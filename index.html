@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Long Island Convenience - Your one-stop gift shop for sports cards, gift baskets, balloons, and more with same-day delivery across Nassau & Suffolk County, NY.">
-    <meta name="keywords" content="gift shop, sports cards, gift baskets, balloons, same-day delivery, Long Island, Nassau County, Suffolk County, greeting cards, game cards">
+    <meta name="keywords" content="gift shop, sports cards, gift baskets, balloons, same-day delivery, Long Island, coupons, offers">
     <meta name="author" content="Long Island Convenience">
     <meta name="robots" content="index, follow">
     <meta property="og:title" content="Long Island Convenience - Gifts & More">
-    <meta property="og:description" content="Your one-stop gift shop. Sports cards, gift baskets, balloons, game cards, and more with free local delivery.">
+    <meta property="og:description" content="Your one-stop gift shop with daily coupons and special events. Same-day delivery across Nassau & Suffolk County.">
     <meta property="og:image" content="./images/BalloonsCenter.png">
     <meta property="og:url" content="https://longislandconvenience.com">
     <meta property="og:type" content="website">
@@ -30,6 +30,7 @@
             --text-light: #e0e0e0;
             --text-gray: #b0b0b0;
             --success-green: #2ecc71;
+            --warning-orange: #ff9800;
             --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
@@ -41,89 +42,259 @@
             min-height: 100vh;
         }
 
-        .canvas-container {
-            position: relative;
-            width: 100%;
-            height: 600px;
-            background: radial-gradient(circle at 50% 30%, rgba(107, 62, 74, 0.3), transparent);
-            overflow: hidden;
-        }
-
-        canvas {
-            display: block;
-            width: 100% !important;
-            height: 100% !important;
-        }
-
-        .stores-section {
+        .hero-section {
             padding: 60px 20px;
+            background: linear-gradient(135deg, rgba(107, 62, 74, 0.3), rgba(233, 75, 127, 0.1));
+            border-bottom: 2px solid rgba(217, 175, 55, 0.3);
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-gray);
+            margin-bottom: 30px;
+        }
+
+        .container {
             max-width: 1400px;
             margin: 0 auto;
+            padding: 60px 20px;
         }
 
         .section-title {
-            text-align: center;
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: 700;
-            margin-bottom: 50px;
             background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             letter-spacing: 1px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        /* Special Events & Coupons Section */
+        .offers-section {
+            margin-bottom: 80px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .event-card {
+            background: linear-gradient(135deg, rgba(217, 175, 55, 0.15), rgba(233, 75, 127, 0.1));
+            border: 2px solid rgba(217, 175, 55, 0.4);
+            border-radius: 15px;
+            padding: 25px;
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-gold), var(--accent-pink));
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .event-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent-gold);
+            box-shadow: 0 15px 35px rgba(217, 175, 55, 0.2);
+            background: linear-gradient(135deg, rgba(217, 175, 55, 0.25), rgba(233, 75, 127, 0.15));
+        }
+
+        .event-date {
+            font-size: 1rem;
+            color: var(--accent-gold);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .event-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-pink);
+            margin-bottom: 10px;
+        }
+
+        .event-description {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .event-discount {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(46, 204, 113, 0.2);
+            border: 2px solid var(--success-green);
+            color: var(--success-green);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        /* Store Cards with Image Gallery */
+        .stores-section {
+            margin-bottom: 80px;
         }
 
         .stores-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 40px;
-            margin-bottom: 80px;
         }
 
         .store-card {
-            background: rgba(107, 62, 74, 0.2);
+            background: rgba(107, 62, 74, 0.15);
             border: 2px solid rgba(217, 175, 55, 0.3);
             border-radius: 15px;
             overflow: hidden;
             transition: var(--transition);
-            cursor: pointer;
-            position: relative;
-            transform-origin: center;
+            display: flex;
+            flex-direction: column;
         }
 
         .store-card:hover {
             transform: translateY(-10px);
             border-color: var(--accent-gold);
-            box-shadow: 0 20px 40px rgba(217, 175, 55, 0.2), 0 0 40px rgba(233, 75, 127, 0.1);
-            background: rgba(107, 62, 74, 0.4);
+            box-shadow: 0 20px 40px rgba(217, 175, 55, 0.2);
+            background: rgba(107, 62, 74, 0.25);
         }
 
-        .store-card-image {
-            width: 100%;
-            height: 250px;
+        /* Image Gallery/Carousel */
+        .gallery-container {
+            position: relative;
+            height: 300px;
             background: linear-gradient(45deg, rgba(107, 62, 74, 0.5), rgba(233, 75, 127, 0.3));
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            position: relative;
         }
 
-        .store-card-image img {
-            max-width: 100%;
-            max-height: 100%;
+        .gallery-main {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gallery-image {
+            position: absolute;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            transition: var(--transition);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
             filter: brightness(0.9);
         }
 
-        .store-card:hover .store-card-image img {
-            filter: brightness(1.1) drop-shadow(0 0 20px rgba(217, 175, 55, 0.5));
-            transform: scale(1.05);
+        .gallery-image.active {
+            opacity: 1;
+            filter: brightness(1);
         }
 
-        .store-card-content {
+        .gallery-thumbs {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: var(--transition);
+        }
+
+        .thumb.active {
+            background: var(--accent-gold);
+            transform: scale(1.3);
+            border-color: var(--accent-gold);
+        }
+
+        .thumb:hover {
+            background: rgba(217, 175, 55, 0.8);
+        }
+
+        .gallery-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(217, 175, 55, 0.3);
+            border: none;
+            color: var(--accent-gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        .gallery-arrow:hover {
+            background: rgba(217, 175, 55, 0.6);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .gallery-arrow.prev {
+            left: 10px;
+        }
+
+        .gallery-arrow.next {
+            right: 10px;
+        }
+
+        .store-content {
             padding: 30px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .store-name {
@@ -169,21 +340,23 @@
             line-height: 1.6;
             font-size: 0.95rem;
             margin-bottom: 20px;
+            flex-grow: 1;
         }
 
         .store-link {
             display: inline-block;
-            padding: 10px 20px;
+            padding: 12px 24px;
             background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink));
             color: var(--primary-dark);
             text-decoration: none;
             border-radius: 8px;
-            font-weight: 600;
+            font-weight: 700;
             transition: var(--transition);
             border: none;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             letter-spacing: 0.5px;
+            align-self: flex-start;
         }
 
         .store-link:hover {
@@ -191,124 +364,18 @@
             box-shadow: 0 10px 25px rgba(217, 175, 55, 0.4);
         }
 
-        .seasonal-reminder {
-            background: linear-gradient(135deg, rgba(233, 75, 127, 0.2), rgba(217, 175, 55, 0.2));
-            border: 2px solid rgba(217, 175, 55, 0.5);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 60px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .seasonal-reminder::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent-pink), var(--accent-gold), var(--accent-pink));
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .seasonal-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--accent-gold);
-            margin-bottom: 15px;
-            letter-spacing: 1px;
-        }
-
-        .reminder-text {
-            color: var(--text-light);
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-        }
-
-        .timer-display {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .timer-unit {
-            background: rgba(107, 62, 74, 0.4);
-            border: 2px solid var(--accent-gold);
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .timer-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--accent-gold);
-            display: block;
-        }
-
-        .timer-label {
-            font-size: 0.8rem;
-            color: var(--text-gray);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
-
-        .floating-balloons {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .balloon {
-            position: absolute;
-            width: 40px;
-            height: 50px;
-            border-radius: 50% 50% 50% 0;
-            opacity: 0.1;
-            animation: float-up linear infinite;
-        }
-
-        @keyframes float-up {
-            0% {
-                transform: translateY(0) translateX(0);
-                opacity: 0.1;
-            }
-            50% {
-                opacity: 0.15;
-            }
-            100% {
-                transform: translateY(-100vh) translateX(100px);
-                opacity: 0;
-            }
-        }
-
-        .features-showcase {
+        /* Features Section */
+        .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 30px;
-            margin-bottom: 60px;
+            margin-bottom: 80px;
         }
 
         .feature-box {
             background: rgba(107, 62, 74, 0.15);
             border-left: 4px solid var(--accent-gold);
-            padding: 25px;
+            padding: 30px;
             border-radius: 10px;
             transition: var(--transition);
         }
@@ -320,7 +387,7 @@
         }
 
         .feature-icon {
-            font-size: 2rem;
+            font-size: 2.5rem;
             margin-bottom: 15px;
         }
 
@@ -337,9 +404,54 @@
             line-height: 1.6;
         }
 
+        /* Call to Action Banner */
+        .cta-banner {
+            background: linear-gradient(135deg, rgba(217, 175, 55, 0.2), rgba(233, 75, 127, 0.2));
+            border: 2px solid var(--accent-gold);
+            border-radius: 15px;
+            padding: 50px 40px;
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .cta-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            margin-bottom: 15px;
+        }
+
+        .cta-text {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+        }
+
+        .cta-button {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink));
+            color: var(--primary-dark);
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(217, 175, 55, 0.3);
+        }
+
         @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+
             .section-title {
-                font-size: 1.8rem;
+                font-size: 1.6rem;
             }
 
             .stores-grid {
@@ -347,72 +459,44 @@
                 gap: 30px;
             }
 
-            .timer-display {
-                grid-template-columns: repeat(2, 1fr);
+            .gallery-container {
+                height: 250px;
             }
 
-            .canvas-container {
-                height: 400px;
-            }
-        }
-
-        .pulse {
-            animation: pulse-animation 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse-animation {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.8;
+            .cta-banner {
+                padding: 30px 20px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="floating-balloons" id="balloons"></div>
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <h1 class="hero-title">✨ Long Island Convenience</h1>
+        <p class="hero-subtitle">7 Brands. One Neighborhood. Premium Gifts & Services</p>
+    </div>
 
-    <!-- Three.js Canvas Container -->
-    <div class="canvas-container" id="canvas-container"></div>
-
-    <!-- Main Content Section -->
-    <div class="stores-section">
-        <!-- Seasonal Reminder Timer -->
-        <div class="seasonal-reminder">
-            <div class="seasonal-title">🎉 Upcoming Holiday Countdown</div>
-            <div class="reminder-text">Get ready for the next big celebration!</div>
-            <div class="timer-display" id="timerDisplay">
-                <div class="timer-unit">
-                    <span class="timer-value" id="days">0</span>
-                    <span class="timer-label">Days</span>
-                </div>
-                <div class="timer-unit">
-                    <span class="timer-value" id="hours">0</span>
-                    <span class="timer-label">Hours</span>
-                </div>
-                <div class="timer-unit">
-                    <span class="timer-value" id="minutes">0</span>
-                    <span class="timer-label">Minutes</span>
-                </div>
-                <div class="timer-unit">
-                    <span class="timer-value" id="seconds">0</span>
-                    <span class="timer-label">Seconds</span>
-                </div>
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Special Events & Coupons Section -->
+        <div class="offers-section">
+            <h2 class="section-title">🎉 Special Events & Best Offers</h2>
+            <div class="calendar-grid" id="eventsGrid">
+                <!-- Events will be dynamically inserted here -->
             </div>
         </div>
 
-        <!-- Section Title -->
-        <h1 class="section-title">✨ Our Stores</h1>
-
-        <!-- Stores Grid -->
-        <div class="stores-grid" id="storesGrid">
-            <!-- Store cards will be dynamically inserted here -->
+        <!-- Stores with Image Galleries -->
+        <div class="stores-section">
+            <h2 class="section-title">🏪 Our Stores</h2>
+            <div class="stores-grid" id="storesGrid">
+                <!-- Store cards will be dynamically inserted here -->
+            </div>
         </div>
 
-        <!-- Features Showcase -->
-        <h2 class="section-title" style="margin-top: 80px;">Why Choose Long Island Convenience?</h2>
-        <div class="features-showcase">
+        <!-- Features Section -->
+        <h2 class="section-title">Why Choose Long Island Convenience?</h2>
+        <div class="features-grid">
             <div class="feature-box">
                 <div class="feature-icon">🚚</div>
                 <div class="feature-title">Fast Delivery</div>
@@ -424,81 +508,167 @@
                 <div class="feature-text">From sports cards to gift baskets, balloons to custom orders. Everything in one place for every occasion.</div>
             </div>
             <div class="feature-box">
+                <div class="feature-icon">💳</div>
+                <div class="feature-title">Daily Coupons</div>
+                <div class="feature-text">Exclusive offers updated daily. Check our calendar for the best deals on your favorite products.</div>
+            </div>
+            <div class="feature-box">
                 <div class="feature-icon">⭐</div>
                 <div class="feature-title">Premium Quality</div>
                 <div class="feature-text">Carefully curated products from trusted brands. Quality you can see and feel.</div>
             </div>
-            <div class="feature-box">
-                <div class="feature-icon">📱</div>
-                <div class="feature-title">Easy Ordering</div>
-                <div class="feature-text">Shop online or visit our stores. Multiple convenient ways to order and pick up.</div>
-            </div>
+        </div>
+
+        <!-- CTA Banner -->
+        <div class="cta-banner">
+            <h2 class="cta-title">🎊 Ready to Celebrate?</h2>
+            <p class="cta-text">Visit our stores or shop online for exclusive deals and same-day delivery</p>
+            <a href="#" class="cta-button">Shop Now</a>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Store Configuration
+        // Events and Special Offers Data
+        const events = [
+            {
+                date: 'Jun 9',
+                title: '🎈 Summer Balloon Sale',
+                description: 'Colorful balloons for all summer celebrations. Perfect for parties and events.',
+                discount: '20% OFF',
+                category: 'balloons'
+            },
+            {
+                date: 'Jun 15',
+                title: '🎴 Trading Card Tournament',
+                description: 'Rare card showcase and trading event. Bring your best collection!',
+                discount: 'Free Entry',
+                category: 'sports-cards'
+            },
+            {
+                date: 'Jun 20',
+                title: '🎁 Gift Basket Bonanza',
+                description: 'Curated gift baskets for every occasion. Same-day delivery available.',
+                discount: '15% OFF',
+                category: 'gift-baskets'
+            },
+            {
+                date: 'Jun 25',
+                title: '📮 Printing & Mail Day',
+                description: 'Custom printing services with special rates. Turnaround time just 24 hours.',
+                discount: '30% OFF',
+                category: 'print-mail'
+            },
+            {
+                date: 'Jul 1',
+                title: '🎆 Mid-Summer Clearance',
+                description: 'Massive discounts on selected items across all stores. Limited quantities!',
+                discount: 'UP TO 50% OFF',
+                category: 'special'
+            },
+            {
+                date: 'Jul 4',
+                title: '🇺🇸 Independence Day Sale',
+                description: 'Patriotic decorations, gifts, and balloons for your celebrations.',
+                discount: '25% OFF',
+                category: 'balloons'
+            }
+        ];
+
+        // Stores with Image Galleries
         const stores = [
             {
+                id: 1,
                 name: 'Sports Cards',
                 category: 'Cards & Collectibles',
-                description: 'Rare and vintage sports cards. Build your collection with us.',
+                description: 'Rare and vintage sports cards. Build your collection with us. Expert trading advice available.',
                 status: 'LIVE',
-                image: './images/sports-cards-center.png',
-                url: '#'
+                images: ['./images/sports-cards-center.png', './images/cards_left.png', './images/cards_right.png'],
+                url: 'https://longislandcards.com'
             },
             {
+                id: 2,
                 name: 'Gift Baskets',
                 category: 'Gifts & Occasions',
-                description: 'Beautifully curated gift baskets for every celebration and budget.',
+                description: 'Beautifully curated gift baskets for every celebration and budget. Custom arrangements available.',
                 status: 'LIVE',
-                image: './images/giftbasket_center.jpg',
-                url: '#'
+                images: ['./images/giftbasket_center.jpg', './images/giftbasket_left.jpg', './images/giftbasket_right.jpg'],
+                url: 'https://ligiftbasket.com'
             },
             {
+                id: 3,
                 name: 'Balloons & Décor',
                 category: 'Events & Parties',
-                description: 'Transform any space with our premium balloon arrangements and decorations.',
+                description: 'Transform any space with our premium balloon arrangements and event decorations. Same-day setup available.',
                 status: 'LIVE',
-                image: './images/BalloonsCenter.png',
-                url: '#'
+                images: ['./images/BalloonsCenter.png', './images/balloon_left.jfif', './images/balloon_right.jfif'],
+                url: 'https://longislandbaloonsdecor.com'
             },
             {
+                id: 4,
                 name: 'Print & Mail',
                 category: 'Print & Shipping',
-                description: 'Professional printing and nationwide shipping services.',
+                description: 'Professional printing and nationwide shipping services. Custom designs and rush orders welcome.',
                 status: 'LIVE',
-                image: './images/printmail_center.jpeg',
-                url: '#'
+                images: ['./images/printmail_center.jpeg', './images/printmail_left.jpeg', './images/printmail_right.jpeg'],
+                url: 'https://longislandprintandmail.com'
             },
             {
+                id: 5,
                 name: 'Game Cards',
                 category: 'Gaming',
-                description: 'Yu-Gi-Oh, Magic: The Gathering, and more collectible card games.',
+                description: 'Yu-Gi-Oh, Magic: The Gathering, and more collectible card games. Competitive play support.',
                 status: 'LIVE',
-                image: './images/cards_left.png',
+                images: ['./images/cards_left.png', './images/sports-cards-center.png', './images/cards_right.png'],
                 url: '#'
             },
             {
+                id: 6,
                 name: 'Greeting Cards',
-                category: 'Cards',
-                description: 'Custom and personalized greeting cards for all occasions.',
+                category: 'Cards & Stationery',
+                description: 'Custom and personalized greeting cards for all occasions. Bulk orders with discounts.',
                 status: 'COMING',
-                image: './images/cards_right.png',
+                images: ['./images/cards_right.png', './images/cards_left.png', './images/sports-cards-center.png'],
                 url: '#'
             }
         ];
 
-        // Populate Store Cards
-        function initializeStores() {
+        // Render Events
+        function renderEvents() {
+            const eventsGrid = document.getElementById('eventsGrid');
+            eventsGrid.innerHTML = events.map(event => `
+                <div class="event-card">
+                    <div class="event-date">${event.date}</div>
+                    <div class="event-title">${event.title}</div>
+                    <div class="event-description">${event.description}</div>
+                    <div class="event-discount">${event.discount}</div>
+                </div>
+            `).join('');
+        }
+
+        // Render Stores with Galleries
+        function renderStores() {
             const storesGrid = document.getElementById('storesGrid');
-            storesGrid.innerHTML = stores.map(store => `
+            storesGrid.innerHTML = stores.map((store, index) => `
                 <div class="store-card">
-                    <div class="store-card-image">
-                        <img src="${store.image}" alt="${store.name}" loading="lazy">
+                    <div class="gallery-container">
+                        <div class="gallery-main" id="gallery-${store.id}">
+                            ${store.images.map((img, idx) => `
+                                <img src="${img}" alt="${store.name} - Image ${idx + 1}"
+                                     class="gallery-image ${idx === 0 ? 'active' : ''}"
+                                     data-store="${store.id}" data-index="${idx}">
+                            `).join('')}
+                        </div>
+                        <button class="gallery-arrow prev" onclick="changeGalleryImage(${store.id}, -1)">❮</button>
+                        <button class="gallery-arrow next" onclick="changeGalleryImage(${store.id}, 1)">❯</button>
+                        <div class="gallery-thumbs">
+                            ${store.images.map((_, idx) => `
+                                <div class="thumb ${idx === 0 ? 'active' : ''}"
+                                     onclick="goToGalleryImage(${store.id}, ${idx})"
+                                     data-store="${store.id}" data-index="${idx}"></div>
+                            `).join('')}
+                        </div>
                     </div>
-                    <div class="store-card-content">
+                    <div class="store-content">
                         <div class="store-name">
                             ${store.name}
                             <span class="store-status ${store.status === 'LIVE' ? 'status-live' : 'status-coming'}">
@@ -507,155 +677,35 @@
                         </div>
                         <div class="store-category">${store.category}</div>
                         <div class="store-description">${store.description}</div>
-                        <a href="${store.url}" class="store-link">Explore Store</a>
+                        <a href="${store.url}" class="store-link">Visit Store →</a>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Seasonal Reminder Timer
-        function initializeTimer() {
-            function updateTimer() {
-                const now = new Date();
-                const currentYear = now.getFullYear();
-
-                // Set target to Christmas 2026
-                let target = new Date(currentYear, 11, 25); // December 25
-
-                // If Christmas has passed, target next year
-                if (now > target) {
-                    target = new Date(currentYear + 1, 11, 25);
-                }
-
-                const diff = target - now;
-
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-                document.getElementById('days').textContent = String(days).padStart(2, '0');
-                document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-                document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-                document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
-            }
-
-            updateTimer();
-            setInterval(updateTimer, 1000);
+        // Gallery Navigation Functions
+        function changeGalleryImage(storeId, direction) {
+            const images = document.querySelectorAll(`[data-store="${storeId}"].gallery-image`);
+            let currentIndex = Array.from(images).findIndex(img => img.classList.contains('active'));
+            let newIndex = (currentIndex + direction + images.length) % images.length;
+            goToGalleryImage(storeId, newIndex);
         }
 
-        // Floating Balloons Animation
-        function createFloatingBalloons() {
-            const colors = ['#e94b7f', '#d4af37', '#2ecc71', '#ff6b6b', '#4ecdc4'];
-            const container = document.getElementById('balloons');
+        function goToGalleryImage(storeId, index) {
+            const images = document.querySelectorAll(`[data-store="${storeId}"].gallery-image`);
+            const thumbs = document.querySelectorAll(`[data-store="${storeId}"].thumb`);
 
-            for (let i = 0; i < 15; i++) {
-                const balloon = document.createElement('div');
-                balloon.className = 'balloon';
-                balloon.style.left = Math.random() * 100 + '%';
-                balloon.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                balloon.style.animationDuration = (Math.random() * 10 + 8) + 's';
-                balloon.style.animationDelay = Math.random() * 5 + 's';
-                container.appendChild(balloon);
-            }
+            images.forEach(img => img.classList.remove('active'));
+            thumbs.forEach(thumb => thumb.classList.remove('active'));
+
+            images[index].classList.add('active');
+            thumbs[index].classList.add('active');
         }
 
-        // Three.js Scene Setup
-        function initThreeJS() {
-            const container = document.getElementById('canvas-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-
-            // Scene Setup
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-
-            renderer.setSize(width, height);
-            renderer.setClearColor(0x000000, 0);
-            container.appendChild(renderer.domElement);
-
-            camera.position.z = 5;
-
-            // Create geometric shapes
-            const geometry = new THREE.IcosahedronGeometry(2, 4);
-            const material = new THREE.MeshPhongMaterial({
-                color: 0xd4af37,
-                emissive: 0x6b3e4a,
-                wireframe: false,
-                shininess: 100
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-
-            // Add spheres for visual interest
-            const sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-            const sphereMaterial = new THREE.MeshPhongMaterial({
-                color: 0xe94b7f,
-                emissive: 0x3a1f2a,
-                wireframe: false,
-                shininess: 100,
-                opacity: 0.3,
-                transparent: true
-            });
-
-            const sphere1 = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere1.position.x = -8;
-            scene.add(sphere1);
-
-            const sphere2 = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere2.position.x = 8;
-            scene.add(sphere2);
-
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-
-            const pointLight = new THREE.PointLight(0xffffff, 0.8);
-            pointLight.position.set(10, 10, 10);
-            scene.add(pointLight);
-
-            const pointLight2 = new THREE.PointLight(0xe94b7f, 0.6);
-            pointLight2.position.set(-10, 10, 10);
-            scene.add(pointLight2);
-
-            // Animation Loop
-            function animate() {
-                requestAnimationFrame(animate);
-
-                // Rotation animations
-                mesh.rotation.x += 0.001;
-                mesh.rotation.y += 0.002;
-                mesh.position.y = Math.sin(Date.now() * 0.0005) * 0.5;
-
-                sphere1.rotation.y -= 0.001;
-                sphere1.position.y = Math.cos(Date.now() * 0.0003) * 1;
-
-                sphere2.rotation.y += 0.001;
-                sphere2.position.y = Math.sin(Date.now() * 0.0004) * 1;
-
-                renderer.render(scene, camera);
-            }
-
-            animate();
-
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                const newWidth = container.clientWidth;
-                const newHeight = container.clientHeight;
-                camera.aspect = newWidth / newHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(newWidth, newHeight);
-            });
-        }
-
-        // Initialize Everything
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
-            initializeStores();
-            initializeTimer();
-            createFloatingBalloons();
-            initThreeJS();
+            renderEvents();
+            renderStores();
         });
     </script>
 </body>
