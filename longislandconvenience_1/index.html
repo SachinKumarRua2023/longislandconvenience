@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Long Island Convenience - Your one-stop gift shop for sports cards, gift baskets, balloons, and more with same-day delivery across Nassau & Suffolk County, NY.">
+    <meta name="keywords" content="gift shop, sports cards, gift baskets, balloons, same-day delivery, Long Island, Nassau County, Suffolk County, greeting cards, game cards">
+    <meta name="author" content="Long Island Convenience">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Long Island Convenience - Gifts & More">
+    <meta property="og:description" content="Your one-stop gift shop. Sports cards, gift baskets, balloons, game cards, and more with free local delivery.">
+    <meta property="og:image" content="./images/BalloonsCenter.png">
+    <meta property="og:url" content="https://longislandconvenience.com">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#6b3e4a">
+    <title>Long Island Convenience - Premium Gifts & Products</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #1a0f15;
+            --primary-burgundy: #6b3e4a;
+            --accent-pink: #e94b7f;
+            --accent-gold: #d4af37;
+            --text-light: #e0e0e0;
+            --text-gray: #b0b0b0;
+            --success-green: #2ecc71;
+            --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #2a1a25 100%);
+            color: var(--text-light);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: radial-gradient(circle at 50% 30%, rgba(107, 62, 74, 0.3), transparent);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .stores-section {
+            padding: 60px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 50px;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1px;
+        }
+
+        .stores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-bottom: 80px;
+        }
+
+        .store-card {
+            background: rgba(107, 62, 74, 0.2);
+            border: 2px solid rgba(217, 175, 55, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            transform-origin: center;
+        }
+
+        .store-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent-gold);
+            box-shadow: 0 20px 40px rgba(217, 175, 55, 0.2), 0 0 40px rgba(233, 75, 127, 0.1);
+            background: rgba(107, 62, 74, 0.4);
+        }
+
+        .store-card-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(45deg, rgba(107, 62, 74, 0.5), rgba(233, 75, 127, 0.3));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .store-card-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+            filter: brightness(0.9);
+        }
+
+        .store-card:hover .store-card-image img {
+            filter: brightness(1.1) drop-shadow(0 0 20px rgba(217, 175, 55, 0.5));
+            transform: scale(1.05);
+        }
+
+        .store-card-content {
+            padding: 30px;
+        }
+
+        .store-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .store-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-live {
+            background-color: rgba(46, 204, 113, 0.3);
+            color: var(--success-green);
+            border: 1px solid var(--success-green);
+        }
+
+        .status-coming {
+            background-color: rgba(217, 175, 55, 0.2);
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+        }
+
+        .store-category {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .store-description {
+            color: var(--text-light);
+            line-height: 1.6;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+        .store-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink));
+            color: var(--primary-dark);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        .store-link:hover {
+            transform: translateX(5px);
+            box-shadow: 0 10px 25px rgba(217, 175, 55, 0.4);
+        }
+
+        .seasonal-reminder {
+            background: linear-gradient(135deg, rgba(233, 75, 127, 0.2), rgba(217, 175, 55, 0.2));
+            border: 2px solid rgba(217, 175, 55, 0.5);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .seasonal-reminder::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-pink), var(--accent-gold), var(--accent-pink));
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .seasonal-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .reminder-text {
+            color: var(--text-light);
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .timer-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .timer-unit {
+            background: rgba(107, 62, 74, 0.4);
+            border: 2px solid var(--accent-gold);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .timer-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            display: block;
+        }
+
+        .timer-label {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .floating-balloons {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .balloon {
+            position: absolute;
+            width: 40px;
+            height: 50px;
+            border-radius: 50% 50% 50% 0;
+            opacity: 0.1;
+            animation: float-up linear infinite;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0.1;
+            }
+            50% {
+                opacity: 0.15;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        .features-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .feature-box {
+            background: rgba(107, 62, 74, 0.15);
+            border-left: 4px solid var(--accent-gold);
+            padding: 25px;
+            border-radius: 10px;
+            transition: var(--transition);
+        }
+
+        .feature-box:hover {
+            background: rgba(107, 62, 74, 0.25);
+            border-left-color: var(--accent-pink);
+            transform: translateX(5px);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+        }
+
+        .feature-text {
+            color: var(--text-gray);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .section-title {
+                font-size: 1.8rem;
+            }
+
+            .stores-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .timer-display {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .canvas-container {
+                height: 400px;
+            }
+        }
+
+        .pulse {
+            animation: pulse-animation 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-animation {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-balloons" id="balloons"></div>
+
+    <!-- Three.js Canvas Container -->
+    <div class="canvas-container" id="canvas-container"></div>
+
+    <!-- Main Content Section -->
+    <div class="stores-section">
+        <!-- Seasonal Reminder Timer -->
+        <div class="seasonal-reminder">
+            <div class="seasonal-title">🎉 Upcoming Holiday Countdown</div>
+            <div class="reminder-text">Get ready for the next big celebration!</div>
+            <div class="timer-display" id="timerDisplay">
+                <div class="timer-unit">
+                    <span class="timer-value" id="days">0</span>
+                    <span class="timer-label">Days</span>
+                </div>
+                <div class="timer-unit">
+                    <span class="timer-value" id="hours">0</span>
+                    <span class="timer-label">Hours</span>
+                </div>
+                <div class="timer-unit">
+                    <span class="timer-value" id="minutes">0</span>
+                    <span class="timer-label">Minutes</span>
+                </div>
+                <div class="timer-unit">
+                    <span class="timer-value" id="seconds">0</span>
+                    <span class="timer-label">Seconds</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Title -->
+        <h1 class="section-title">✨ Our Stores</h1>
+
+        <!-- Stores Grid -->
+        <div class="stores-grid" id="storesGrid">
+            <!-- Store cards will be dynamically inserted here -->
+        </div>
+
+        <!-- Features Showcase -->
+        <h2 class="section-title" style="margin-top: 80px;">Why Choose Long Island Convenience?</h2>
+        <div class="features-showcase">
+            <div class="feature-box">
+                <div class="feature-icon">🚚</div>
+                <div class="feature-title">Fast Delivery</div>
+                <div class="feature-text">Same-day delivery available across Nassau & Suffolk County. Get your gifts on time, every time.</div>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">🎁</div>
+                <div class="feature-title">Wide Selection</div>
+                <div class="feature-text">From sports cards to gift baskets, balloons to custom orders. Everything in one place for every occasion.</div>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">⭐</div>
+                <div class="feature-title">Premium Quality</div>
+                <div class="feature-text">Carefully curated products from trusted brands. Quality you can see and feel.</div>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">📱</div>
+                <div class="feature-title">Easy Ordering</div>
+                <div class="feature-text">Shop online or visit our stores. Multiple convenient ways to order and pick up.</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Store Configuration
+        const stores = [
+            {
+                name: 'Sports Cards',
+                category: 'Cards & Collectibles',
+                description: 'Rare and vintage sports cards. Build your collection with us.',
+                status: 'LIVE',
+                image: './images/sports-cards-center.png',
+                url: '#'
+            },
+            {
+                name: 'Gift Baskets',
+                category: 'Gifts & Occasions',
+                description: 'Beautifully curated gift baskets for every celebration and budget.',
+                status: 'LIVE',
+                image: './images/giftbasket_center.jpg',
+                url: '#'
+            },
+            {
+                name: 'Balloons & Décor',
+                category: 'Events & Parties',
+                description: 'Transform any space with our premium balloon arrangements and decorations.',
+                status: 'LIVE',
+                image: './images/BalloonsCenter.png',
+                url: '#'
+            },
+            {
+                name: 'Print & Mail',
+                category: 'Print & Shipping',
+                description: 'Professional printing and nationwide shipping services.',
+                status: 'LIVE',
+                image: './images/printmail_center.jpeg',
+                url: '#'
+            },
+            {
+                name: 'Game Cards',
+                category: 'Gaming',
+                description: 'Yu-Gi-Oh, Magic: The Gathering, and more collectible card games.',
+                status: 'LIVE',
+                image: './images/cards_left.png',
+                url: '#'
+            },
+            {
+                name: 'Greeting Cards',
+                category: 'Cards',
+                description: 'Custom and personalized greeting cards for all occasions.',
+                status: 'COMING',
+                image: './images/cards_right.png',
+                url: '#'
+            }
+        ];
+
+        // Populate Store Cards
+        function initializeStores() {
+            const storesGrid = document.getElementById('storesGrid');
+            storesGrid.innerHTML = stores.map(store => `
+                <div class="store-card">
+                    <div class="store-card-image">
+                        <img src="${store.image}" alt="${store.name}" loading="lazy">
+                    </div>
+                    <div class="store-card-content">
+                        <div class="store-name">
+                            ${store.name}
+                            <span class="store-status ${store.status === 'LIVE' ? 'status-live' : 'status-coming'}">
+                                ${store.status}
+                            </span>
+                        </div>
+                        <div class="store-category">${store.category}</div>
+                        <div class="store-description">${store.description}</div>
+                        <a href="${store.url}" class="store-link">Explore Store</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Seasonal Reminder Timer
+        function initializeTimer() {
+            function updateTimer() {
+                const now = new Date();
+                const currentYear = now.getFullYear();
+
+                // Set target to Christmas 2026
+                let target = new Date(currentYear, 11, 25); // December 25
+
+                // If Christmas has passed, target next year
+                if (now > target) {
+                    target = new Date(currentYear + 1, 11, 25);
+                }
+
+                const diff = target - now;
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('days').textContent = String(days).padStart(2, '0');
+                document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+                document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+                document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+            }
+
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        }
+
+        // Floating Balloons Animation
+        function createFloatingBalloons() {
+            const colors = ['#e94b7f', '#d4af37', '#2ecc71', '#ff6b6b', '#4ecdc4'];
+            const container = document.getElementById('balloons');
+
+            for (let i = 0; i < 15; i++) {
+                const balloon = document.createElement('div');
+                balloon.className = 'balloon';
+                balloon.style.left = Math.random() * 100 + '%';
+                balloon.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                balloon.style.animationDuration = (Math.random() * 10 + 8) + 's';
+                balloon.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(balloon);
+            }
+        }
+
+        // Three.js Scene Setup
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Scene Setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+            renderer.setSize(width, height);
+            renderer.setClearColor(0x000000, 0);
+            container.appendChild(renderer.domElement);
+
+            camera.position.z = 5;
+
+            // Create geometric shapes
+            const geometry = new THREE.IcosahedronGeometry(2, 4);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xd4af37,
+                emissive: 0x6b3e4a,
+                wireframe: false,
+                shininess: 100
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            // Add spheres for visual interest
+            const sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+            const sphereMaterial = new THREE.MeshPhongMaterial({
+                color: 0xe94b7f,
+                emissive: 0x3a1f2a,
+                wireframe: false,
+                shininess: 100,
+                opacity: 0.3,
+                transparent: true
+            });
+
+            const sphere1 = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere1.position.x = -8;
+            scene.add(sphere1);
+
+            const sphere2 = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere2.position.x = 8;
+            scene.add(sphere2);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0xffffff, 0.8);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
+
+            const pointLight2 = new THREE.PointLight(0xe94b7f, 0.6);
+            pointLight2.position.set(-10, 10, 10);
+            scene.add(pointLight2);
+
+            // Animation Loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Rotation animations
+                mesh.rotation.x += 0.001;
+                mesh.rotation.y += 0.002;
+                mesh.position.y = Math.sin(Date.now() * 0.0005) * 0.5;
+
+                sphere1.rotation.y -= 0.001;
+                sphere1.position.y = Math.cos(Date.now() * 0.0003) * 1;
+
+                sphere2.rotation.y += 0.001;
+                sphere2.position.y = Math.sin(Date.now() * 0.0004) * 1;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                const newWidth = container.clientWidth;
+                const newHeight = container.clientHeight;
+                camera.aspect = newWidth / newHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(newWidth, newHeight);
+            });
+        }
+
+        // Initialize Everything
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeStores();
+            initializeTimer();
+            createFloatingBalloons();
+            initThreeJS();
+        });
+    </script>
+</body>
+</html>
