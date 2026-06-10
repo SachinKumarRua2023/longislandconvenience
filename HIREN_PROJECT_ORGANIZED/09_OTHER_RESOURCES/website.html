@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Country Cove Inc. - Custom Banners & Signs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1a237e;
+            --primary-dark: #0d1b4b;
+            --accent: #ff6f00;
+            --accent-dark: #e65100;
+            --text: #212121;
+            --text-light: #616161;
+            --bg: #f8f9fa;
+            --white: #ffffff;
+            --border: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, #283593 100%);
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        nav {
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--accent);
+        }
+
+        .contact-btn {
+            background: var(--accent);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .contact-btn:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 111, 0, 0.3);
+        }
+
+        /* CAROUSEL */
+        .carousel {
+            position: relative;
+            height: 500px;
+            overflow: hidden;
+            background: var(--primary);
+        }
+
+        .carousel-slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .carousel-slide.active {
+            opacity: 1;
+        }
+
+        .carousel-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 10;
+            width: 100%;
+            padding: 0 24px;
+        }
+
+        .carousel-content h1 {
+            font-size: clamp(32px, 5vw, 56px);
+            margin-bottom: 16px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .carousel-content p {
+            font-size: 18px;
+            margin-bottom: 24px;
+            opacity: 0.95;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            padding: 14px 36px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 111, 0, 0.4);
+        }
+
+        .carousel-nav {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .carousel-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .carousel-dot.active {
+            background: white;
+            width: 32px;
+            border-radius: 6px;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            text-align: center;
+            padding: 60px 24px;
+            background: white;
+        }
+
+        .hero h2 {
+            font-size: clamp(28px, 4vw, 42px);
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            font-size: 17px;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        /* FILTERS & SEARCH */
+        .filters {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .filter-label {
+            font-weight: 700;
+            color: var(--text-light);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-right: 12px;
+        }
+
+        .filter-btn {
+            padding: 8px 18px;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .sort-select {
+            margin-left: auto;
+            padding: 8px 16px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* PRODUCT GRID */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.16);
+        }
+
+        .product-image {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+            display: block;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-category {
+            color: var(--text-light);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .product-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .product-price {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--accent);
+            margin: 12px 0;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent-dark);
+        }
+
+        /* CTA SECTION */
+        .cta {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            color: white;
+            padding: 60px 24px;
+            text-align: center;
+        }
+
+        .cta h2 {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .cta p {
+            font-size: 17px;
+            margin-bottom: 24px;
+            opacity: 0.95;
+        }
+
+        .btn-light {
+            background: white;
+            color: var(--accent);
+            padding: 14px 40px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-light:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        /* PAGINATION */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 48px 0;
+        }
+
+        .pagination button {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .pagination button.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .pagination button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* FOOTER */
+        footer {
+            background: var(--primary);
+            color: white;
+            padding: 40px 24px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        footer p {
+            opacity: 0.8;
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 28px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--text-light);
+        }
+
+        .modal-image {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-wrap: wrap;
+            }
+
+            nav {
+                display: none;
+            }
+
+            .carousel {
+                height: 300px;
+            }
+
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 16px;
+            }
+
+            .sort-select {
+                margin-left: 0;
+                margin-top: 12px;
+                width: 100%;
+            }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--text-light);
+        }
+
+        .no-results h3 {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        /* SECTION PADDING */
+        section {
+            padding: 60px 24px;
+        }
+
+        section.white {
+            background: white;
+        }
+
+        section.gray {
+            background: var(--bg);
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                🚩 Country Cove Inc.
+            </div>
+            <nav>
+                <a href="#home">Home</a>
+                <a href="#shop">Shop</a>
+                <a href="#about">About</a>
+                <a href="#contact" class="contact-btn">Contact Us</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- CAROUSEL -->
+    <div class="carousel" id="carousel">
+        <div class="carousel-slide active" style="background-image: url('https://images.unsplash.com/photo-1524234107056-1c1f48f64ab8?w=1200&h=500&fit=crop');"></div>
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=1200&h=500&fit=crop');"></div>
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=500&fit=crop');"></div>
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200&h=500&fit=crop');"></div>
+
+        <div class="carousel-content">
+            <h1>Long Island's #1 Banner & Sign Printer</h1>
+            <p>Same-day production. Premium quality. Unbeatable prices.</p>
+            <button class="btn-primary" onclick="scrollTo('#shop')">Shop Now</button>
+        </div>
+
+        <div class="carousel-nav">
+            <div class="carousel-dot active" onclick="currentSlide(0)"></div>
+            <div class="carousel-dot" onclick="currentSlide(1)"></div>
+            <div class="carousel-dot" onclick="currentSlide(2)"></div>
+            <div class="carousel-dot" onclick="currentSlide(3)"></div>
+        </div>
+    </div>
+
+    <!-- HERO SECTION -->
+    <section class="white" id="home">
+        <div class="container">
+            <div class="hero">
+                <h2>Shop by Category</h2>
+                <p>Everything you need to make your brand stand out</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SHOP SECTION -->
+    <section class="gray" id="shop">
+        <div class="container">
+            <!-- FILTERS -->
+            <div class="filters">
+                <div class="filter-row">
+                    <span class="filter-label">Filter by:</span>
+                    <button class="filter-btn active" onclick="filterCategory('')">All Products</button>
+                    <button class="filter-btn" onclick="filterCategory('Banners')">Banners</button>
+                    <button class="filter-btn" onclick="filterCategory('Stands')">Stands</button>
+                    <button class="filter-btn" onclick="filterCategory('Signs')">Signs</button>
+                    <button class="filter-btn" onclick="filterCategory('Decals')">Decals</button>
+                    <button class="filter-btn" onclick="filterCategory('Flags')">Flags</button>
+                    <button class="filter-btn" onclick="filterCategory('Table')">Table Covers</button>
+                    <select class="sort-select" onchange="sortProducts(this.value)">
+                        <option value="">Sort: Popular</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                        <option value="newest">Newest</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- GRID -->
+            <div class="grid" id="productGrid">
+                <!-- Products loaded by JavaScript -->
+            </div>
+
+            <!-- PAGINATION -->
+            <div class="pagination" id="pagination">
+                <!-- Pagination loaded by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA SECTION -->
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Order?</h2>
+            <p>Get your free digital proof within 2 hours. Rush delivery available.</p>
+            <button class="btn-light">Get Free Quote</button>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>&copy; 2026 Country Cove Inc. | Long Island's Premier Banner & Sign Printer</p>
+        <p>Phone: 1-800-COV-SIGN | Email: info@countrycove.com</p>
+    </footer>
+
+    <!-- MODAL -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <img class="modal-image" id="modalImage" src="" alt="">
+            <h3 id="modalTitle"></h3>
+            <p id="modalCategory"></p>
+            <p style="font-size: 20px; font-weight: 900; color: #ff6f00; margin: 12px 0;" id="modalPrice">$89.99</p>
+            <button class="btn-primary" style="width: 100%;">Customize Now</button>
+        </div>
+    </div>
+
+    <script>
+        // PRODUCTS DATABASE
+        const products = [
+            // BANNERS
+            { id: 1, name: 'Step & Repeat Banner', category: 'Banners', image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=300&fit=crop', price: 89.99, rating: 5, reviews: 412 },
+            { id: 2, name: 'Vinyl Banner', category: 'Banners', image: 'https://images.unsplash.com/photo-1524234107056-1c1f48f64ab8?w=400&h=300&fit=crop', price: 59.99, rating: 5, reviews: 287 },
+            { id: 3, name: 'Fabric Banner', category: 'Banners', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop', price: 79.99, rating: 4, reviews: 156 },
+            { id: 4, name: 'Holiday Banner', category: 'Banners', image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop', price: 45.99, rating: 5, reviews: 98 },
+
+            // STANDS
+            { id: 5, name: 'Retractable Standard', category: 'Stands', image: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=400&h=300&fit=crop', price: 49.99, rating: 5, reviews: 287 },
+            { id: 6, name: 'Tabletop Retractable', category: 'Stands', image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop', price: 29.99, rating: 5, reviews: 204 },
+            { id: 7, name: 'Wide Retractable', category: 'Stands', image: 'https://images.unsplash.com/photo-1524234107056-1c1f48f64ab8?w=400&h=300&fit=crop', price: 69.99, rating: 4, reviews: 73 },
+            { id: 8, name: 'Frame Stand', category: 'Stands', image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=300&fit=crop', price: 39.99, rating: 4, reviews: 142 },
+
+            // SIGNS
+            { id: 9, name: 'Yard Sign Package', category: 'Signs', image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=300&fit=crop', price: 24.99, rating: 5, reviews: 234 },
+            { id: 10, name: 'LED Sign', category: 'Signs', image: 'https://images.unsplash.com/photo-1524234107056-1c1f48f64ab8?w=400&h=300&fit=crop', price: 199.99, rating: 5, reviews: 89 },
+            { id: 11, name: 'Aluminum Sign', category: 'Signs', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop', price: 34.99, rating: 4, reviews: 67 },
+
+            // DECALS
+            { id: 12, name: 'Window Decal', category: 'Decals', image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop', price: 14.99, rating: 5, reviews: 156 },
+            { id: 13, name: 'Wall Decal', category: 'Decals', image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=300&fit=crop', price: 19.99, rating: 5, reviews: 203 },
+            { id: 14, name: 'Floor Decal', category: 'Decals', image: 'https://images.unsplash.com/photo-1524234107056-1c1f48f64ab8?w=400&h=300&fit=crop', price: 9.99, rating: 4, reviews: 89 },
+
+            // FLAGS
+            { id: 15, name: 'Feather Flag', category: 'Flags', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop', price: 34.99, rating: 5, reviews: 104 },
+            { id: 16, name: 'Teardrop Flag', category: 'Flags', image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop', price: 44.99, rating: 5, reviews: 78 },
+            { id: 17, name: 'Table Flag', category: 'Flags', image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=300&fit=crop', price: 12.99, rating: 4, reviews: 45 },
+
+            // TABLE COVERS
+            { id: 18, name: 'Fitted Table Cover', category: 'Table', image: 'https://images.unsplash.com/photo-1524234107056-1c1f48f64ab8?w=400&h=300&fit=crop', price: 29.99, rating: 5, reviews: 187 },
+            { id: 19, name: 'Stretch Table Cover', category: 'Table', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop', price: 34.99, rating: 5, reviews: 142 },
+            { id: 20, name: 'Table Runner', category: 'Table', image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop', price: 19.99, rating: 4, reviews: 73 },
+        ];
+
+        let currentFilter = '';
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let filteredProducts = [...products];
+
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageProducts = filteredProducts.slice(start, end);
+
+            if (pageProducts.length === 0) {
+                grid.innerHTML = '<div class="no-results"><h3>No products found</h3><p>Try a different filter</p></div>';
+                return;
+            }
+
+            grid.innerHTML = pageProducts.map(p => `
+                <div class="product-card" onclick="openModal('${p.name}', '${p.image}', '${p.category}', ${p.price})">
+                    <img src="${p.image}" alt="${p.name}" class="product-image">
+                    <div class="product-info">
+                        <div class="product-category">${p.category}</div>
+                        <div class="product-title">${p.name}</div>
+                        <div style="color: #ff9800; font-size: 12px; margin-bottom: 8px;">
+                            ${'★'.repeat(p.rating)}${'☆'.repeat(5-p.rating)} (${p.reviews})
+                        </div>
+                        <div class="product-price">$${p.price.toFixed(2)}</div>
+                        <button class="btn-secondary">Customize</button>
+                    </div>
+                </div>
+            `).join('');
+
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+            pagination.innerHTML = Array.from({length: totalPages}, (_, i) => `
+                <button ${currentPage === i + 1 ? 'class="active"' : ''} onclick="goToPage(${i + 1})">${i + 1}</button>
+            `).join('');
+        }
+
+        function filterCategory(category) {
+            currentFilter = category;
+            currentPage = 1;
+            filteredProducts = category ? products.filter(p => p.category.includes(category)) : [...products];
+
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            renderProducts();
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderProducts();
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function sortProducts(type) {
+            if (type === 'price-low') {
+                filteredProducts.sort((a, b) => a.price - b.price);
+            } else if (type === 'price-high') {
+                filteredProducts.sort((a, b) => b.price - a.price);
+            } else if (type === 'newest') {
+                filteredProducts.sort((a, b) => b.id - a.id);
+            }
+            currentPage = 1;
+            renderProducts();
+        }
+
+        function openModal(name, image, category, price) {
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('modalImage').src = image;
+            document.getElementById('modalTitle').textContent = name;
+            document.getElementById('modalCategory').textContent = category;
+            document.getElementById('modalPrice').textContent = `$${price.toFixed(2)}`;
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        function scrollTo(selector) {
+            document.querySelector(selector).scrollIntoView({behavior: 'smooth'});
+        }
+
+        // CAROUSEL
+        let slideIndex = 0;
+        function currentSlide(n) {
+            slideIndex = n;
+            showSlide();
+        }
+
+        function showSlide() {
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dots = document.querySelectorAll('.carousel-dot');
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+            slides[slideIndex].classList.add('active');
+            dots[slideIndex].classList.add('active');
+        }
+
+        function nextSlide() {
+            slideIndex = (slideIndex + 1) % 4;
+            showSlide();
+        }
+
+        setInterval(nextSlide, 4000);
+
+        // INITIALIZE
+        renderProducts();
+    </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+{
+  "name": "Template: Schedule + HTTP + Email",
+  "nodes": [
+    {
+      "parameters": {
+        "interval": [
+          "days"
+        ],
+        "triggerAtHour": 9,
+        "triggerAtMinute": 0
+      },
+      "id": "f1e5c9e8-1234",
+      "name": "Every Day at 9 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.example.com/orders",
+        "authentication": "genericCredentialType",
+        "genericCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "a2b3c4d5-5678",
+      "name": "Fetch Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process the fetched orders\nreturn $input.all().map(item => ({\n  ...item.json,\n  processedAt: new Date().toISOString(),\n  status: 'processed'\n}));"
+      },
+      "id": "d4e5f6g7-9012",
+      "name": "Transform Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@hirenkumar.com",
+        "toEmail": "{{ $json.email }}",
+        "subject": "Daily Orders Summary - {{ $now.toLocaleDateString() }}",
+        "emailType": "text",
+        "textPlain": "Orders processed: {{ $input.itemMatching(0).json.length }}\n\nProcessed at: {{ $execution.resumeUrl }}"
+      },
+      "id": "e5f6g7h8-3456",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Every Day at 9 AM": {
+      "main": [
+        [
+          {
+            "node": "Fetch Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Orders": {
+      "main": [
+        [
+          {
+            "node": "Transform Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Data": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1234567890",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "description": "This workflow: 1) Triggers daily at 9 AM, 2) Fetches orders from API, 3) Transforms the data, 4) Sends email summary"
+  }
+}

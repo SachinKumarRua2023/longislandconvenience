@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <template id="website.page_long_island_banners" name="Long Island Banners & Signs - Professional Homepage">
+            <t t-call="website.layout">
+                <div id="wrap" class="oe_structure">
+                    <!-- ===== ANNOUNCEMENT BAR ===== -->
+                    <div class="announcement-bar bg-gradient-to-r from-slate-900 to-blue-900 text-white py-2 px-4">
+                        <div class="container flex justify-between items-center text-sm">
+                            <span>✓ Free Super Saver Shipping over $99</span>
+                            <span>Same Day Shipping Available | Call Us: 800-580-4489</span>
+                        </div>
+                    </div>
+
+                    <!-- ===== HEADER/LOGO ===== -->
+                    <header class="bg-white border-b border-gray-200 py-4">
+                        <div class="container">
+                            <div class="flex justify-between items-center">
+                                <div class="logo-section">
+                                    <h1 class="text-3xl font-bold text-blue-900">
+                                        <span class="text-blue-900">Long Island</span>
+                                        <span class="text-orange-500"> Banners & Signs</span>
+                                    </h1>
+                                    <p class="text-sm text-gray-600">Professional Custom Signage Solutions</p>
+                                </div>
+                                <div class="header-actions flex gap-4">
+                                    <input type="search" placeholder="Search for Banners, Signs..." class="border border-gray-300 rounded-lg px-4 py-2 w-64" />
+                                    <button class="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800">Search</button>
+                                    <div class="flex gap-2 text-center">
+                                        <div class="text-blue-900 text-sm">
+                                            <div class="font-bold">Account</div>
+                                        </div>
+                                        <div class="text-blue-900 text-sm">
+                                            <div class="font-bold">Cart</div>
+                                            <div class="text-orange-500">$0.00</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- ===== NAVIGATION WITH DROPDOWNS ===== -->
+                    <nav class="bg-slate-900 text-white py-3">
+                        <div class="container">
+                            <div class="flex gap-8 text-sm font-semibold">
+                                <div class="nav-item dropdown">
+                                    <button class="hover:text-orange-500 transition py-2">Banners</button>
+                                    <div class="dropdown-content hidden absolute top-12 left-0 bg-white text-gray-900 shadow-lg rounded-lg w-48 z-50">
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Vinyl Banners</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Cloth/Fabric Banners</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Political Banners & Signs</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Fence Banners</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Promotional Banners</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Trade Show Banners</a>
+                                    </div>
+                                </div>
+
+                                <div class="nav-item dropdown">
+                                    <button class="hover:text-orange-500 transition py-2">Stands & Displays</button>
+                                    <div class="dropdown-content hidden absolute top-12 left-0 bg-white text-gray-900 shadow-lg rounded-lg w-48 z-50">
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Roll Up Stands</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">A-Frame Stands</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">T-Frame Stands</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Sidewalk Signs</a>
+                                    </div>
+                                </div>
+
+                                <div class="nav-item dropdown">
+                                    <button class="hover:text-orange-500 transition py-2">Table Covers</button>
+                                    <div class="dropdown-content hidden absolute top-12 left-0 bg-white text-gray-900 shadow-lg rounded-lg w-48 z-50">
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Premium Table Covers</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Table Runners & Toppers</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Stretch Table Covers</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Fitted Covers</a>
+                                    </div>
+                                </div>
+
+                                <div class="nav-item dropdown">
+                                    <button class="hover:text-orange-500 transition py-2">Custom Flags</button>
+                                    <div class="dropdown-content hidden absolute top-12 left-0 bg-white text-gray-900 shadow-lg rounded-lg w-48 z-50">
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Rectangle Flags</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Clip Flags</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Car Flags</a>
+                                    </div>
+                                </div>
+
+                                <div class="nav-item dropdown">
+                                    <button class="hover:text-orange-500 transition py-2">LED Signs</button>
+                                    <div class="dropdown-content hidden absolute top-12 left-0 bg-white text-gray-900 shadow-lg rounded-lg w-48 z-50">
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Portable LED Displays</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">LED Wall Mounts</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">LED Light Signs</a>
+                                    </div>
+                                </div>
+
+                                <div class="nav-item dropdown">
+                                    <button class="hover:text-orange-500 transition py-2">Custom Signs & Decals</button>
+                                    <div class="dropdown-content hidden absolute top-12 left-0 bg-white text-gray-900 shadow-lg rounded-lg w-48 z-50">
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Die-Cut Magnetic Signs</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Custom Vinyl Decals</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Window Decals</a>
+                                    </div>
+                                </div>
+
+                                <div class="nav-item dropdown">
+                                    <button class="hover:text-orange-500 transition py-2">Marketing Materials</button>
+                                    <div class="dropdown-content hidden absolute top-12 left-0 bg-white text-gray-900 shadow-lg rounded-lg w-48 z-50">
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Business Cards</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Brochures</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Flyers</a>
+                                    </div>
+                                </div>
+
+                                <div class="nav-item dropdown">
+                                    <button class="hover:text-orange-500 transition py-2">Accessories</button>
+                                    <div class="dropdown-content hidden absolute top-12 left-0 bg-white text-gray-900 shadow-lg rounded-lg w-48 z-50">
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Hardware & Frames</a>
+                                        <a href="#" class="block px-4 py-2 hover:bg-blue-50">Installation Tools</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <!-- ===== THREE.JS 3D HERO SECTION ===== -->
+                    <section class="hero-3d bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 text-white py-20 relative overflow-hidden">
+                        <div id="canvas-container" style="width: 100%; height: 500px; position: absolute; top: 0; left: 0; z-index: 1;"></div>
+
+                        <div class="container relative z-10">
+                            <div class="grid grid-cols-2 gap-8 items-center">
+                                <div class="hero-content">
+                                    <h1 class="text-5xl font-bold mb-4 text-white">
+                                        Professional Custom Signage Solutions
+                                    </h1>
+                                    <p class="text-xl text-slate-100 mb-6">
+                                        High-quality banners, signs, and displays for your business. Design, print, and ship in as little as 24 hours.
+                                    </p>
+                                    <div class="flex gap-4">
+                                        <button class="bg-orange-500 text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-600 transition text-lg">
+                                            Design Your Banner
+                                        </button>
+                                        <button class="border-2 border-white text-white px-8 py-3 rounded-lg font-bold hover:bg-white hover:text-blue-900 transition">
+                                            View Catalog
+                                        </button>
+                                    </div>
+                                    <div class="mt-8 grid grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <div class="font-bold text-orange-500">✓ Free Shipping</div>
+                                            <div class="text-gray-300">Orders over $99</div>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-orange-500">✓ Same Day Ship</div>
+                                            <div class="text-gray-300">Orders before 3pm EST</div>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-orange-500">✓ Expert Design</div>
+                                            <div class="text-gray-300">Free design consultation</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="hero-3d-visuals">
+                                    <img src="https://www.bannerbuzz.com/cdn/shop/products/custom-life-size-cutouts-1_400x.jpg?v=1684156873" alt="Banner Preview" class="w-full rounded-lg shadow-2xl" />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===== FEATURED PRODUCTS CAROUSEL ===== -->
+                    <section class="featured-products py-16 bg-gray-50">
+                        <div class="container">
+                            <h2 class="text-4xl font-bold text-gray-900 mb-2">Best Sellers</h2>
+                            <p class="text-gray-600 mb-8">Top-rated products trusted by thousands of businesses</p>
+
+                            <div class="carousel-container overflow-x-auto">
+                                <div class="flex gap-6 pb-4">
+                                    <!-- Product Card 1 -->
+                                    <div class="carousel-item bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition flex-shrink-0 w-64">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/custom-life-size-cutouts-1_400x.jpg?v=1684156873" alt="Product" class="w-full h-48 object-cover" />
+                                        <div class="p-4">
+                                            <h3 class="font-bold text-gray-900 mb-2">Custom Life Size Cutouts</h3>
+                                            <div class="flex items-center gap-1 mb-2">
+                                                <span class="text-orange-500">★★★★★</span>
+                                                <span class="text-sm text-gray-600">(87)</span>
+                                            </div>
+                                            <p class="text-orange-500 font-bold text-lg mb-3">Starts at: $39.53</p>
+                                            <button class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">Customize</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Product Card 2 -->
+                                    <div class="carousel-item bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition flex-shrink-0 w-64">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/clip-flags-rectangle_400x.jpg?v=1684156873" alt="Product" class="w-full h-48 object-cover" />
+                                        <div class="p-4">
+                                            <h3 class="font-bold text-gray-900 mb-2">Clip Flags - Rectangle</h3>
+                                            <div class="flex items-center gap-1 mb-2">
+                                                <span class="text-orange-500">★★★★★</span>
+                                                <span class="text-sm text-gray-600">(87)</span>
+                                            </div>
+                                            <p class="text-orange-500 font-bold text-lg mb-3">Starts at: $24.95</p>
+                                            <button class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">Customize</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Product Card 3 -->
+                                    <div class="carousel-item bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition flex-shrink-0 w-64">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/sports-banners_400x.jpg?v=1684156873" alt="Product" class="w-full h-48 object-cover" />
+                                        <div class="p-4">
+                                            <h3 class="font-bold text-gray-900 mb-2">Sports Banners</h3>
+                                            <div class="flex items-center gap-1 mb-2">
+                                                <span class="text-orange-500">★★★★★</span>
+                                                <span class="text-sm text-gray-600">(98)</span>
+                                            </div>
+                                            <p class="text-orange-500 font-bold text-lg mb-3">Starts at: $6.99</p>
+                                            <button class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">Customize</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Product Card 4 -->
+                                    <div class="carousel-item bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition flex-shrink-0 w-64">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/die-cut-magnetic-signs_400x.jpg?v=1684156873" alt="Product" class="w-full h-48 object-cover" />
+                                        <div class="p-4">
+                                            <h3 class="font-bold text-gray-900 mb-2">Die-Cut Magnetic Signs</h3>
+                                            <div class="flex items-center gap-1 mb-2">
+                                                <span class="text-orange-500">★★★★★</span>
+                                                <span class="text-sm text-gray-600">(19)</span>
+                                            </div>
+                                            <p class="text-orange-500 font-bold text-lg mb-3">Starts at: $34.08</p>
+                                            <button class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">Customize</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Product Card 5 -->
+                                    <div class="carousel-item bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition flex-shrink-0 w-64">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/gator-boards_400x.jpg?v=1684156873" alt="Product" class="w-full h-48 object-cover" />
+                                        <div class="p-4">
+                                            <h3 class="font-bold text-gray-900 mb-2">Gator Boards</h3>
+                                            <div class="flex items-center gap-1 mb-2">
+                                                <span class="text-orange-500">★★★★★</span>
+                                                <span class="text-sm text-gray-600">(6)</span>
+                                            </div>
+                                            <p class="text-orange-500 font-bold text-lg mb-3">Starts at: $10.00</p>
+                                            <button class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">Customize</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===== CATEGORIES SECTION ===== -->
+                    <section class="categories py-16">
+                        <div class="container">
+                            <h2 class="text-4xl font-bold text-gray-900 mb-12 text-center">Shop by Category</h2>
+
+                            <div class="grid grid-cols-4 gap-6">
+                                <!-- Category Card 1 -->
+                                <div class="category-card bg-white rounded-lg shadow hover:shadow-xl transition cursor-pointer overflow-hidden group">
+                                    <div class="relative h-40 bg-gradient-to-br from-blue-100 to-blue-50 overflow-hidden">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/vinyl-banners_400x.jpg?v=1684156873" alt="Banners" class="w-full h-full object-cover group-hover:scale-110 transition" />
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-gray-900 text-lg">Vinyl Banners</h3>
+                                        <p class="text-sm text-gray-600">Premium quality outdoor banners</p>
+                                    </div>
+                                </div>
+
+                                <!-- Category Card 2 -->
+                                <div class="category-card bg-white rounded-lg shadow hover:shadow-xl transition cursor-pointer overflow-hidden group">
+                                    <div class="relative h-40 bg-gradient-to-br from-orange-100 to-orange-50 overflow-hidden">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/stands-displays_400x.jpg?v=1684156873" alt="Stands" class="w-full h-full object-cover group-hover:scale-110 transition" />
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-gray-900 text-lg">Stands & Displays</h3>
+                                        <p class="text-sm text-gray-600">Professional trade show displays</p>
+                                    </div>
+                                </div>
+
+                                <!-- Category Card 3 -->
+                                <div class="category-card bg-white rounded-lg shadow hover:shadow-xl transition cursor-pointer overflow-hidden group">
+                                    <div class="relative h-40 bg-gradient-to-br from-purple-100 to-purple-50 overflow-hidden">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/table-covers_400x.jpg?v=1684156873" alt="Table Covers" class="w-full h-full object-cover group-hover:scale-110 transition" />
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-gray-900 text-lg">Table Covers</h3>
+                                        <p class="text-sm text-gray-600">Custom table drapes & throws</p>
+                                    </div>
+                                </div>
+
+                                <!-- Category Card 4 -->
+                                <div class="category-card bg-white rounded-lg shadow hover:shadow-xl transition cursor-pointer overflow-hidden group">
+                                    <div class="relative h-40 bg-gradient-to-br from-teal-100 to-teal-50 overflow-hidden">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/custom-flags_400x.jpg?v=1684156873" alt="Flags" class="w-full h-full object-cover group-hover:scale-110 transition" />
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-gray-900 text-lg">Custom Flags</h3>
+                                        <p class="text-sm text-gray-600">Eye-catching flag designs</p>
+                                    </div>
+                                </div>
+
+                                <!-- Category Card 5 -->
+                                <div class="category-card bg-white rounded-lg shadow hover:shadow-xl transition cursor-pointer overflow-hidden group">
+                                    <div class="relative h-40 bg-gradient-to-br from-red-100 to-red-50 overflow-hidden">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/led-signs_400x.jpg?v=1684156873" alt="LED Signs" class="w-full h-full object-cover group-hover:scale-110 transition" />
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-gray-900 text-lg">LED Signs & Letters</h3>
+                                        <p class="text-sm text-gray-600">Modern LED display solutions</p>
+                                    </div>
+                                </div>
+
+                                <!-- Category Card 6 -->
+                                <div class="category-card bg-white rounded-lg shadow hover:shadow-xl transition cursor-pointer overflow-hidden group">
+                                    <div class="relative h-40 bg-gradient-to-br from-indigo-100 to-indigo-50 overflow-hidden">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/custom-signs_400x.jpg?v=1684156873" alt="Signs & Decals" class="w-full h-full object-cover group-hover:scale-110 transition" />
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-gray-900 text-lg">Signs & Decals</h3>
+                                        <p class="text-sm text-gray-600">Vinyl decals & custom signage</p>
+                                    </div>
+                                </div>
+
+                                <!-- Category Card 7 -->
+                                <div class="category-card bg-white rounded-lg shadow hover:shadow-xl transition cursor-pointer overflow-hidden group">
+                                    <div class="relative h-40 bg-gradient-to-br from-green-100 to-green-50 overflow-hidden">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/trade-show_400x.jpg?v=1684156873" alt="Trade Show" class="w-full h-full object-cover group-hover:scale-110 transition" />
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-gray-900 text-lg">Trade Show Displays</h3>
+                                        <p class="text-sm text-gray-600">Professional exhibition solutions</p>
+                                    </div>
+                                </div>
+
+                                <!-- Category Card 8 -->
+                                <div class="category-card bg-white rounded-lg shadow hover:shadow-xl transition cursor-pointer overflow-hidden group">
+                                    <div class="relative h-40 bg-gradient-to-br from-cyan-100 to-cyan-50 overflow-hidden">
+                                        <img src="https://www.bannerbuzz.com/cdn/shop/products/marketing-materials_400x.jpg?v=1684156873" alt="Marketing" class="w-full h-full object-cover group-hover:scale-110 transition" />
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-gray-900 text-lg">Marketing Materials</h3>
+                                        <p class="text-sm text-gray-600">Business cards, flyers & more</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===== TRUST SIGNALS ===== -->
+                    <section class="trust-signals bg-blue-900 text-white py-16">
+                        <div class="container">
+                            <div class="grid grid-cols-4 gap-8">
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold mb-2">✓</div>
+                                    <h3 class="font-bold mb-2">Free Shipping</h3>
+                                    <p class="text-sm text-gray-300">Orders over $99 ship free</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold mb-2">⚡</div>
+                                    <h3 class="font-bold mb-2">Same Day Ship</h3>
+                                    <p class="text-sm text-gray-300">Orders before 3pm EST</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold mb-2">📞</div>
+                                    <h3 class="font-bold mb-2">Expert Support</h3>
+                                    <p class="text-sm text-gray-300">24/7 customer service</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold mb-2">✎</div>
+                                    <h3 class="font-bold mb-2">Free Design</h3>
+                                    <p class="text-sm text-gray-300">Professional design help</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===== NEWSLETTER ===== -->
+                    <section class="newsletter py-16 bg-gradient-to-r from-slate-900 to-blue-900 text-white">
+                        <div class="container max-w-2xl">
+                            <h2 class="text-3xl font-bold mb-4">Subscribe & Save 20%</h2>
+                            <p class="text-gray-300 mb-6">Get the latest updates on new products and exclusive offers</p>
+                            <div class="flex gap-2">
+                                <input type="email" placeholder="Enter your email address" class="flex-1 px-4 py-3 rounded text-gray-900" />
+                                <button class="bg-orange-500 text-white px-8 py-3 rounded font-bold hover:bg-orange-600 transition">Subscribe</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===== FOOTER ===== -->
+                    <footer class="bg-slate-950 text-gray-300 py-12 border-t border-gray-800">
+                        <div class="container">
+                            <div class="grid grid-cols-4 gap-8 mb-8">
+                                <div>
+                                    <h4 class="font-bold text-white mb-4">Shop</h4>
+                                    <ul class="space-y-2 text-sm">
+                                        <li><a href="#" class="hover:text-orange-500">Banners</a></li>
+                                        <li><a href="#" class="hover:text-orange-500">Stands & Displays</a></li>
+                                        <li><a href="#" class="hover:text-orange-500">Custom Flags</a></li>
+                                        <li><a href="#" class="hover:text-orange-500">LED Signs</a></li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white mb-4">Company</h4>
+                                    <ul class="space-y-2 text-sm">
+                                        <li><a href="#" class="hover:text-orange-500">About Us</a></li>
+                                        <li><a href="#" class="hover:text-orange-500">Contact</a></li>
+                                        <li><a href="#" class="hover:text-orange-500">Blog</a></li>
+                                        <li><a href="#" class="hover:text-orange-500">FAQ</a></li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white mb-4">Support</h4>
+                                    <ul class="space-y-2 text-sm">
+                                        <li><a href="#" class="hover:text-orange-500">Shipping Info</a></li>
+                                        <li><a href="#" class="hover:text-orange-500">Returns</a></li>
+                                        <li><a href="#" class="hover:text-orange-500">Privacy Policy</a></li>
+                                        <li><a href="#" class="hover:text-orange-500">Terms of Service</a></li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white mb-4">Contact</h4>
+                                    <ul class="space-y-2 text-sm">
+                                        <li>📞 800-580-4489</li>
+                                        <li>📧 support@longislandbanners.com</li>
+                                        <li>🕒 Mon-Fri 9am-6pm EST</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="border-t border-gray-800 pt-8">
+                                <div class="flex justify-between items-center">
+                                    <p class="text-sm">&copy; 2026 Long Island Banners & Signs. All rights reserved.</p>
+                                    <div class="flex gap-4 text-sm">
+                                        <a href="#" class="hover:text-orange-500">Facebook</a>
+                                        <a href="#" class="hover:text-orange-500">Instagram</a>
+                                        <a href="#" class="hover:text-orange-500">Twitter</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
+
+                </div>
+
+                <!-- ===== STYLES ===== -->
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                        line-height: 1.6;
+                        color: #1f2937;
+                    }
+
+                    .container {
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        padding: 0 20px;
+                    }
+
+                    /* Navigation Dropdowns */
+                    .nav-item {
+                        position: relative;
+                    }
+
+                    .nav-item:hover .dropdown-content {
+                        display: block;
+                    }
+
+                    .dropdown-content {
+                        min-width: 200px;
+                        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+                    }
+
+                    .dropdown-content a {
+                        text-decoration: none;
+                        color: inherit;
+                        display: block;
+                    }
+
+                    .dropdown-content a:last-child {
+                        border-bottom: none;
+                    }
+
+                    /* Carousel */
+                    .carousel-container {
+                        scroll-behavior: smooth;
+                    }
+
+                    .carousel-item {
+                        transition: all 0.3s ease;
+                    }
+
+                    .carousel-item:hover {
+                        transform: translateY(-8px);
+                    }
+
+                    /* Animations */
+                    @keyframes fadeInUp {
+                        from {
+                            opacity: 0;
+                            transform: translateY(30px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+
+                    .hero-content {
+                        animation: fadeInUp 0.8s ease-out;
+                    }
+
+                    /* Three.js Canvas */
+                    #canvas-container {
+                        opacity: 0.3;
+                    }
+
+                    /* Responsive */
+                    @media (max-width: 768px) {
+                        .grid {
+                            grid-template-columns: 1fr !important;
+                        }
+
+                        .hero-3d {
+                            padding: 40px 20px;
+                        }
+
+                        h1 {
+                            font-size: 2.5rem !important;
+                        }
+
+                        .flex {
+                            flex-direction: column;
+                        }
+                    }
+                </style>
+
+                <!-- ===== THREE.JS SCRIPT ===== -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+                <script>
+                    // Initialize Three.js Scene
+                    const container = document.getElementById('canvas-container');
+                    if (container) {
+                        const scene = new THREE.Scene();
+                        const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+                        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+                        renderer.setSize(container.clientWidth, container.clientHeight);
+                        renderer.setClearColor(0x0f172a, 0.1);
+                        container.appendChild(renderer.domElement);
+
+                        // Create rotating 3D banner cube
+                        const geometry = new THREE.BoxGeometry(2, 3, 0.5);
+                        const material = new THREE.MeshPhongMaterial({
+                            color: 0xff6b35,
+                            emissive: 0xff6b35,
+                            shininess: 100
+                        });
+                        const banner = new THREE.Mesh(geometry, material);
+                        scene.add(banner);
+
+                        // Add lighting
+                        const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
+                        light1.position.set(5, 5, 5);
+                        scene.add(light1);
+
+                        const light2 = new THREE.PointLight(0x0ea5e9, 0.5);
+                        light2.position.set(-5, 5, 0);
+                        scene.add(light2);
+
+                        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+                        scene.add(ambientLight);
+
+                        camera.position.z = 5;
+
+                        // Animation loop
+                        function animate() {
+                            requestAnimationFrame(animate);
+                            banner.rotation.x += 0.005;
+                            banner.rotation.y += 0.008;
+                            banner.position.y = Math.sin(Date.now() * 0.0005) * 0.5;
+                            renderer.render(scene, camera);
+                        }
+
+                        animate();
+
+                        // Handle window resize
+                        window.addEventListener('resize', () => {
+                            const width = container.clientWidth;
+                            const height = container.clientHeight;
+                            camera.aspect = width / height;
+                            camera.updateProjectionMatrix();
+                            renderer.setSize(width, height);
+                        });
+                    }
+
+                    // Dropdown functionality
+                    document.querySelectorAll('.nav-item').forEach(item => {
+                        item.addEventListener('mouseenter', () => {
+                            item.querySelector('.dropdown-content')?.classList.remove('hidden');
+                        });
+                        item.addEventListener('mouseleave', () => {
+                            item.querySelector('.dropdown-content')?.classList.add('hidden');
+                        });
+                    });
+
+                    // Smooth scroll for carousel
+                    document.querySelectorAll('.carousel-container').forEach(carousel => {
+                        let isScrolling = false;
+                        carousel.addEventListener('wheel', (e) => {
+                            if (!isScrolling) {
+                                e.preventDefault();
+                                isScrolling = true;
+                                carousel.scrollLeft += e.deltaY;
+                                setTimeout(() => isScrolling = false, 50);
+                            }
+                        });
+                    });
+                </script>
+            </t-call>
+        </template>
+    </data>
+</odoo>

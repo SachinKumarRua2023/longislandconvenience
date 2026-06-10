@@ -1,0 +1,99 @@
+{
+  "categories": [
+    {
+      "name": "Baseball",
+      "search_keyword": "baseball card collection",
+      "enabled": true,
+      "notes": "Sports cards trading baseball"
+    },
+    {
+      "name": "Basketball",
+      "search_keyword": "basketball trading card",
+      "enabled": true,
+      "notes": "Sports cards NBA basketball"
+    },
+    {
+      "name": "Football",
+      "search_keyword": "football sports card",
+      "enabled": true,
+      "notes": "Sports cards NFL football"
+    },
+    {
+      "name": "Hockey",
+      "search_keyword": "hockey trading card",
+      "enabled": true,
+      "notes": "Sports cards ice hockey"
+    },
+    {
+      "name": "Soccer",
+      "search_keyword": "soccer card sport",
+      "enabled": true,
+      "notes": "Sports cards football soccer"
+    },
+    {
+      "name": "Gaming",
+      "search_keyword": "gaming card collection",
+      "enabled": true,
+      "notes": "Trading card games TCG"
+    },
+    {
+      "name": "Racing",
+      "search_keyword": "racing card motorsport",
+      "enabled": true,
+      "notes": "Racing motorsport card collection"
+    },
+    {
+      "name": "Entertainment",
+      "search_keyword": "entertainment trading cards",
+      "enabled": true,
+      "notes": "Movies music TV character cards"
+    },
+    {
+      "name": "Vintage",
+      "search_keyword": "vintage collectible cards",
+      "enabled": true,
+      "notes": "Antique classic vintage collection"
+    },
+    {
+      "name": "Singles",
+      "search_keyword": "individual cards collection",
+      "enabled": true,
+      "notes": "Single card items"
+    },
+    {
+      "name": "Live Box Breaks",
+      "search_keyword": "box break opening cards",
+      "enabled": true,
+      "notes": "Box break live opening event"
+    },
+    {
+      "name": "Reed Buys",
+      "search_keyword": "buying cards high value",
+      "enabled": true,
+      "notes": "High value card purchases"
+    },
+    {
+      "name": "Daily Deals",
+      "search_keyword": "special deals discount",
+      "enabled": true,
+      "notes": "Daily special offers discounts"
+    },
+    {
+      "name": "Best Deals List",
+      "search_keyword": "best price offers",
+      "enabled": true,
+      "notes": "Featured deals best prices"
+    },
+    {
+      "name": "Hit Parade",
+      "search_keyword": "graded card collection rare",
+      "enabled": true,
+      "notes": "Graded rare high-value cards"
+    }
+  ],
+  "settings": {
+    "image_download_timeout": 15,
+    "api_fetch_timeout": 10
+  },
+  "notes": "Edit this file to customize categories and search keywords. No Python editing needed!"
+}

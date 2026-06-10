@@ -1,0 +1,180 @@
+{
+  "name": "JHD AI Daily Digest — v8 FINAL (No Loop, Native Nodes)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 12 * * *" }]
+        }
+      },
+      "id": "n1-schedule",
+      "name": "Schedule: Daily 8AM ET",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-1100, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const RSS2JSON_KEY = 'nveygzki784qbozhxu821qnr59un81d6yxmw0cra';\n\nconst channels = [\n  { id: 'UCsBjURrPoezykLs9EqgamOA', name: 'Fireship',       cat: 'Tech/Dev' },\n  { id: 'UCHlNU7kIZhRgSbhHvFoy72w', name: 'Hugging Face',   cat: 'AI Tools' },\n  { id: 'UCbfYPyITQ-7l4upoX8nvctg', name: 'Two Min Papers', cat: 'AI Research' },\n  { id: 'UCNJ1Ymd5yFuUPtn21xtRbbw', name: 'AI Explained',   cat: 'AI News' },\n  { id: 'UCSHZKyawb77ixDdsGog4iWA', name: 'Lex Fridman',    cat: 'Tech/AI/Biz' },\n  { id: 'UCxIJaCMEptJjxmmQgGFsnCg', name: 'Y Combinator',   cat: 'Startup' },\n  { id: 'UCnxrdFPXJMeHru_b4Q_vTPQ', name: 'NetworkChuck',   cat: 'Networking' },\n  { id: 'UCZHmQk67mSJgfCCTn7xBfew', name: 'Yannic Kilcher', cat: 'AI/ML' },\n  { id: 'UCBJycsmduvYEL83R_U4JriQ', name: 'MKBHD',          cat: 'Tech Reviews' },\n  { id: 'UC9-y-6csu5WGm29I7JiwpnA', name: 'Computerphile',  cat: 'CS/Tech' },\n  { id: 'UCCjyq_K1Xwfg8Lndy7lKMpA', name: 'TechCrunch',     cat: 'Tech News' },\n  { id: 'UCESLZhusAkFfsNsApnjF_Cg', name: 'All-In Podcast', cat: 'B2B/Startup' }\n];\n\nconst CLAUDE_KEY   = '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';\nconst CLAUDE_MODEL = 'claude-sonnet-4-6';\nconst DIGEST_EMAIL = 'countrycoveinc@gmail.com';\n\nconst cutoff = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();\nconst today  = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'America/New_York' });\n\nconsole.log('[Config] ' + channels.length + ' channels | RSS2JSON_KEY set | cutoff: ' + cutoff);\n\nreturn [{ json: { channels, RSS2JSON_KEY, CLAUDE_KEY, CLAUDE_MODEL, DIGEST_EMAIL, cutoff, today } }];"
+      },
+      "id": "n2-config",
+      "name": "Config: Channels + Settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-860, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://techcrunch.com/feed/",
+        "options": {
+          "response": { "response": { "responseFormat": "text" } },
+          "timeout": 15000
+        }
+      },
+      "id": "n3-techcrunch",
+      "name": "HTTP: TechCrunch RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-640, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reads TechCrunch XML from input + Config from Config node\n// Outputs 12 SEPARATE items (one per YouTube channel)\n// n8n will auto-run the next HTTP node once for EACH of these 12 items\nconst cfg = $('Config: Channels + Settings').item.json;\n\nlet tcXml = '';\ntry {\n  const raw = $input.item.json;\n  tcXml = (typeof raw === 'string') ? raw : (raw.data || raw.body || '');\n} catch(e) { tcXml = ''; }\n\nfunction parseRSS(xml, limit) {\n  const items = [];\n  let pos = 0;\n  while (items.length < (limit || 12)) {\n    const s = xml.indexOf('<item>', pos);\n    if (s < 0) break;\n    const e = xml.indexOf('</item>', s);\n    if (e < 0) break;\n    const b = xml.slice(s + 6, e);\n    pos = e + 7;\n    function gv(tag) {\n      const open = '<' + tag + '>', close = '</' + tag + '>';\n      const si = b.indexOf(open), ei = b.indexOf(close);\n      if (si < 0 || ei < 0) return '';\n      let v = b.slice(si + open.length, ei);\n      const cs = v.indexOf('<![CDATA['), ce = v.indexOf(']]>');\n      if (cs >= 0 && ce > cs) v = v.slice(cs + 9, ce);\n      return v.replace(/<[^>]+>/g, '').trim();\n    }\n    const title = gv('title');\n    if (!title || title.length < 4) continue;\n    const ls = b.indexOf('<link>'), le = b.indexOf('</link>');\n    const link = (ls >= 0 && le >= 0) ? b.slice(ls + 6, le).trim() : gv('guid');\n    items.push({ source: 'TechCrunch', category: 'Trending', title, url: link, description: gv('description').slice(0, 250) });\n  }\n  return items;\n}\n\nconst trendingItems = parseRSS(tcXml, 12);\nconsole.log('[Trending] ' + trendingItems.length + ' items from TechCrunch');\n\n// Return 12 items — one per channel\n// n8n HTTP node will execute ONCE FOR EACH of these 12 items automatically (no loop needed)\nreturn cfg.channels.map(function(ch) {\n  const ytFeed  = 'https://www.youtube.com/feeds/videos.xml?channel_id=' + ch.id;\n  const r2jUrl  = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(ytFeed) + '&api_key=' + cfg.RSS2JSON_KEY + '&count=15';\n  return {\n    json: {\n      channelId:    ch.id,\n      channelName:  ch.name,\n      channelCat:   ch.cat,\n      r2jUrl:       r2jUrl,\n      cutoff:       cfg.cutoff,\n      today:        cfg.today,\n      CLAUDE_KEY:   cfg.CLAUDE_KEY,\n      CLAUDE_MODEL: cfg.CLAUDE_MODEL,\n      DIGEST_EMAIL: cfg.DIGEST_EMAIL,\n      trendingItems: trendingItems\n    }\n  };\n});"
+      },
+      "id": "n4-prep",
+      "name": "Code: Prep Channel Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-420, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.r2jUrl }}",
+        "options": {
+          "response": { "response": { "responseFormat": "json" } },
+          "timeout": 20000
+        }
+      },
+      "id": "n5-http-yt",
+      "name": "HTTP: YouTube via rss2json",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-200, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Runs once per channel (12 times total, automatically)\n// Gets channel info from the Prep node via n8n's pairedItem chain\nlet chInfo = {};\ntry { chInfo = $('Code: Prep Channel Items').item.json || {}; } catch(e) {}\n\nconst chName        = chInfo.channelName || 'Unknown';\nconst chCat         = chInfo.channelCat  || 'General';\nconst cutoff        = new Date(chInfo.cutoff || (Date.now() - 7 * 24 * 3600 * 1000));\nconst trendingItems = Array.isArray(chInfo.trendingItems) ? chInfo.trendingItems : [];\nconst meta = {\n  today:        chInfo.today,\n  CLAUDE_KEY:   chInfo.CLAUDE_KEY,\n  CLAUDE_MODEL: chInfo.CLAUDE_MODEL,\n  DIGEST_EMAIL: chInfo.DIGEST_EMAIL\n};\n\nconst EMPTY = [{ json: Object.assign({ channelName: chName, category: chCat, videos: [], trendingItems }, meta) }];\n\n// Read rss2json JSON response\nlet d = {};\ntry { d = $input.item.json || {}; } catch(e) { return EMPTY; }\n\n// Unwrap any n8n envelope\nif (typeof d === 'string') { try { d = JSON.parse(d); } catch(e) { return EMPTY; } }\nif (d.body && typeof d.body === 'string') { try { d = JSON.parse(d.body); } catch(e) {} }\nif (d.json && typeof d.json === 'object') { d = d.json; }\n\nconst status = (d && d.status) || '';\nconst items  = (d && Array.isArray(d.items)) ? d.items : [];\nconsole.log('[' + chName + '] status=' + status + ' | items=' + items.length + (d.message ? ' | ' + d.message : ''));\n\nif (status !== 'ok' || items.length === 0) {\n  console.log('[' + chName + '] SKIP');\n  return EMPTY;\n}\n\nconst videos = [];\nfor (var i = 0; i < items.length; i++) {\n  try {\n    const item = items[i];\n    const pub  = (item.pubDate || '').replace(' ', 'T');\n    if (pub) {\n      const d2 = new Date(pub);\n      if (!isNaN(d2.getTime()) && d2 < cutoff) continue;\n    }\n    const link = item.link || '';\n    if (!link.includes('youtube.com/watch')) continue;\n    const vi    = link.indexOf('v=');\n    const vidId = vi >= 0 ? link.slice(vi + 2, vi + 13) : null;\n    if (!vidId || vidId.length !== 11) continue;\n    const title = (item.title || '')\n      .replace(/&amp;/g,'&').replace(/&#39;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim();\n    if (!title) continue;\n    const desc  = (item.description || '')\n      .replace(/<[^>]+>/g,'')\n      .replace(/&amp;/g,'&').replace(/&#39;/g,\"'\").replace(/&quot;/g,'\"')\n      .trim().slice(0, 500);\n    const thumb = item.thumbnail || ('https://i.ytimg.com/vi/' + vidId + '/hqdefault.jpg');\n    videos.push({ videoId: vidId, title, url: link, published: item.pubDate || '', description: desc, thumbnail: thumb, views: 0, channel: chName, category: chCat });\n  } catch(ex) { continue; }\n}\n\nconsole.log('[' + chName + '] => ' + videos.length + ' videos within 7d');\nreturn [{ json: Object.assign({ channelName: chName, category: chCat, videos, trendingItems }, meta) }];"
+      },
+      "id": "n6-parse",
+      "name": "Code: Parse Channel Videos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [20, 300]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "allChannels",
+        "options": {}
+      },
+      "id": "n7-aggregate",
+      "name": "Aggregate: All Channels",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allChannels = $input.item.json.allChannels || [];\n\nlet allVideos = [], trendingItems = [];\nlet today = '', CLAUDE_KEY = '', CLAUDE_MODEL = '', DIGEST_EMAIL = '';\n\nfor (var i = 0; i < allChannels.length; i++) {\n  const ch = allChannels[i];\n  if (Array.isArray(ch.videos) && ch.videos.length > 0) allVideos = allVideos.concat(ch.videos);\n  if (Array.isArray(ch.trendingItems) && ch.trendingItems.length > trendingItems.length) trendingItems = ch.trendingItems;\n  if (ch.today)        today        = ch.today;\n  if (ch.CLAUDE_KEY)   CLAUDE_KEY   = ch.CLAUDE_KEY;\n  if (ch.CLAUDE_MODEL) CLAUDE_MODEL = ch.CLAUDE_MODEL;\n  if (ch.DIGEST_EMAIL) DIGEST_EMAIL = ch.DIGEST_EMAIL;\n}\n\n// Deduplicate by videoId, sort newest first\nconst seen = new Set();\nallVideos = allVideos\n  .filter(function(v) { if (seen.has(v.videoId)) return false; seen.add(v.videoId); return true; })\n  .sort(function(a, b) { return new Date(b.published || 0) - new Date(a.published || 0); });\n\nconsole.log('[Build] ' + allVideos.length + ' unique videos | ' + trendingItems.length + ' trending');\n\nconst videoSection = allVideos.length > 0\n  ? allVideos.map(function(v, i) {\n      return (i+1) + '. [' + v.category + '] ' + v.channel + ': \"' + v.title + '\"\\nLink: ' + v.url + '\\nDescription: ' + (v.description || '(none)').slice(0, 300);\n    }).join('\\n\\n')\n  : 'No YouTube videos found this week. Focus digest on trending news below.';\n\nconst trendingSection = trendingItems.length > 0\n  ? trendingItems.map(function(t) { return '• ' + t.title + (t.url ? ' | ' + t.url : '') + (t.description ? ' — ' + t.description.slice(0,120) : ''); }).join('\\n')\n  : 'No trending news available.';\n\nconst prompt =\n  'You are a sharp AI + Tech + Business curator. Today is ' + today + '.\\n\\n'\n  + '== TRENDING TECH NEWS (TechCrunch) ==\\n' + trendingSection + '\\n\\n'\n  + '== YOUTUBE VIDEOS THIS WEEK (' + allVideos.length + ' videos from 12 channels) ==\\n' + videoSection + '\\n\\n'\n  + '== YOUR TASK ==\\n'\n  + 'Write a high-value daily digest. Use EXACTLY these headers (ALL CAPS):\\n\\n'\n  + 'HEADLINE OF THE DAY\\nOne bold sentence — the single most important story right now.\\n\\n'\n  + 'TOP VIDEOS THIS WEEK\\nFor each top video: title | channel | 2-3 sentence summary | link\\n\\n'\n  + 'KEY INSIGHTS\\n5 specific bullets from the video descriptions with real details.\\n\\n'\n  + 'AI & AUTOMATION HIGHLIGHTS\\n3 bullets on AI/automation developments.\\n\\n'\n  + 'BUSINESS & STARTUP SIGNALS\\n2 bullets — key business/SaaS signals.\\n\\n'\n  + 'TRENDING IN TECH\\n3 TechCrunch stories with one-line commentary.\\n\\n'\n  + 'WHAT TO BUILD THIS WEEK\\n1 concrete product/automation idea from this week content.\\n\\n'\n  + 'QUOTE OF THE DAY\\nOne memorable insight (cite the channel).\\n\\n'\n  + 'Tone: direct, intelligent, no filler. Plain text — NO markdown asterisks or headers.';\n\nconst claudeRequest = JSON.stringify({\n  model:      CLAUDE_MODEL || 'claude-sonnet-4-6',\n  max_tokens: 4000,\n  messages:   [{ role: 'user', content: prompt }]\n});\n\nreturn [{ json: { allVideos, trendingItems, totalVideos: allVideos.length, today, CLAUDE_KEY, CLAUDE_MODEL, DIGEST_EMAIL, claudeRequest } }];"
+      },
+      "id": "n8-build",
+      "name": "Code: Build Claude Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",        "value": "={{ $json.CLAUDE_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type",      "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.claudeRequest }}",
+        "options": {
+          "response": { "response": { "responseFormat": "json" } },
+          "timeout": 90000
+        }
+      },
+      "id": "n9-claude",
+      "name": "HTTP: Claude — Write Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev       = $('Code: Build Claude Request').item.json;\nconst claudeResp = $input.item.json;\n\nlet digestText = 'Digest generation failed.';\ntry {\n  const t = claudeResp && claudeResp.content && claudeResp.content[0] && claudeResp.content[0].text;\n  if (t && t.length > 50) digestText = t;\n} catch(e) {}\n\nconst allVideos     = prev.allVideos     || [];\nconst trendingItems = prev.trendingItems || [];\n\nfunction timeAgo(s) {\n  if (!s) return '';\n  const d = Math.floor((Date.now() - new Date(s.replace(' ','T')).getTime()) / 86400000);\n  return d <= 0 ? 'Today' : d + 'd ago';\n}\n\nconst videoCards = allVideos.slice(0, 6).map(function(v, i) {\n  return '<div style=\"border:1px solid #1f2937;border-radius:10px;overflow:hidden;margin-bottom:14px;background:#111827;\">'\n    + '<table cellpadding=\"0\" cellspacing=\"0\" width=\"100%\"><tr>'\n    + '<td width=\"150\" valign=\"top\" style=\"padding:0;\"><a href=\"' + v.url + '\" target=\"_blank\"><img src=\"' + (v.thumbnail||'') + '\" width=\"150\" height=\"85\" alt=\"\" style=\"display:block;\"/></a></td>'\n    + '<td valign=\"top\" style=\"padding:10px 12px;\">'\n    + '<p style=\"margin:0 0 3px;font-size:10px;color:#6b7280;\">#' + (i+1) + ' <span style=\"background:#1d4ed8;color:#bfdbfe;padding:1px 7px;border-radius:8px;font-size:9px;font-weight:700;\">' + (v.category||'') + '</span> ' + timeAgo(v.published) + '</p>'\n    + '<a href=\"' + v.url + '\" target=\"_blank\" style=\"text-decoration:none;\"><p style=\"margin:0 0 3px;color:#f9fafb;font-size:13px;font-weight:700;line-height:1.4;\">' + (v.title||'') + '</p></a>'\n    + '<p style=\"margin:0;color:#9ca3af;font-size:11px;\">&#128250; ' + (v.channel||'') + '</p>'\n    + '</td></tr></table></div>';\n}).join('');\n\nconst trendingHtml = trendingItems.slice(0, 6).map(function(t) {\n  return '<p style=\"margin:0 0 7px;font-size:12px;color:#d1d5db;border-left:3px solid #7c3aed;padding-left:8px;\"><a href=\"' + (t.url||'#') + '\" style=\"color:#a78bfa;text-decoration:none;font-weight:600;\">' + (t.title||'') + '</a></p>';\n}).join('');\n\nconst SECTIONS = ['HEADLINE OF THE DAY','TOP VIDEOS THIS WEEK','KEY INSIGHTS','AI & AUTOMATION HIGHLIGHTS','BUSINESS & STARTUP SIGNALS','TRENDING IN TECH','WHAT TO BUILD THIS WEEK','QUOTE OF THE DAY'];\nfunction extract(text, heading) {\n  const idx = text.indexOf(heading);\n  if (idx < 0) return '';\n  const start = idx + heading.length;\n  let end = text.length;\n  SECTIONS.forEach(function(s) { if (s !== heading) { const ni = text.indexOf(s, start); if (ni > 0 && ni < end) end = ni; } });\n  return text.slice(start, end).trim();\n}\nfunction block(h, content, color) {\n  if (!content) return '';\n  const body = content.split('\\n').filter(function(l){return l.trim();}).map(function(line) {\n    const linked = line.replace(/(https?:\\/\\/[^\\s]+)/g,'<a href=\"$1\" style=\"color:#818cf8;\">$1</a>');\n    return (/^[•\\-*]|^\\d+\\./.test(line.trim())\n      ? '<p style=\"margin:4px 0 4px 8px;color:#d1d5db;font-size:13px;\">' : '<p style=\"margin:4px 0;color:#e5e7eb;font-size:13px;line-height:1.65;\">')\n      + linked + '</p>';\n  }).join('');\n  return '<div style=\"margin-bottom:22px;\"><p style=\"margin:0 0 8px;font-size:10px;font-weight:800;color:' + color + ';text-transform:uppercase;letter-spacing:1.5px;\">' + h + '</p>' + body + '</div>';\n}\n\nconst headline = extract(digestText, 'HEADLINE OF THE DAY');\nconst subject  = '\\uD83D\\uDCFA ' + (prev.today||'') + ' \\u2014 AI+Tech Digest (' + prev.totalVideos + ' videos, ' + trendingItems.length + ' trending)';\n\nconst emailHtml =\n  '<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head>'\n  + '<body style=\"margin:0;padding:0;background:#030712;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif;\">'\n  + '<div style=\"max-width:660px;margin:0 auto;padding:20px 0;\">'\n  + '<div style=\"background:linear-gradient(135deg,#1e1b4b,#312e81,#1e1b4b);padding:36px 32px;border-radius:14px 14px 0 0;text-align:center;\">'\n  + '<div style=\"font-size:44px;\">\\uD83D\\uDCFA</div>'\n  + '<h1 style=\"margin:8px 0 4px;color:#fff;font-size:22px;font-weight:900;\">AI + Tech + Business Daily Digest</h1>'\n  + '<p style=\"color:rgba(255,255,255,0.65);margin:0 0 14px;font-size:13px;\">' + (prev.today||'') + '</p>'\n  + '<span style=\"background:rgba(255,255,255,0.1);color:#a5b4fc;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;\">\\uD83D\\uDCF9 ' + prev.totalVideos + ' VIDEOS</span> '\n  + '<span style=\"background:rgba(255,255,255,0.1);color:#fcd34d;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;\">\\uD83D\\uDD25 ' + trendingItems.length + ' TRENDING</span>'\n  + '</div>'\n  + (headline ? '<div style=\"background:#1f2937;border-left:4px solid #7c3aed;padding:16px 20px;\"><p style=\"margin:0 0 4px;font-size:10px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1.5px;\">\\uD83D\\uDCA5 HEADLINE OF THE DAY</p><p style=\"margin:0;font-size:15px;color:#f9fafb;font-weight:700;line-height:1.5;\">' + headline + '</p></div>' : '')\n  + '<div style=\"background:#111827;padding:26px 30px;\">'\n  + (allVideos.length > 0\n      ? '<p style=\"margin:0 0 12px;font-size:10px;font-weight:800;color:#6366f1;text-transform:uppercase;letter-spacing:1.5px;\">\\uD83C\\uDFC6 TOP VIDEOS THIS WEEK</p>' + videoCards\n      : '<p style=\"color:#9ca3af;font-size:13px;margin-bottom:20px;\">No new videos found in the last 7 days.</p>')\n  + block('\\uD83D\\uDCC4 VIDEO SUMMARIES', extract(digestText,'TOP VIDEOS THIS WEEK'),'#818cf8')\n  + block('\\uD83D\\uDCA1 KEY INSIGHTS', extract(digestText,'KEY INSIGHTS'),'#34d399')\n  + block('\\uD83E\\uDD16 AI & AUTOMATION HIGHLIGHTS', extract(digestText,'AI & AUTOMATION HIGHLIGHTS'),'#60a5fa')\n  + block('\\uD83D\\uDCBC BUSINESS & STARTUP SIGNALS', extract(digestText,'BUSINESS & STARTUP SIGNALS'),'#f59e0b')\n  + (trendingItems.length > 0 ? '<div style=\"margin-bottom:22px;\"><p style=\"margin:0 0 10px;font-size:10px;font-weight:800;color:#f87171;text-transform:uppercase;letter-spacing:1.5px;\">\\uD83D\\uDD25 TRENDING IN TECH</p>' + trendingHtml + '</div>' : '')\n  + block('\\uD83D\\uDD28 WHAT TO BUILD THIS WEEK', extract(digestText,'WHAT TO BUILD THIS WEEK'),'#a3e635')\n  + (extract(digestText,'QUOTE OF THE DAY') ? '<div style=\"background:#1f2937;border:1px solid #374151;border-radius:10px;padding:18px;margin-bottom:20px;\"><p style=\"margin:0 0 6px;font-size:10px;font-weight:800;color:#fbbf24;text-transform:uppercase;letter-spacing:1.5px;\">\\uD83D\\uDDE8 QUOTE OF THE DAY</p><p style=\"margin:0;font-size:14px;color:#f3f4f6;font-style:italic;line-height:1.7;\">' + extract(digestText,'QUOTE OF THE DAY') + '</p></div>' : '')\n  + '</div>'\n  + '<div style=\"background:#030712;padding:14px;text-align:center;border-radius:0 0 14px 14px;border-top:1px solid #1f2937;\"><p style=\"color:#374151;font-size:10px;margin:0;\">\\uD83E\\uDD16 JHD Advisor AI &mdash; rss2json + Claude &mdash; Daily 8AM ET</p></div>'\n  + '</div></body></html>';\n\nconsole.log('[Email] ' + subject);\nreturn [{ json: Object.assign({}, prev, { emailHtml, subject, digestText }) }];"
+      },
+      "id": "n10-email",
+      "name": "Code: Format HTML Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.DIGEST_EMAIL }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.emailHtml }}",
+        "options": { "appendAttribution": false }
+      },
+      "id": "n11-gmail",
+      "name": "Gmail: Send Digest",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1120, 300],
+      "webhookId": "aa2a3be4-de61-4043-9325-f98d92d74317",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "HqHUkn2g403O8D7o",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule: Daily 8AM ET":     { "main": [[{ "node": "Config: Channels + Settings",  "type": "main", "index": 0 }]] },
+    "Config: Channels + Settings": { "main": [[{ "node": "HTTP: TechCrunch RSS",          "type": "main", "index": 0 }]] },
+    "HTTP: TechCrunch RSS":        { "main": [[{ "node": "Code: Prep Channel Items",       "type": "main", "index": 0 }]] },
+    "Code: Prep Channel Items":    { "main": [[{ "node": "HTTP: YouTube via rss2json",     "type": "main", "index": 0 }]] },
+    "HTTP: YouTube via rss2json":  { "main": [[{ "node": "Code: Parse Channel Videos",    "type": "main", "index": 0 }]] },
+    "Code: Parse Channel Videos":  { "main": [[{ "node": "Aggregate: All Channels",        "type": "main", "index": 0 }]] },
+    "Aggregate: All Channels":     { "main": [[{ "node": "Code: Build Claude Request",     "type": "main", "index": 0 }]] },
+    "Code: Build Claude Request":  { "main": [[{ "node": "HTTP: Claude — Write Digest",   "type": "main", "index": 0 }]] },
+    "HTTP: Claude — Write Digest": { "main": [[{ "node": "Code: Format HTML Email",        "type": "main", "index": 0 }]] },
+    "Code: Format HTML Email":     { "main": [[{ "node": "Gmail: Send Digest",             "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "meta": {
+    "instanceId": "2438f323414ba3851c46d2bb57627e2215bbb8bde60d2ead230658315596a5c9"
+  }
+}

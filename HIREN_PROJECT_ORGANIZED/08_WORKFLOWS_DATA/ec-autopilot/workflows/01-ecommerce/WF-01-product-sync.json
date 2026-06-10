@@ -1,0 +1,23 @@
+{
+  "name": "WF-01 — Product Add & Sync to All 7 Stores",
+  "description": "Receives product via Telegram or webhook → Claude writes descriptions → syncs to all WooCommerce stores",
+  "status": "PENDING BUILD",
+  "trigger": "Telegram /addproduct command OR n8n webhook",
+  "steps": [
+    "1. Telegram Trigger → parse product name, price, category, image URL",
+    "2. Claude API → generate title, short desc, long desc, meta title, meta desc, tags",
+    "3. OpenAI Images → generate lifestyle product image if none provided",
+    "4. Loop: POST product to all 7 WooCommerce stores",
+    "5. Trigger WF-19 (Launch Campaign)",
+    "6. Send Telegram confirmation with product URLs"
+  ],
+  "n8n_nodes": [
+    "Telegram Trigger",
+    "HTTP Request (Claude API)",
+    "HTTP Request (OpenAI Images)",
+    "Split In Batches (7 stores)",
+    "HTTP Request (WooCommerce POST)",
+    "Execute Workflow (WF-19)",
+    "Telegram (send confirmation)"
+  ]
+}

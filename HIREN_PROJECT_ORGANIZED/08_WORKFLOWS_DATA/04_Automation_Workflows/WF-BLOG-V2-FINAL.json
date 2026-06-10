@@ -1,0 +1,192 @@
+{
+  "name": "Daily SEO Blog — LongIslandConvenience.com V2 (10AM ET)",
+  "nodes": [
+
+    {
+      "id": "b01",
+      "name": "Schedule: 10AM ET Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 10 * * *" }]
+        }
+      }
+    },
+
+    {
+      "id": "b02",
+      "name": "Code: Pick Today's Topic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "parameters": {
+        "jsCode": "// ════════════════════════════════════════════════════════════\n// 54-TOPIC ROTATION across ALL 6 store blog categories\n// blog_id: 2=Cards, 3=Balloons, 4=Print&Mail, 5=GiftBaskets,\n//          7=Convenience/Greeting, 1=General\n// Category-aware seasonal weighting picks the right topic\n// for current month automatically.\n// ════════════════════════════════════════════════════════════\nconst ALL_TOPICS = [\n\n  // ── BALLOONS & PARTY DECOR (blog_id: 3) ─────────────────\n  { blog_id:3, category:'balloons', special_day:'Graduation', months:[4,5,6],\n    focus:'Graduation Balloon Arch Long Island NY 2026',\n    keywords:['graduation balloon arch Long Island','class of 2026 balloons Nassau County','balloon arch graduation Plainview NY'],\n    angle:'Stunning graduation balloon arches and setups for Nassau County Class of 2026 parties' },\n\n  { blog_id:3, category:'balloons', special_day:\"Father's Day\", months:[5,6],\n    focus:\"Father's Day Balloon Decorations Long Island NY\",\n    keywords:[\"fathers day balloons Long Island\",\"balloon bouquet fathers day Nassau County\",\"fathers day decor Plainview NY\"],\n    angle:\"Surprise Dad with a balloon bouquet or party setup from your Plainview NY balloon shop\" },\n\n  { blog_id:3, category:'balloons', special_day:'Birthday', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Birthday Balloon Delivery Long Island NY Same Day',\n    keywords:['birthday balloon delivery Long Island','same day balloons Nassau County','balloon bouquet pickup Plainview NY'],\n    angle:'Same-day birthday balloon pickup and delivery throughout Nassau County' },\n\n  { blog_id:3, category:'balloons', special_day:'Baby Shower', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Baby Shower Balloon Garland Nassau County NY',\n    keywords:['baby shower balloons Long Island','balloon garland Nassau County','gender reveal balloons Plainview NY'],\n    angle:'Pastel balloon garlands and gender reveal setups for Long Island baby showers' },\n\n  { blog_id:3, category:'balloons', special_day:'Wedding', months:[4,5,6,7,8,9],\n    focus:'Wedding Balloon Decorations Long Island Nassau County',\n    keywords:['wedding balloons Long Island','balloon arch wedding Nassau County','elegant balloon decor Plainview NY'],\n    angle:'Elegant balloon arches and backdrops for Long Island weddings in Nassau County' },\n\n  { blog_id:3, category:'balloons', special_day:'July 4th', months:[5,6],\n    focus:'July 4th Patriotic Balloons Long Island NY',\n    keywords:['July 4th balloons Long Island','patriotic party decor Nassau County','fourth of July Plainview NY'],\n    angle:'Red white and blue balloon setups for your Nassau County Fourth of July celebration' },\n\n  { blog_id:3, category:'balloons', special_day:'Halloween', months:[8,9],\n    focus:'Halloween Balloon Decorations Nassau County NY',\n    keywords:['Halloween balloons Long Island','spooky party decor Nassau County','Halloween decor Plainview NY'],\n    angle:'Spooky and fun Halloween balloon decorations in Plainview for Nassau County parties' },\n\n  { blog_id:3, category:'balloons', special_day:\"Valentine's Day\", months:[0,1],\n    focus:\"Valentine's Day Balloon Bouquet Long Island NY\",\n    keywords:[\"valentines balloons Long Island\",\"heart balloon bouquet Nassau County\",\"romantic balloons Plainview NY\"],\n    angle:\"Romantic Valentine's Day balloon bouquets and gifts from your Plainview NY shop\" },\n\n  { blog_id:3, category:'balloons', special_day:'Corporate', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Corporate Event Balloon Decor Long Island NY',\n    keywords:['corporate balloons Long Island','business event decor Nassau County','office party balloons Plainview NY'],\n    angle:'Professional balloon displays for grand openings and corporate events on Long Island' },\n\n  { blog_id:3, category:'balloons', special_day:'General', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Best Balloon Shop Plainview NY Nassau County',\n    keywords:['balloon shop Long Island','helium balloons Plainview NY','balloon store Nassau County near me'],\n    angle:'Your go-to balloon shop in Plainview serving all of Nassau County with same-day service' },\n\n  // ── GIFT BASKETS (blog_id: 5) ────────────────────────────\n  { blog_id:5, category:'gift_baskets', special_day:'Graduation', months:[4,5,6],\n    focus:'Graduation Gift Baskets Long Island NY Class of 2026',\n    keywords:['graduation gift basket Long Island','class of 2026 gift Nassau County','graduate gift basket Plainview NY'],\n    angle:'Curated graduation gift baskets with same-day pickup for Nassau County Class of 2026 grads' },\n\n  { blog_id:5, category:'gift_baskets', special_day:\"Father's Day\", months:[5,6],\n    focus:\"Best Father's Day Gift Baskets Long Island 2026\",\n    keywords:[\"fathers day gift basket Long Island\",\"dad gift basket Nassau County\",\"fathers day Plainview NY\"],\n    angle:\"The best Father's Day gift basket ideas available for same-day pickup in Plainview NY\" },\n\n  { blog_id:5, category:'gift_baskets', special_day:\"Mother's Day\", months:[3,4],\n    focus:\"Mother's Day Gift Baskets Long Island Nassau County\",\n    keywords:[\"mothers day gift basket Long Island\",\"mom gifts Nassau County\",\"mothers day Plainview NY\"],\n    angle:\"Celebrate Mom with a beautiful curated gift basket from your local Plainview NY shop\" },\n\n  { blog_id:5, category:'gift_baskets', special_day:'Birthday', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Birthday Gift Baskets Same-Day Pickup Long Island',\n    keywords:['birthday gift basket Long Island','same day gift basket Nassau County','birthday gifts Plainview NY'],\n    angle:'Beautiful birthday gift baskets available for same-day pickup across Nassau County' },\n\n  { blog_id:5, category:'gift_baskets', special_day:'Corporate', months:[0,1,2,8,9,10,11],\n    focus:'Corporate Gift Baskets Long Island NY Bulk Orders',\n    keywords:['corporate gift baskets Long Island','bulk gift baskets Nassau County','employee gifts Plainview NY'],\n    angle:'Corporate gift basket solutions for Long Island businesses — bulk orders welcome' },\n\n  { blog_id:5, category:'gift_baskets', special_day:'Holiday', months:[10,11],\n    focus:'Holiday Gift Baskets Long Island Christmas Hanukkah',\n    keywords:['holiday gift baskets Long Island','Christmas gift basket Nassau County','Hanukkah gifts Plainview NY'],\n    angle:'Perfect holiday gift baskets for Christmas and Hanukkah in Nassau County' },\n\n  { blog_id:5, category:'gift_baskets', special_day:'Baby Shower', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Baby Shower Gift Baskets Long Island Nassau County',\n    keywords:['baby shower gift basket Long Island','newborn gift basket Nassau County','baby gifts Plainview NY'],\n    angle:'Adorable baby shower gift baskets for Long Island families in Nassau County' },\n\n  { blog_id:5, category:'gift_baskets', special_day:'Thank You', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Thank You Gift Baskets Nassau County Plainview NY',\n    keywords:['thank you gift basket Long Island','appreciation gifts Nassau County','thank you Plainview NY'],\n    angle:'Thoughtful thank you gift baskets from your local Plainview NY shop' },\n\n  { blog_id:5, category:'gift_baskets', special_day:'Same Day', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Same Day Gift Ideas Plainview NY Last Minute Gifts',\n    keywords:['same day gifts Long Island','last minute gift Nassau County','gift ideas Plainview NY'],\n    angle:'Last-minute gift solutions available for same-day pickup in Plainview, Long Island' },\n\n  // ── PRINTING & MAILING (blog_id: 4) ──────────────────────\n  { blog_id:4, category:'print_mail', special_day:'Business Cards', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Same-Day Business Card Printing Plainview NY Long Island',\n    keywords:['business card printing Plainview NY','business cards Long Island','same day printing Nassau County'],\n    angle:'Professional same-day business card printing for Nassau County businesses in Plainview' },\n\n  { blog_id:4, category:'print_mail', special_day:'Graduation', months:[4,5,6],\n    focus:'Graduation Flyers and Banners Printing Long Island NY',\n    keywords:['graduation flyer printing Long Island','party banner printing Nassau County','graduation banner Plainview NY'],\n    angle:'Print custom graduation flyers, banners, and signs for your Nassau County celebration' },\n\n  { blog_id:4, category:'print_mail', special_day:'Marketing', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Flyer Printing Long Island NY — Fast Turnaround Nassau County',\n    keywords:['flyer printing Long Island','promotional flyers Nassau County','cheap printing Plainview NY'],\n    angle:'Fast, affordable flyer and marketing material printing for Long Island businesses' },\n\n  { blog_id:4, category:'print_mail', special_day:'Shipping', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'UPS FedEx USPS Shipping Services Plainview NY Long Island',\n    keywords:['shipping services Plainview NY','UPS drop off Long Island','FedEx USPS Nassau County'],\n    angle:'One-stop shipping center in Plainview — UPS, FedEx, and USPS for Nassau County residents' },\n\n  { blog_id:4, category:'print_mail', special_day:'Banner', months:[3,4,5,6,7,8,9,10],\n    focus:'Banner Printing Long Island NY Events and Business',\n    keywords:['banner printing Long Island','vinyl banner Nassau County','event banner Plainview NY'],\n    angle:'Eye-catching event and business banners printed fast in Plainview, Long Island' },\n\n  { blog_id:4, category:'print_mail', special_day:'Notary', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Notary Public Services Plainview NY Nassau County',\n    keywords:['notary public Plainview NY','notary service Long Island','notarization Nassau County'],\n    angle:'Walk-in notary public services at Long Island Convenience in Plainview NY' },\n\n  { blog_id:4, category:'print_mail', special_day:'Holiday', months:[10,11],\n    focus:'Holiday Card Printing Long Island NY Christmas Hanukkah',\n    keywords:['holiday card printing Long Island','Christmas card printing Nassau County','custom cards Plainview NY'],\n    angle:'Print custom Christmas and Hanukkah cards for Nassau County families and businesses' },\n\n  { blog_id:4, category:'print_mail', special_day:'Scanning', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Scan to PDF Services Plainview NY Nassau County',\n    keywords:['scanning service Plainview NY','scan to PDF Long Island','document scanning Nassau County'],\n    angle:'Fast, affordable scan to PDF and document services in Plainview for Nassau County' },\n\n  // ── GREETING CARDS & CONVENIENCE (blog_id: 7) ────────────\n  { blog_id:7, category:'greeting_cards', special_day:'Graduation', months:[4,5,6],\n    focus:'Graduation Cards Near Plainview NY — Long Island',\n    keywords:['graduation cards Plainview NY','congratulations cards Long Island','graduation cards Nassau County'],\n    angle:'Find the perfect heartfelt graduation card at your Plainview NY convenience hub' },\n\n  { blog_id:7, category:'greeting_cards', special_day:\"Father's Day\", months:[5,6],\n    focus:\"Father's Day Cards Long Island NY 2026\",\n    keywords:[\"fathers day cards Long Island\",\"dad cards Nassau County\",\"funny dad cards Plainview NY\"],\n    angle:\"The best Father's Day cards for every kind of dad — available in Plainview NY\" },\n\n  { blog_id:7, category:'greeting_cards', special_day:\"Mother's Day\", months:[3,4],\n    focus:\"Mother's Day Cards and Gifts Long Island NY\",\n    keywords:[\"mothers day cards Long Island\",\"mom cards Nassau County\",\"mothers day gifts Plainview NY\"],\n    angle:\"Beautiful Mother's Day cards and last-minute gift ideas in Plainview, Long Island\" },\n\n  { blog_id:7, category:'greeting_cards', special_day:'Birthday', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Birthday Cards and Gifts Same Day Long Island NY',\n    keywords:['birthday cards Long Island','last minute birthday gift Nassau County','birthday card Plainview NY'],\n    angle:'One-stop shop for birthday cards AND gifts — same day in Plainview Long Island' },\n\n  { blog_id:7, category:'greeting_cards', special_day:'Holiday', months:[10,11],\n    focus:'Holiday Cards Christmas Hanukkah Long Island NY',\n    keywords:['Christmas cards Long Island','holiday cards Nassau County','Hanukkah cards Plainview NY'],\n    angle:'Find beautiful holiday cards for Christmas and Hanukkah at your Plainview NY store' },\n\n  { blog_id:7, category:'greeting_cards', special_day:'Sympathy', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Sympathy Cards and Condolence Gifts Nassau County NY',\n    keywords:['sympathy cards Long Island','condolence gifts Nassau County','sympathy basket Plainview NY'],\n    angle:'Thoughtful sympathy cards and gift baskets available in Plainview, Nassau County' },\n\n  { blog_id:7, category:'greeting_cards', special_day:'General', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Best Greeting Card Store Plainview NY Long Island',\n    keywords:['greeting cards Plainview NY','card shop Long Island','where to buy cards Nassau County'],\n    angle:'Your neighborhood greeting card destination in Plainview serving all of Nassau County' },\n\n  // ── SPORTS & TRADING CARDS (blog_id: 2) ──────────────────\n  { blog_id:2, category:'trading_cards', special_day:'Pokémon', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Pokémon Cards Long Island NY — Buy Sell Trade Plainview',\n    keywords:['pokemon cards Long Island','pokemon singles Nassau County','buy pokemon cards Plainview NY'],\n    angle:'Where to buy, sell, and trade Pokémon cards on Long Island in Plainview NY' },\n\n  { blog_id:2, category:'trading_cards', special_day:'Graduation Gift', months:[4,5,6],\n    focus:'Trading Card Gifts for Graduates Long Island NY',\n    keywords:['trading card gift Long Island','pokemon gift graduate Nassau County','card collector gift Plainview'],\n    angle:'The perfect graduation gift for card collectors — available at Long Island Cards in Plainview' },\n\n  { blog_id:2, category:'trading_cards', special_day:'MTG', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'MTG Magic The Gathering Cards Long Island Nassau County',\n    keywords:['MTG cards Long Island','Magic The Gathering Nassau County','MTG singles Plainview NY'],\n    angle:'Buy Magic: The Gathering singles and booster boxes at your Long Island card shop' },\n\n  { blog_id:2, category:'trading_cards', special_day:'Yu-Gi-Oh', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Yu-Gi-Oh Cards Nassau County NY — Buy and Trade',\n    keywords:['yugioh cards Long Island','yu-gi-oh Nassau County','buy yugioh Plainview NY'],\n    angle:'Tournament-ready Yu-Gi-Oh cards available at your Plainview, Long Island card shop' },\n\n  { blog_id:2, category:'trading_cards', special_day:'PSA Graded', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'PSA Graded Sports Cards Long Island Nassau County',\n    keywords:['PSA graded cards Long Island','graded sports cards Nassau County','PSA cards Plainview NY'],\n    angle:'Invest in PSA-graded sports cards at Long Island Cards in Plainview, Nassau County' },\n\n  { blog_id:2, category:'trading_cards', special_day:'Sports', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Sports Cards Buy Sell Trade Long Island Plainview NY',\n    keywords:['sports cards Long Island','baseball cards Nassau County','buy sell sports cards Plainview'],\n    angle:'Buy, sell, and trade baseball, basketball, and football cards in Plainview NY' },\n\n  // ── GENERAL / STORE (blog_id: 1) ──────────────────────────\n  { blog_id:1, category:'general', special_day:'General', months:[0,1,2,3,4,5,6,7,8,9,10,11],\n    focus:'Long Island One-Stop Shop Plainview NY — Everything You Need',\n    keywords:['Long Island convenience store','Plainview NY shop','Nassau County one stop shop'],\n    angle:'Your complete one-stop hub in Plainview NY — balloons, gifts, printing, cards and more' },\n\n  { blog_id:1, category:'general', special_day:'Summer', months:[5,6,7],\n    focus:'Summer Celebrations Long Island NY 2026 — What We Offer',\n    keywords:['summer party Long Island','Nassau County celebrations 2026','Plainview NY summer'],\n    angle:'Everything you need for summer 2026 celebrations in Nassau County, all in one Plainview shop' },\n\n  { blog_id:1, category:'general', special_day:'Back to School', months:[7,8],\n    focus:'Back to School Essentials Plainview NY Long Island',\n    keywords:['back to school Long Island','school supplies Nassau County','back to school Plainview NY'],\n    angle:'Back-to-school essentials and surprise gifts for Long Island students in Nassau County' },\n\n  { blog_id:1, category:'general', special_day:'Thanksgiving', months:[10],\n    focus:'Thanksgiving Gifts and Decor Long Island Nassau County',\n    keywords:['Thanksgiving gifts Long Island','Thanksgiving basket Nassau County','fall decor Plainview NY'],\n    angle:'Thanksgiving gift baskets and fall decorations for Nassau County families' },\n\n  { blog_id:1, category:'general', special_day:'New Year', months:[11,0],\n    focus:'New Year Party Supplies and Gifts Long Island NY',\n    keywords:['New Year party Long Island','New Year gifts Nassau County','party supplies Plainview NY'],\n    angle:'Ring in 2027 with party supplies, balloons, and gift baskets from Plainview, Long Island' },\n];\n\n// ── Smart topic selection: match by current month ──────────\nconst now = new Date();\nconst month = now.getMonth(); // 0-11\nconst dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);\n\n// Filter topics relevant to this month, fallback to all\nconst monthTopics = ALL_TOPICS.filter(t => t.months.includes(month));\nconst pool = monthTopics.length >= 3 ? monthTopics : ALL_TOPICS;\n\n// Pick from pool by day-of-year so same day each year = same topic\nconst topic = pool[dayOfYear % pool.length];\n\nconst seasonMap = {\n  0:'New Year, Winter sales, Valentine Day prep',\n  1:'Valentine Day, Presidents Day, winter clearance',\n  2:\"St Patrick's Day, Spring starts, early graduation season\",\n  3:'Easter, Passover, Spring celebrations, prom season',\n  4:\"Mother's Day, Graduations peak, Memorial Day\",\n  5:\"Father's Day, Graduation peak, early summer Long Island\",\n  6:'Fourth of July, Summer BBQs, beach season Nassau County',\n  7:'Back to school, Late summer, Nassau County end-of-summer',\n  8:'Labor Day, Fall begins, Rosh Hashanah, Yom Kippur Long Island',\n  9:'Halloween, Nassau County fall events, Columbus Day',\n  10:'Thanksgiving, Veterans Day, Black Friday, holiday starts',\n  11:'Christmas, Hanukkah, New Year eve, holiday gifts Long Island',\n};\n\nconst blogNameMap = {\n  1:'Our Blog',\n  2:'Sports & Trading Cards',\n  3:'Balloons & Party Decor',\n  4:'Print & Mail Services',\n  5:'Gift Baskets & Gifts',\n  7:'Convenience & Grocery',\n};\n\nconst imgMap = {\n  balloons:      'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=900&h=500&fit=crop&auto=format&q=80',\n  gift_baskets:  'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=900&h=500&fit=crop&auto=format&q=80',\n  greeting_cards:'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=900&h=500&fit=crop&auto=format&q=80',\n  print_mail:    'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=900&h=500&fit=crop&auto=format&q=80',\n  trading_cards: 'https://images.unsplash.com/photo-1541278107931-e006523892df?w=900&h=500&fit=crop&auto=format&q=80',\n  general:       'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=900&h=500&fit=crop&auto=format&q=80',\n};\n\nconst dateStr = now.toLocaleDateString('en-US',{\n  weekday:'long',year:'numeric',month:'long',day:'numeric',\n  timeZone:'America/New_York'\n});\n\nreturn [{ json: {\n  topic,\n  dateStr,\n  month,\n  seasonContext: seasonMap[month],\n  blogName:      blogNameMap[topic.blog_id] || 'Our Blog',\n  headerImg:     imgMap[topic.category] || imgMap.general,\n  dayOfYear,\n  poolSize:      pool.length,\n  topicIndex:    dayOfYear % pool.length,\n} }];"
+      }
+    },
+
+    {
+      "id": "b03",
+      "name": "HTTP: Claude — Generate Blog Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",         "value": "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" },
+            { "name": "anthropic-version",  "value": "2023-06-01" },
+            { "name": "content-type",       "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-opus-4-7', max_tokens: 3000, system: 'You are an expert local SEO content writer for Long Island, New York. You write blog posts for LongIslandConvenience.com at 605 Old Country Road, Plainview NY 11803 (Nassau County, Long Island). This is a one-stop community hub offering: balloon decorations & party supplies, curated gift baskets, greeting cards, sports and trading cards (Pokémon, MTG, Yu-Gi-Oh, graded), professional printing (business cards, flyers, banners, brochures), and shipping services (UPS, FedEx, USPS). Write warm, friendly, locally-focused SEO blog posts that rank on Google for Long Island and Nassau County searches. HTML uses h2/h3/p/ul/li/strong/em only — no inline CSS, no scripts.', messages: [{ role: 'user', content: 'Write a 900-1000 word SEO blog post for LongIslandConvenience.com.\\n\\nTODAY: ' + $json.dateStr + '\\nSEASON / OCCASION: ' + $json.seasonContext + '\\nBLOG SECTION: ' + $json.blogName + ' (blog_id: ' + $json.topic.blog_id + ')\\nBLOG FOCUS: ' + $json.topic.focus + '\\nSPECIAL DAY ANGLE: ' + $json.topic.special_day + '\\n\\nPRIMARY KEYWORDS — use FIRST keyword minimum 3 times, others minimum 2 times each:\\n' + $json.topic.keywords.join('\\n') + '\\n\\nANGLE: ' + $json.topic.angle + '\\n\\nSTRICT SEO REQUIREMENTS:\\n- Title: exactly 50-60 chars, includes primary keyword + \\'Long Island\\' or \\'Nassau County\\' or \\'Plainview NY\\'\\n- Subtitle: 1 engaging sentence, 80-100 chars, geo-targeted\\n- Meta description: MUST be 155-160 chars exactly (count carefully), conversational, includes primary keyword, ends with CTA (\"Visit us today!\", \"Shop now!\", \"Call today!\", \"Order now!\")\\n- Meta keywords: 6-8 comma-separated keywords, all geo-targeted\\n- Tags: 4-5 relevant tags including geographic\\n- First paragraph: compelling hook with primary keyword in first 2 sentences\\n- 3-4 H2 headings each targeting a different keyword variation or subtopic\\n- Naturally mention \"605 Old Country Road, Plainview NY\" once in body\\n- \"Nassau County\" MINIMUM 4 times throughout body\\n- \"Long Island\" MINIMUM 5 times throughout body\\n- \"Plainview\" MINIMUM 3 times throughout body\\n- Closing H2 section: warm CTA inviting to visit or call +1 (917) 338-7086\\n- One bulleted or numbered list (5-7 items) of specific products, services, or tips\\n- Tone: warm, neighborly, helpful — NOT corporate or salesy\\n- Reference at least 3 specific nearby Nassau County towns: Hicksville, Syosset, Bethpage, Farmingdale, Westbury, Old Bethpage, Jericho, Levittown, Massapequa\\n- HTML: h2, h3, p, ul, li, ol, strong, em only — absolutely no inline CSS, no scripts\\n\\nReturn ONLY valid JSON (no markdown wrapper, no explanation):\\n{\"title\":\"\",\"subtitle\":\"\",\"meta_title\":\"\",\"meta_description\":\"\",\"meta_keywords\":\"\",\"tags\":[],\"html_body\":\"\"}' }] }) }}",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 90000
+        }
+      }
+    },
+
+    {
+      "id": "b04",
+      "name": "Code: Parse Claude Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 300],
+      "parameters": {
+        "jsCode": "const response   = $input.first().json;\nconst topicData  = $('Code: Pick Today\\'s Topic').first().json;\n\n// Extract text from Claude\nlet raw = '';\ntry { raw = response.content[0].text; }\ncatch(e) { console.log('Claude error:', JSON.stringify(response).slice(0,300)); }\n\n// Parse JSON\nlet blog = null;\ntry {\n  let cleaned = raw.trim();\n  if (cleaned.startsWith('```')) {\n    cleaned = cleaned.replace(/^```[a-z]*\\s*/,'').replace(/\\s*```$/,'').trim();\n  }\n  blog = JSON.parse(cleaned);\n} catch(e) {\n  console.log('JSON parse failed, using fallback. Raw:', raw.slice(0,200));\n}\n\n// Validate / fallback\nif (!blog || !blog.title || !blog.html_body) {\n  const t = topicData.topic;\n  blog = {\n    title:            t.focus.slice(0,60),\n    subtitle:         'Serving Plainview NY and all of Nassau County Long Island',\n    meta_title:       t.focus.slice(0,60),\n    meta_description: 'Visit Long Island Convenience at 605 Old Country Road Plainview NY for ' + t.focus.toLowerCase().slice(0,70) + '. Call +1 (917) 338-7086.',\n    meta_keywords:    t.keywords.join(', '),\n    tags:             ['Long Island','Plainview NY','Nassau County', t.category],\n    html_body:        '<h2>' + t.focus + '</h2><p>Shop at Long Island Convenience, 605 Old Country Road, Plainview NY 11803. Serving Nassau County. Call +1 (917) 338-7086.</p>',\n  };\n  console.log('Using fallback content.');\n}\n\n// Ensure tags array\nif (!Array.isArray(blog.tags)) {\n  blog.tags = typeof blog.tags === 'string' ? blog.tags.split(',').map(t=>t.trim()) : ['Long Island','Plainview NY','Nassau County'];\n}\n\n// Prepend header image\nconst img = topicData.headerImg;\nconst alt = topicData.topic.focus + ' — Long Island Convenience Plainview NY Nassau County';\nblog.html_body = '<p><img src=\"' + img + '\" alt=\"' + alt + '\" style=\"max-width:100%;border-radius:8px;margin:16px 0;\"/></p>' + blog.html_body;\n\nreturn [{ json: { blog, topic: topicData.topic, dateStr: topicData.dateStr, blogName: topicData.blogName } }];"
+      }
+    },
+
+    {
+      "id": "b05",
+      "name": "HTTP: Odoo Authenticate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/session/authenticate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"jsonrpc\":\"2.0\",\"method\":\"call\",\"id\":1,\"params\":{\"db\":\"country-cove-inc\",\"login\":\"countrycoveinc@gmail.com\",\"password\":\"M@nhattan1234\"}}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+
+    {
+      "id": "b06",
+      "name": "Code: Extract Session + Build Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1260, 300],
+      "parameters": {
+        "jsCode": "const authResp = $('HTTP: Odoo Authenticate').first().json;\nconst blogData = $('Code: Parse Claude Response').first().json;\n\n// ── Extract uid ──\nconst uid = authResp?.body?.result?.uid;\n\n// ── Extract session_id from Set-Cookie header ──\n// n8n may return set-cookie as string or array\nlet rawCookie = authResp?.headers?.['set-cookie'] || '';\nif (Array.isArray(rawCookie)) rawCookie = rawCookie.join('; ');\n\nlet sessionId = '';\nfor (const part of rawCookie.split(';')) {\n  const p = part.trim();\n  if (p.toLowerCase().startsWith('session_id=')) {\n    sessionId = p.split('=', 2)[1];\n    break;\n  }\n}\n\nif (!uid || !sessionId) {\n  const dump = JSON.stringify(authResp).slice(0, 500);\n  throw new Error('Odoo auth failed. uid=' + uid + ' session=' + (sessionId||'EMPTY') + ' | Response: ' + dump);\n}\n\nconsole.log('Odoo auth OK. uid=' + uid + ' session=' + sessionId.slice(0,12) + '...');\n\nconst b = blogData.blog;\nconst topic = blogData.topic;\n\nconst title     = (b.title || topic.focus).slice(0, 255);\nconst subtitle  = (b.subtitle || '').slice(0, 255);\nconst metaTitle = (b.meta_title || title).slice(0, 255);\nconst metaDesc  = (b.meta_description || '').slice(0, 400);\nconst metaKw    = (b.meta_keywords || topic.keywords.join(', ')).slice(0, 255);\n\nreturn [{ json: {\n  sessionId,\n  uid,\n  createPayload: {\n    jsonrpc: '2.0',\n    method:  'call',\n    id:      2,\n    params: {\n      model:  'blog.post',\n      method: 'create',\n      args: [{\n        name:                     title,\n        subtitle:                 subtitle,\n        content:                  b.html_body,\n        blog_id:                  topic.blog_id,\n        website_id:               1,\n        website_published:        true,\n        is_published:             true,\n        website_meta_title:       metaTitle,\n        website_meta_description: metaDesc,\n        website_meta_keywords:    metaKw,\n      }],\n      kwargs: {}\n    }\n  },\n  blogTitle:    title,\n  blogCategory: topic.category,\n  blogBlogId:   topic.blog_id,\n  blogName:     blogData.blogName,\n} }];"
+      }
+    },
+
+    {
+      "id": "b07",
+      "name": "HTTP: Odoo Create Blog Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1520, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Cookie", "value": "={{ 'session_id=' + $json.sessionId }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.createPayload) }}",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 30000
+        }
+      }
+    },
+
+    {
+      "id": "b08",
+      "name": "HTTP: Odoo Read Post URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Cookie", "value": "={{ 'session_id=' + $('Code: Extract Session + Build Payload').first().json.sessionId }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ jsonrpc: '2.0', method: 'call', id: 3, params: { model: 'blog.post', method: 'read', args: [[ $('HTTP: Odoo Create Blog Post').first().json.result ], ['id','name','website_absolute_url','is_published']], kwargs: {} } }) }}",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 15000
+        }
+      }
+    },
+
+    {
+      "id": "b09",
+      "name": "Code: Final Log + URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2040, 300],
+      "parameters": {
+        "jsCode": "const createResp = $('HTTP: Odoo Create Blog Post').first().json;\nconst readResp   = $('HTTP: Odoo Read Post URL').first().json;\nconst buildData  = $('Code: Extract Session + Build Payload').first().json;\nconst blogData   = $('Code: Parse Claude Response').first().json;\n\nconst postId = createResp?.result;\nif (!postId || typeof postId !== 'number') {\n  throw new Error('Post creation failed: ' + JSON.stringify(createResp).slice(0,400));\n}\n\nconst postRecord = readResp?.result?.[0] || {};\nlet liveUrl = postRecord.website_absolute_url || '';\n\nif (!liveUrl) {\n  const slugMap = {1:'our-blog-1',2:'sports-trading-cards-2',3:'balloons-party-decor-3',4:'print-mail-services-4',5:'gift-baskets-gifts-5',7:'convenience-grocery-7'};\n  const blogSlug = slugMap[buildData.blogBlogId] || 'our-blog-1';\n  const titleSlug = (buildData.blogTitle||'').toLowerCase().replace(/[^a-z0-9\\s-]/g,'').replace(/\\s+/g,'-').replace(/-+/g,'-').slice(0,80);\n  liveUrl = 'https://www.longislandconvenience.com/blog/' + blogSlug + '/' + titleSlug + '-' + postId;\n}\n\nconst gscUrl = 'https://search.google.com/search-console/inspect?resource_id=https%3A%2F%2Fwww.longislandconvenience.com%2F&id=' + encodeURIComponent(liveUrl);\n\nconsole.log('═══════════════════════════════════════════════════');\nconsole.log('✅ DAILY BLOG PUBLISHED');\nconsole.log('   Blog section : ' + buildData.blogName);\nconsole.log('   Category     : ' + buildData.blogCategory);\nconsole.log('   Post ID      : ' + postId);\nconsole.log('   Title        : ' + buildData.blogTitle);\nconsole.log('   Live URL     : ' + liveUrl);\nconsole.log('   GSC Inspect  : ' + gscUrl);\nconsole.log('   Published    : ' + (postRecord.is_published || true));\nconsole.log('═══════════════════════════════════════════════════');\n\nreturn [{ json: {\n  success:        true,\n  postId,\n  blogSection:    buildData.blogName,\n  blogCategory:   buildData.blogCategory,\n  blogTitle:      buildData.blogTitle,\n  liveUrl,\n  gscInspectUrl:  gscUrl,\n  gscDashboard:   'https://search.google.com/search-console/',\n  blogIndex:      'https://www.longislandconvenience.com/blog',\n  publishedAt:    new Date().toISOString(),\n  metaDescription: blogData.blog.meta_description || '',\n} }];"
+      }
+    }
+
+  ],
+
+  "connections": {
+    "Schedule: 10AM ET Daily":            { "main": [[{ "node": "Code: Pick Today's Topic",              "type": "main", "index": 0 }]] },
+    "Code: Pick Today's Topic":           { "main": [[{ "node": "HTTP: Claude — Generate Blog Post",     "type": "main", "index": 0 }]] },
+    "HTTP: Claude — Generate Blog Post":  { "main": [[{ "node": "Code: Parse Claude Response",          "type": "main", "index": 0 }]] },
+    "Code: Parse Claude Response":        { "main": [[{ "node": "HTTP: Odoo Authenticate",              "type": "main", "index": 0 }]] },
+    "HTTP: Odoo Authenticate":            { "main": [[{ "node": "Code: Extract Session + Build Payload","type": "main", "index": 0 }]] },
+    "Code: Extract Session + Build Payload": { "main": [[{ "node": "HTTP: Odoo Create Blog Post",       "type": "main", "index": 0 }]] },
+    "HTTP: Odoo Create Blog Post":        { "main": [[{ "node": "HTTP: Odoo Read Post URL",             "type": "main", "index": 0 }]] },
+    "HTTP: Odoo Read Post URL":           { "main": [[{ "node": "Code: Final Log + URLs",               "type": "main", "index": 0 }]] }
+  },
+
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "timezone": "America/New_York"
+  },
+  "tags": ["blog","seo","geo","daily","long-island","claude-api","odoo","v2"]
+}

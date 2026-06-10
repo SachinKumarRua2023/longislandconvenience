@@ -1,0 +1,50 @@
+{
+  "categories": {
+    "pokemon": {
+      "name": "Pok\u00e9mon",
+      "images": [
+        "https://images.pokemontcg.io/base4/1_hires.png",
+        "https://images.pokemontcg.io/base4/2_hires.png",
+        "https://images.pokemontcg.io/base4/3_hires.png"
+      ],
+      "local_files": [
+        "/images/cards/pokemon_1.jpg",
+        "/images/cards/pokemon_2.jpg",
+        "/images/cards/pokemon_3.jpg"
+      ]
+    },
+    "magic": {
+      "name": "Magic: The Gathering",
+      "images": [
+        "https://cards.scryfall.io/normal/front/7/0/70e7ddf2-5604-41e7-bb9d-ddd03d3e9d0b.jpg?1559591549",
+        "https://cards.scryfall.io/normal/front/2/0/20d666ef-39bf-4fbf-8201-5f1056539da2.jpg?1559591462",
+        "https://cards.scryfall.io/normal/front/6/7/67c7784b-6b79-4268-a714-895c82809aff.jpg?1559591596"
+      ],
+      "local_files": [
+        "/images/cards/magic_1.jpg",
+        "/images/cards/magic_2.jpg",
+        "/images/cards/magic_3.jpg"
+      ]
+    },
+    "yugioh": {
+      "name": "Yu-Gi-Oh!",
+      "images": [],
+      "local_files": []
+    },
+    "graded": {
+      "name": "Graded Cards",
+      "images": [
+        "https://images.unsplash.com/photo-1590080876-a371a6b6d5fa?w=300",
+        "https://images.unsplash.com/photo-1635026912552-c546efb1f913?w=300",
+        "https://images.unsplash.com/photo-1517836357463-d25ddfcbf042?w=300"
+      ],
+      "local_files": [
+        "/images/cards/graded_1.jpg",
+        "/images/cards/graded_2.jpg",
+        "/images/cards/graded_3.jpg"
+      ]
+    }
+  },
+  "updated": "1780683947.8428183",
+  "source": "Real Trading Card APIs (Pok\u00e9mon TCG, Scryfall, YGOProDeck)"
+}

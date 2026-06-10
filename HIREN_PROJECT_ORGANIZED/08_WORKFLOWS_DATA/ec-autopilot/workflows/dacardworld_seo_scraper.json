@@ -1,0 +1,449 @@
+{
+  "name": "Dacardworld → AI SEO → Odoo + Drive + Sheets",
+  "nodes": [
+    {
+      "id": "node-01",
+      "name": "Start Scraper",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 460],
+      "parameters": {}
+    },
+    {
+      "id": "node-02",
+      "name": "Firecrawl: Map Site URLs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 460],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/map",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer fc-471db502e79143e0982f3d2638b8ccdb" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={ \"url\": \"https://www.dacardworld.com\", \"limit\": 5000 }"
+      }
+    },
+    {
+      "id": "node-03",
+      "name": "Filter Product URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 460],
+      "parameters": {
+        "jsCode": "const links = $input.item.json.links || [];\n\nconst PRODUCT_CATS = ['sports-cards', 'gaming', 'entertainment', 'supplies', 'vintage'];\nconst SKIP_SLUGS = [\n  'best-prices', 'new-releases', 'presells', 'clearance',\n  'single-cards', 'soccer-cards', 'basketball-cards',\n  'baseball-cards', 'hockey-cards', 'football-cards',\n  'ufc-and-mma', 'pokemon-cards', 'bowman-chrome-football',\n  'topps-heritage-baseball', '2024-25-hockey-cards',\n  '2023-24-hockey-cards', 'new-basketball-card-releases',\n  'basketball-trading-card-presells'\n];\n\nconst products = links.filter(url => {\n  try {\n    const path = url.replace('https://www.dacardworld.com', '');\n    const parts = path.replace(/^\\//, '').split('/').filter(Boolean);\n    if (parts.length !== 2) return false;\n    if (!PRODUCT_CATS.includes(parts[0])) return false;\n    const slug = parts[1];\n    if (SKIP_SLUGS.some(s => slug === s || slug.startsWith(s + '-'))) return false;\n    return true;\n  } catch (e) { return false; }\n});\n\nconsole.log(`Found ${products.length} product URLs from ${links.length} total`);\nreturn products.map(url => ({ json: { url } }));"
+      }
+    },
+    {
+      "id": "node-04",
+      "name": "Loop Products",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [900, 460],
+      "parameters": {
+        "batchSize": 3,
+        "options": {}
+      }
+    },
+    {
+      "id": "node-05",
+      "name": "Firecrawl: Scrape Product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 460],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer fc-471db502e79143e0982f3d2638b8ccdb" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ url: $json.url, formats: ['extract'], extract: { schema: { type: 'object', properties: { title: { type: 'string' }, price: { type: 'string' }, sku: { type: 'string' }, description: { type: 'string' }, images: { type: 'array', items: { type: 'string' } }, category: { type: 'string' }, in_stock: { type: 'boolean' } } } } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "node-06",
+      "name": "Parse Product Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 460],
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst extract = data?.data?.extract || data?.extract || {};\nconst sourceUrl = $('Loop Products').item.json.url || '';\n\nif (!extract.title || !extract.price) {\n  return [{ json: { _valid: false, _error: 'Missing title or price', sourceUrl, rawData: JSON.stringify(extract).substring(0, 200) } }];\n}\n\nconst price = parseFloat(String(extract.price || '0').replace(/[^0-9.]/g, '')) || 0;\n\nconst allImages = extract.images || [];\nconst productImages = allImages.filter(url =>\n  url.includes('dacardworld1.imgix.net') &&\n  !url.includes('live_streams') &&\n  !url.includes('/logos/') &&\n  !url.includes('/features/') &&\n  !url.includes('/builder_assets/')\n);\n\nconst mainImageUrl = productImages.find(u => u.includes('h=340')) ||\n  productImages.find(u => !u.includes('h=84')) ||\n  productImages[0] || '';\n\nconst productType = sourceUrl.split('/').filter(Boolean)[3] || 'sports-cards';\n\nreturn [{ json: {\n  _valid: true,\n  title: extract.title,\n  price,\n  priceDisplay: extract.price,\n  sku: extract.sku || '',\n  description: extract.description || '',\n  category: extract.category || productType,\n  productType,\n  in_stock: extract.in_stock !== false,\n  sourceUrl,\n  mainImageUrl,\n  allImageUrls: productImages,\n  imageCount: productImages.length\n}}];"
+      }
+    },
+    {
+      "id": "node-07",
+      "name": "Is Valid Product?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 460],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "cond-valid",
+              "leftValue": "={{ $json._valid }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-08",
+      "name": "Build Claude Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 340],
+      "parameters": {
+        "jsCode": "const p = $input.item.json;\nconst geo = 'Long Island, Plainview, Hicksville, Syosset, Bethpage, Farmingdale, Westbury, New York';\n\nconst prompt = `You are an expert e-commerce SEO copywriter for a sports trading card store in ${geo}.\n\nOptimize this product for maximum SEO + local geo targeting:\n- Title: ${p.title}\n- Price: ${p.priceDisplay}\n- SKU: ${p.sku}\n- Category: ${p.category} (${p.productType})\n- In Stock: ${p.in_stock}\n- Description: ${p.description}\n\nReturn ONLY a valid JSON object with no extra text or markdown:\n{\n  \"seo_title\": \"SEO title max 60 chars - include product type + Long Island or NY\",\n  \"seo_description\": \"400-600 word rich description. Include: product highlights, collector value, why ${geo} customers love this, local delivery mention, natural keyword use\",\n  \"meta_title\": \"Max 60 chars, primary keyword first\",\n  \"meta_description\": \"Max 155 chars, geo-targeted, compelling with CTA\",\n  \"keywords\": [\"array of 8-12 keywords including Long Island NY area terms\"]\n}`;\n\nreturn [{ json: { ...p, claudePrompt: prompt } }];"
+      }
+    },
+    {
+      "id": "node-09",
+      "name": "Claude: AI SEO Rewrite",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 340],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "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" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: $json.claudePrompt }] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "node-10",
+      "name": "Parse AI Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 340],
+      "parameters": {
+        "jsCode": "const claudeResp = $input.item.json;\nconst product = $('Build Claude Prompt').item.json;\n\nconst rawText = claudeResp?.content?.[0]?.text || '';\n\nlet ai = {};\ntry {\n  const match = rawText.match(/\\{[\\s\\S]*\\}/);\n  if (match) ai = JSON.parse(match[0]);\n} catch (e) {\n  ai = {\n    seo_title: product.title.substring(0, 60),\n    seo_description: product.description,\n    meta_title: product.title.substring(0, 60),\n    meta_description: product.description.substring(0, 155),\n    keywords: [product.category, product.productType, 'Long Island', 'New York']\n  };\n}\n\nreturn [{ json: {\n  title: product.title,\n  price: product.price,\n  priceDisplay: product.priceDisplay,\n  sku: product.sku,\n  description: product.description,\n  category: product.category,\n  productType: product.productType,\n  in_stock: product.in_stock,\n  sourceUrl: product.sourceUrl,\n  mainImageUrl: product.mainImageUrl,\n  allImageUrls: product.allImageUrls,\n  imageCount: product.imageCount,\n  seo_title: ai.seo_title || product.title.substring(0, 60),\n  seo_description: ai.seo_description || product.description,\n  meta_title: ai.meta_title || product.title.substring(0, 60),\n  meta_description: ai.meta_description || '',\n  keywords: ai.keywords || [],\n  keywordsStr: (ai.keywords || []).join(', ')\n}}];"
+      }
+    },
+    {
+      "id": "node-11",
+      "name": "Has Product Image?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2440, 340],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "cond-img",
+              "leftValue": "={{ $json.mainImageUrl }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-12",
+      "name": "Download Product Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2660, 220],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.mainImageUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "node-13",
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2880, 220],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "upload",
+        "name": "={{ $('Parse AI Content').item.json.sku || 'img' }}_{{ $('Parse AI Content').item.json.title.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40) }}.jpg",
+        "driveId": { "__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive" },
+        "folderId": { "__rl": true, "value": "root", "mode": "list", "cachedResultName": "/ (Root)" },
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-14",
+      "name": "Set Drive Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3100, 220],
+      "parameters": {
+        "jsCode": "const driveResp = $input.item.json;\nconst product = $('Parse AI Content').item.json;\nconst driveLink = driveResp?.webViewLink || driveResp?.id\n  ? `https://drive.google.com/file/d/${driveResp.id}/view`\n  : '';\nreturn [{ json: { ...product, driveImageLink: driveLink } }];"
+      }
+    },
+    {
+      "id": "node-15",
+      "name": "No Image — Skip Drive",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2660, 460],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "driveImageLink", "value": "", "type": "string" }
+          ]
+        },
+        "options": { "includeOtherFields": true }
+      }
+    },
+    {
+      "id": "node-16",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [3320, 340],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_SPREADSHEET_ID_HERE", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Products", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.toISO() }}",
+            "Title": "={{ $json.title }}",
+            "SEO Title": "={{ $json.seo_title }}",
+            "SKU": "={{ $json.sku }}",
+            "Price": "={{ $json.priceDisplay }}",
+            "Category": "={{ $json.category }}",
+            "In Stock": "={{ $json.in_stock }}",
+            "SEO Description": "={{ $json.seo_description }}",
+            "Meta Title": "={{ $json.meta_title }}",
+            "Meta Description": "={{ $json.meta_description }}",
+            "Keywords": "={{ $json.keywordsStr }}",
+            "Source URL": "={{ $json.sourceUrl }}",
+            "Drive Image": "={{ $json.driveImageLink }}",
+            "All Image URLs": "={{ $json.allImageUrls.join('\\n') }}",
+            "Image Count": "={{ $json.imageCount }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-17",
+      "name": "Odoo: Create Product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3540, 340],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/api/product.template",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "YOUR_ODOO_API_KEY_HERE" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ name: $json.seo_title, description_sale: $json.seo_description, list_price: $json.price, default_code: $json.sku, is_published: $json.in_stock, website_meta_title: $json.meta_title, website_meta_description: $json.meta_description, website_meta_keywords: $json.keywordsStr, website_sequence: 10 }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "node-18",
+      "name": "Log Skipped Product",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [1780, 620],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_SPREADSHEET_ID_HERE", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Errors", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.toISO() }}",
+            "URL": "={{ $json.sourceUrl }}",
+            "Error": "={{ $json._error }}",
+            "Raw Data": "={{ $json.rawData }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-19",
+      "name": "Workflow Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [240, 700],
+      "parameters": {}
+    },
+    {
+      "id": "node-20",
+      "name": "Log Unhandled Error",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [460, 700],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_SPREADSHEET_ID_HERE", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Errors", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.toISO() }}",
+            "Workflow": "={{ $json.workflow?.name }}",
+            "Node": "={{ $json.execution?.lastNodeExecuted }}",
+            "Error": "={{ $json.execution?.error?.message }}",
+            "URL": "={{ $json.execution?.error?.context?.itemIndex }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Start Scraper": {
+      "main": [[ { "node": "Firecrawl: Map Site URLs", "type": "main", "index": 0 } ]]
+    },
+    "Firecrawl: Map Site URLs": {
+      "main": [[ { "node": "Filter Product URLs", "type": "main", "index": 0 } ]]
+    },
+    "Filter Product URLs": {
+      "main": [[ { "node": "Loop Products", "type": "main", "index": 0 } ]]
+    },
+    "Loop Products": {
+      "main": [
+        [ { "node": "Firecrawl: Scrape Product", "type": "main", "index": 0 } ],
+        []
+      ]
+    },
+    "Firecrawl: Scrape Product": {
+      "main": [[ { "node": "Parse Product Data", "type": "main", "index": 0 } ]]
+    },
+    "Parse Product Data": {
+      "main": [[ { "node": "Is Valid Product?", "type": "main", "index": 0 } ]]
+    },
+    "Is Valid Product?": {
+      "main": [
+        [ { "node": "Build Claude Prompt", "type": "main", "index": 0 } ],
+        [ { "node": "Log Skipped Product", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Build Claude Prompt": {
+      "main": [[ { "node": "Claude: AI SEO Rewrite", "type": "main", "index": 0 } ]]
+    },
+    "Claude: AI SEO Rewrite": {
+      "main": [[ { "node": "Parse AI Content", "type": "main", "index": 0 } ]]
+    },
+    "Parse AI Content": {
+      "main": [[ { "node": "Has Product Image?", "type": "main", "index": 0 } ]]
+    },
+    "Has Product Image?": {
+      "main": [
+        [ { "node": "Download Product Image", "type": "main", "index": 0 } ],
+        [ { "node": "No Image — Skip Drive", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Download Product Image": {
+      "main": [[ { "node": "Upload to Google Drive", "type": "main", "index": 0 } ]]
+    },
+    "Upload to Google Drive": {
+      "main": [[ { "node": "Set Drive Link", "type": "main", "index": 0 } ]]
+    },
+    "Set Drive Link": {
+      "main": [[ { "node": "Log to Google Sheets", "type": "main", "index": 0 } ]]
+    },
+    "No Image — Skip Drive": {
+      "main": [[ { "node": "Log to Google Sheets", "type": "main", "index": 0 } ]]
+    },
+    "Log to Google Sheets": {
+      "main": [[ { "node": "Odoo: Create Product", "type": "main", "index": 0 } ]]
+    },
+    "Odoo: Create Product": {
+      "main": [[ { "node": "Loop Products", "type": "main", "index": 0 } ]]
+    },
+    "Log Skipped Product": {
+      "main": [[ { "node": "Loop Products", "type": "main", "index": 0 } ]]
+    },
+    "Workflow Error Trigger": {
+      "main": [[ { "node": "Log Unhandled Error", "type": "main", "index": 0 } ]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": [
+    { "name": "scraper" },
+    { "name": "seo" },
+    { "name": "dacardworld" },
+    { "name": "odoo" }
+  ]
+}

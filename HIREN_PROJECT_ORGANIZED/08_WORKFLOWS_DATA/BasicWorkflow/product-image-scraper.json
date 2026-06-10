@@ -1,0 +1,687 @@
+{
+  "name": "Card Product Image Scraper — Multi-Source + Odoo Publisher",
+  "nodes": [
+    {
+      "id": "t0",
+      "name": "Form Trigger: Scrape Cards",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        180,
+        160
+      ],
+      "parameters": {
+        "path": "scrape-card-products",
+        "formTitle": "🃏 Card Image Scraper + Odoo Product Creator",
+        "formDescription": "Scrapes real product images from Pokemon TCG, MTG Scryfall, Yu-Gi-Oh! APIs + your custom card website. Creates complete products in your Odoo store.",
+        "responseMode": "responseNode",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Source Website URL",
+              "fieldType": "text",
+              "placeholder": "e.g. https://www.trollandtoad.com",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Cards Per Category",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "3 cards"
+                  },
+                  {
+                    "option": "5 cards"
+                  }
+                ]
+              },
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Auto-Publish to Odoo?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Yes — publish immediately"
+                  },
+                  {
+                    "option": "No — save as draft"
+                  }
+                ]
+              },
+              "requiredField": false
+            }
+          ]
+        }
+      },
+      "webhookId": "scrape-cards-form-001"
+    },
+    {
+      "id": "t1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        180,
+        380
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "n1",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        380
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst isForm = typeof item['Source Website URL'] === 'string' || typeof item['Auto-Publish to Odoo?'] === 'string';\nconst customUrl = (isForm ? item['Source Website URL'] : '') || 'https://www.trollandtoad.com';\nconst cardsPerCat = isForm ? parseInt((item['Cards Per Category'] || '3').replace(/\\D/g,'')) || 3 : 3;\nconst autoPublish = !((isForm ? item['Auto-Publish to Odoo?'] : '') || '').toLowerCase().includes('draft');\n\nreturn [{ json: {\n  isForm, customUrl, cardsPerCat, autoPublish,\n  FIRECRAWL_KEY: 'fc-471db502e79143e0982f3d2638b8ccdb',\n  CLAUDE_KEY: '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',\n  CLAUDE_MODEL: 'claude-sonnet-4-6',\n  ODOO_URL: 'https://country-cove-inc.odoo.com',\n  ODOO_DB: 'country-cove-inc',\n  ODOO_USER: 'countrycoveinc@gmail.com',\n  ODOO_PASS: 'M@nhattan1234',\n  startedAt: new Date().toISOString()\n}}];"
+      }
+    },
+    {
+      "id": "n2",
+      "name": "HTTP: Odoo Authenticate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        380
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { service: 'common', method: 'authenticate', args: [$json.ODOO_DB, $json.ODOO_USER, $json.ODOO_PASS, {}] } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "n3",
+      "name": "HTTP: Pokemon TCG API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        380
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.pokemontcg.io/v2/cards?q=supertype:Pok%C3%A9mon+rarity:Rare+set.series:Scarlet+%26+Violet&page=1&pageSize=6&select=name,images,set,rarity,tcgplayer",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "n4",
+      "name": "HTTP: Scryfall MTG Cards",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1260,
+        380
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.scryfall.com/cards/search?q=f:modern+type:creature+r:rare+lang:en&unique=cards&order=edhrec&dir=desc&page=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "n5",
+      "name": "HTTP: YGO Cards",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        380
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "https://db.ygoprodeck.com/api/v7/cardinfo.php?type=Effect%20Monster&level=7&num=6&offset=0&sort=name",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "n6",
+      "name": "HTTP: Firecrawl Sports + Custom URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        380
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('Parse Input').item.json.FIRECRAWL_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ query: 'sports trading cards baseball basketball football PSA graded price buy site:' + ($('Parse Input').item.json.customUrl || 'trollandtoad.com'), limit: 6 }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "n7",
+      "name": "Code: Aggregate Products + Build Claude Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2040,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// Decode Buffer if HTTP node returned a Node.js stream instead of parsed JSON\nfunction decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst cfg = $('Parse Input').item.json;\n\n// Decode Odoo auth response and extract uid\nconst authRaw = decodeBuffer($('HTTP: Odoo Authenticate').item.json);\n// Parse uid — coerce string to int, fallback to 2 (admin uid for country-cove-inc)\nconst rawUid = authRaw?.result;\nconst uid = (rawUid && parseInt(rawUid) > 0) ? parseInt(rawUid) : 2;\nconsole.log('[Aggregate] Odoo uid=' + uid + ' (raw=' + JSON.stringify(rawUid) + ')');\n\n// Decode all 4 API responses — safe even if a node failed (continueOnFail=true)\nconst pokeRaw   = decodeBuffer($('HTTP: Pokemon TCG API').item.json);\nconst mtgRaw    = decodeBuffer($('HTTP: Scryfall MTG Cards').item.json);\nconst ygoRaw    = decodeBuffer($('HTTP: YGO Cards').item.json);\nconst sportsRaw = decodeBuffer($('HTTP: Firecrawl Sports + Custom URL').item.json);\n\n// Pokemon fallback CDN images (used when pokemontcg.io returns 504 or any error)\nconst POKEMON_FALLBACK = [\n  { name: 'Charizard ex (Obsidian Flames)',  set: 'Scarlet & Violet — Obsidian Flames', rarity: 'Double Rare', price: 49.99, imageUrl: 'https://images.pokemontcg.io/sv3/125_hires.png' },\n  { name: 'Gardevoir ex (Scarlet & Violet)', set: 'Scarlet & Violet Base',              rarity: 'Double Rare', price: 24.99, imageUrl: 'https://images.pokemontcg.io/sv1/86_hires.png' },\n  { name: 'Pikachu ex (Paldean Fates)',      set: 'Scarlet & Violet — Paldean Fates',   rarity: 'Double Rare', price: 19.99, imageUrl: 'https://images.pokemontcg.io/sv4pt5/30_hires.png' },\n  { name: 'Miraidon ex (Scarlet & Violet)',  set: 'Scarlet & Violet Base',              rarity: 'Ultra Rare',  price: 29.99, imageUrl: 'https://images.pokemontcg.io/sv1/81_hires.png' },\n  { name: 'Koraidon ex (Scarlet & Violet)',  set: 'Scarlet & Violet Base',              rarity: 'Ultra Rare',  price: 27.99, imageUrl: 'https://images.pokemontcg.io/sv1/254_hires.png' },\n  { name: 'Iono (Paldea Evolved)',           set: 'Scarlet & Violet — Paldea Evolved',  rarity: 'Ultra Rare',  price: 14.99, imageUrl: 'https://images.pokemontcg.io/sv2/185_hires.png' },\n];\n\n// MTG fallback images (used when Scryfall is down)\nconst MTG_FALLBACK = [\n  { name: 'Ragavan, Nimble Pilferer', set: 'Modern Horizons 2',      price: 45.99, imageUrl: 'https://cards.scryfall.io/normal/front/a/9/a9a4e9c3-23ab-4b0c-bac9-c59e44e60e4a.jpg' },\n  { name: 'Murktide Regent',          set: 'Modern Horizons 2',      price: 28.99, imageUrl: 'https://cards.scryfall.io/normal/front/1/d/1d5d9dcd-7b76-4585-9c24-87f13a9e1b83.jpg' },\n  { name: 'Wrenn and Six',            set: 'Modern Horizons',        price: 34.99, imageUrl: 'https://cards.scryfall.io/normal/front/5/b/5bd498cc-a609-4457-9325-6888d9ce1d8d.jpg' },\n  { name: 'Orcish Bowmasters',        set: 'Lord of the Rings',      price: 19.99, imageUrl: 'https://cards.scryfall.io/normal/front/0/9/09fd2d9c-1793-4bef-8f57-5e85a9a0e9e5.jpg' },\n  { name: 'Solitude',                 set: 'Modern Horizons 2',      price: 22.99, imageUrl: 'https://cards.scryfall.io/normal/front/4/7/473b1f17-4e5e-4e60-8f45-37a4bd86c7bf.jpg' },\n];\n\n// YGO fallback images (used when YGOPRODECK is down)\nconst YGO_FALLBACK = [\n  { name: 'Blue-Eyes White Dragon',     set: 'Legend of Blue Eyes',   price: 15.99, imageUrl: 'https://images.ygoprodeck.com/images/cards/89631139.jpg' },\n  { name: 'Dark Magician',              set: 'Legend of Blue Eyes',   price: 8.99,  imageUrl: 'https://images.ygoprodeck.com/images/cards/46986414.jpg' },\n  { name: 'Red-Eyes Black Dragon',      set: 'Legend of Blue Eyes',   price: 6.99,  imageUrl: 'https://images.ygoprodeck.com/images/cards/74677422.jpg' },\n  { name: 'Exodia the Forbidden One',   set: 'Legend of Blue Eyes',   price: 12.99, imageUrl: 'https://images.ygoprodeck.com/images/cards/33396948.jpg' },\n  { name: 'Seto Kaiba',                 set: 'Duelist League',        price: 4.99,  imageUrl: 'https://images.ygoprodeck.com/images/cards/88979991.jpg' },\n];\n\n// --- Pokemon cards — live API with fallback ---\nconst apiPokeOk = Array.isArray(pokeRaw?.data) && pokeRaw.data.length > 0;\nconst pokeSource = apiPokeOk ? pokeRaw.data.slice(0, cfg.cardsPerCat || 5) : [];\nconst pokeProducts = apiPokeOk\n  ? pokeSource.map(c => ({\n      name: c.name || 'Pokemon Card',\n      category: 'Pokemon TCG',\n      imageUrl: c.images?.large || c.images?.small || null,\n      set: c.set?.name || 'Scarlet & Violet',\n      rarity: c.rarity || 'Rare',\n      price: c.tcgplayer?.prices?.holoRare?.market || c.tcgplayer?.prices?.normal?.market || 9.99,\n      source: 'pokemontcg.io'\n    }))\n  : POKEMON_FALLBACK.slice(0, cfg.cardsPerCat || 5).map(c => ({ ...c, category: 'Pokemon TCG', rarity: c.rarity || 'Rare', source: 'CDN fallback' }));\nconsole.log('[Pokemon] ' + pokeProducts.length + ' cards (' + (apiPokeOk ? 'live API' : 'FALLBACK — API was down') + ')');\n\n// --- MTG Scryfall cards — live API with fallback ---\nconst apiMtgOk = Array.isArray(mtgRaw?.data) && mtgRaw.data.length > 0;\nconst mtgProducts = apiMtgOk\n  ? mtgRaw.data.slice(0, cfg.cardsPerCat || 5).map(c => ({\n      name: c.name || 'MTG Card',\n      category: 'Magic: The Gathering',\n      imageUrl: c.image_uris?.normal || c.image_uris?.large || null,\n      set: c.set_name || 'Modern',\n      rarity: c.rarity || 'rare',\n      price: parseFloat(c.prices?.usd || '4.99') || 4.99,\n      oracleText: (c.oracle_text || '').substring(0, 120),\n      source: 'scryfall.com'\n    }))\n  : MTG_FALLBACK.slice(0, cfg.cardsPerCat || 5).map(c => ({ ...c, category: 'Magic: The Gathering', rarity: c.rarity || 'Rare', source: 'CDN fallback' }));\nconsole.log('[MTG] ' + mtgProducts.length + ' cards (' + (apiMtgOk ? 'live API' : 'FALLBACK') + ')');\n\n// --- Yu-Gi-Oh! cards — live API with fallback ---\nconst apiYgoOk = Array.isArray(ygoRaw?.data) && ygoRaw.data.length > 0;\nconst ygoProducts = apiYgoOk\n  ? ygoRaw.data.slice(0, cfg.cardsPerCat || 5).map(c => ({\n      name: c.name || 'Yu-Gi-Oh! Card',\n      category: 'Yu-Gi-Oh!',\n      imageUrl: (c.card_images && c.card_images[0]) ? c.card_images[0].image_url : null,\n      set: (c.card_sets && c.card_sets[0]) ? c.card_sets[0].set_name : 'Effect Monster',\n      rarity: 'Effect Monster',\n      price: 7.99,\n      desc: (c.desc || '').substring(0, 120),\n      source: 'ygoprodeck.com'\n    }))\n  : YGO_FALLBACK.slice(0, cfg.cardsPerCat || 5).map(c => ({ ...c, category: 'Yu-Gi-Oh!', rarity: 'Rare', source: 'CDN fallback' }));\nconsole.log('[YGO] ' + ygoProducts.length + ' cards (' + (apiYgoOk ? 'live API' : 'FALLBACK') + ')');\n\n// --- Sports cards from Firecrawl ---\nconst sportsResults = Array.isArray(sportsRaw?.data) ? sportsRaw.data : [];\nconst sportsProducts = sportsResults.slice(0, 4).map((r, i) => ({\n  name: r.title || ('Sports Card ' + (i + 1)),\n  category: 'Sports Cards',\n  imageUrl: null,\n  set: 'Sports Cards',\n  rarity: 'PSA Graded',\n  price: 29.99 + (i * 10),\n  desc: (r.description || '').substring(0, 120),\n  source: r.url || cfg.customUrl\n}));\nconsole.log('[Sports] found ' + sportsProducts.length + ' items from Firecrawl');\n\n// --- Hardcoded sealed products ---\nconst sealedProducts = [\n  { name: 'Pokemon SV 151 Booster Box', category: 'Sealed Products', imageUrl: null, set: 'Scarlet & Violet 151', rarity: 'Sealed', price: 129.99, source: 'hardcoded' },\n  { name: 'MTG Wilds of Eldraine Box',  category: 'Sealed Products', imageUrl: null, set: 'Wilds of Eldraine',    rarity: 'Sealed', price: 99.99,  source: 'hardcoded' },\n  { name: 'One Piece OP-07 Booster Box',category: 'Sealed Products', imageUrl: null, set: 'OP-07',               rarity: 'Sealed', price: 109.99, source: 'hardcoded' }\n];\n\n// Combine all products\nconst allProducts = [...pokeProducts, ...mtgProducts, ...ygoProducts, ...sportsProducts, ...sealedProducts];\nconsole.log('[Aggregate] Total products: ' + allProducts.length);\n\n// Build Claude prompt for professional descriptions\nconst productList = allProducts.map((p, i) => (\n  (i + 1) + '. Name: ' + p.name + ' | Category: ' + p.category + ' | Set: ' + p.set + ' | Rarity: ' + p.rarity + ' | Price: $' + p.price\n)).join('\\n');\n\nconst promptText =\n  'You are a professional trading card store copywriter. Generate product descriptions for an Odoo ecommerce store.\\n\\n' +\n  'For each product below, create compelling marketing copy. Return ONLY a valid JSON array with no markdown fences:\\n' +\n  '[{\"name\": \"exact product name\", \"category\": \"category\", \"price\": number, \"originalPrice\": number, \"badge\": \"Hot|New|Sale|Rare|PSA 10\", \"shortDescription\": \"1 sentence 15 words max\", \"fullDescription\": \"2-3 sentences professional Odoo HTML description\", \"seoTags\": [\"tag1\",\"tag2\",\"tag3\"]}]\\n\\n' +\n  'Products:\\n' + productList;\n\nconst analyzeRequest = JSON.stringify({\n  model: cfg.CLAUDE_MODEL,\n  max_tokens: 4000,\n  messages: [{ role: 'user', content: promptText }]\n});\n\nreturn [{ json: {\n  cfg,\n  uid,\n  allProducts,\n  totalProducts: allProducts.length,\n  analyzeRequest\n}}];"
+      }
+    },
+    {
+      "id": "n8",
+      "name": "HTTP: Claude Generate Descriptions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2300,
+        380
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $json.cfg.CLAUDE_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.analyzeRequest }}",
+        "options": {
+          "timeout": 90000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Code: Process Descriptions + Download Images + Create Odoo Products",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2560,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// Decode Buffer helper\nfunction decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst prev = $('Code: Aggregate Products + Build Claude Prompt').item.json;\nconst cfg  = prev.cfg;\n// uid fallback: if n7 auth parsing failed, use known admin uid=2 for country-cove-inc\nconst uid  = prev.uid || 2;\nconst allProducts = prev.allProducts || [];\n\n// Decode and parse Claude JSON descriptions\nconst claudeRaw = decodeBuffer($input.item.json);\nconst rawText = claudeRaw?.content?.[0]?.text || '';\nlet descriptions = [];\ntry {\n  const m = rawText.match(/\\[\\s\\S]*\\]/);\n  if (m) descriptions = JSON.parse(m[0]);\n} catch(e) {\n  console.log('[Descriptions] parse error: ' + e.message);\n}\nconsole.log('[Descriptions] parsed ' + descriptions.length + ' from Claude');\n\nconst descMap = {};\nfor (const d of descriptions) {\n  if (d.name) descMap[d.name.toLowerCase().trim()] = d;\n}\n\n// ── $helpers.httpRequest replaces fetch() — fetch is NOT in n8n Code nodes ──\n\nasync function getImageB64(url) {\n  if (!url) return null;\n  try {\n    const buf = await $helpers.httpRequest({\n      method: 'GET',\n      url: url,\n      encoding: 'arraybuffer',\n      returnFullResponse: false,\n      timeout: 10000,\n    });\n    return Buffer.from(buf).toString('base64');\n  } catch(e) {\n    console.log('[Image] failed ' + url.substring(0, 60) + ' — ' + e.message);\n    return null;\n  }\n}\n\nconst odooCall = async (method, model, args, kwargs={}) => {\n  const req = {\n    jsonrpc: '2.0', method: 'call', id: Date.now(),\n    params: {\n      service: 'object', method: 'execute_kw',\n      args: [cfg.ODOO_DB, uid, cfg.ODOO_PASS, model, method, args, kwargs]\n    }\n  };\n  const r = await $helpers.httpRequest({\n    method: 'POST',\n    url: cfg.ODOO_URL + '/jsonrpc',\n    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },\n    body: JSON.stringify(req),\n    returnFullResponse: false,\n  });\n  // r may be string or object depending on n8n version\n  const parsed = (typeof r === 'string') ? JSON.parse(r) : r;\n  if (parsed?.error) console.log('[OdooCall] RPC error: ' + JSON.stringify(parsed.error));\n  return parsed?.result;\n};\n\n// Startup diagnostics\nconsole.log('[n9 Start] uid=' + uid + ' allProducts=' + allProducts.length + ' cfg.ODOO_URL=' + cfg.ODOO_URL);\nif (allProducts.length > 0) console.log('[n9 Start] first product: ' + JSON.stringify(allProducts[0]));\n\n// Download all images in parallel\nconst imageUrls = allProducts.map(p => p.imageUrl || null);\nconsole.log('[Images] downloading ' + imageUrls.filter(Boolean).length + ' images...');\nconst imageB64s = await Promise.all(imageUrls.map(url => getImageB64(url)));\nconsole.log('[Images] downloaded ' + imageB64s.filter(Boolean).length + ' successfully');\n\n// Find Long Island Cards website\nlet targetWebsiteId = null;\nif (uid) {\n  try {\n    const websites = await odooCall('search_read', 'website.website', [[[]]], { fields: ['id', 'name', 'domain'], limit: 20 });\n    console.log('[Websites] found ' + (websites?.length || 0));\n    const cardsSite = (websites || []).find(w => {\n      const t = ((w.name||'') + ' ' + (w.domain||'')).toLowerCase();\n      return t.includes('card') || t.includes('longisland');\n    });\n    if (cardsSite) {\n      targetWebsiteId = cardsSite.id;\n      console.log('[Websites] Long Island Cards: id=' + cardsSite.id + ' name=' + cardsSite.name);\n    }\n  } catch(e) {\n    console.log('[Websites] lookup error: ' + e.message);\n  }\n}\n\n// Get or create Odoo product categories\nconst categoryNames = ['Pokemon TCG', 'Magic: The Gathering', 'Yu-Gi-Oh!', 'Sports Cards', 'Sealed Products'];\nconst categoryIds = {};\n\nif (uid) {\n  for (const catName of categoryNames) {\n    try {\n      const existing = await odooCall('search_read', 'product.category',\n        [[['name', '=', catName]]], { fields: ['id', 'name'], limit: 1 });\n      if (existing && existing.length > 0) {\n        categoryIds[catName] = existing[0].id;\n        console.log('[Category] found \"' + catName + '\" id=' + existing[0].id);\n      } else {\n        const newId = await odooCall('create', 'product.category', [{ name: catName }]);\n        categoryIds[catName] = newId;\n        console.log('[Category] created \"' + catName + '\" id=' + newId);\n      }\n    } catch(e) {\n      console.log('[Category] error for ' + catName + ': ' + e.message);\n    }\n  }\n}\n\n// Create products in Odoo\nconst createdProducts = [];\n\nif (uid) {\n  for (let i = 0; i < allProducts.length; i++) {\n    const p = allProducts[i];\n    const desc = descMap[p.name.toLowerCase().trim()] || {};\n    const listPrice = desc.price || p.price || 9.99;\n    const catId = categoryIds[p.category] || false;\n    const imgB64 = imageB64s[i] || null;\n\n    const productVals = {\n      name: p.name,\n      type: 'consu',\n      sale_ok: true,\n      list_price: listPrice,\n      standard_price: Math.round(listPrice * 0.5 * 100) / 100,\n      description_sale: desc.fullDescription || desc.shortDescription || ('Premium ' + p.category + ' — ' + (p.set || '')),\n      is_published: cfg.autoPublish === true\n    };\n    if (catId) productVals.categ_id = catId;\n    if (imgB64) productVals.image_1920 = imgB64;\n    if (targetWebsiteId) productVals.website_id = targetWebsiteId;\n\n    try {\n      const newId = await odooCall('create', 'product.template', [productVals]);\n      createdProducts.push({ name: p.name, category: p.category, odooId: newId, price: listPrice, badge: desc.badge || 'New', hasImage: !!(imgB64) });\n      console.log('[Odoo] created \"' + p.name + '\" id=' + newId);\n    } catch(e) {\n      console.log('[Odoo] error \"' + p.name + '\": ' + e.message);\n      createdProducts.push({ name: p.name, category: p.category, odooId: null, error: e.message });\n    }\n  }\n} else {\n  console.log('[Odoo] skipping — no uid');\n  for (const p of allProducts) createdProducts.push({ name: p.name, category: p.category, odooId: null, skipped: true });\n}\n\nconst totalCreated = createdProducts.filter(p => p.odooId).length;\nconsole.log('[Done] Created ' + totalCreated + ' / ' + allProducts.length + ' products in Odoo');\n\nreturn [{ json: {\n  cfg, uid,\n  websiteId: targetWebsiteId,\n  createdProducts,\n  totalAttempted: allProducts.length,\n  totalCreated,\n  totalImages: imageB64s.filter(Boolean).length,\n  categories: Object.keys(categoryIds)\n}}];"
+      }
+    },
+    {
+      "id": "n10",
+      "name": "Code: Final Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2820,
+        380
+      ],
+      "parameters": {
+        "jsCode": "const prev = $input.item.json;\nconst cfg  = prev.cfg || {};\n\nconst totalCreated = prev.totalCreated || 0;\nconst totalImages  = prev.totalImages  || 0;\nconst categories   = prev.categories   || [];\nconst created      = prev.createdProducts || [];\nconst isForm       = cfg.isForm || false;\n\nconsole.log('[Summary] totalCreated=' + totalCreated + ' totalImages=' + totalImages);\n\nreturn [{ json: {\n  totalCreated,\n  totalImages,\n  categories,\n  websiteId: prev.websiteId || null,\n  createdProducts: created.filter(p => p.odooId).map(p => ({\n    name: p.name,\n    category: p.category,\n    odooId: p.odooId,\n    price: p.price\n  })),\n  odooStoreUrl: (cfg.ODOO_URL || 'https://country-cove-inc.odoo.com') + '/shop',\n  isForm,\n  generatedAt: new Date().toISOString()\n}}];"
+      }
+    },
+    {
+      "id": "n11",
+      "name": "Is Form Trigger?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        380
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.isForm }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "n12",
+      "name": "Form: Show Result",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        3340,
+        200
+      ],
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "={{ '🃏 ' + $json.totalCreated + ' Products Created in Odoo!' }}",
+        "completionMessage": "={{ '**Products Created:** ' + $json.totalCreated + '\\n**Images Downloaded:** ' + $json.totalImages + '\\n**Categories:** ' + ($json.categories || []).join(', ') + '\\n\\n**View in Odoo Shop:** ' + $json.odooStoreUrl }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "n13",
+      "name": "Set: Manual Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3340,
+        560
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "totalCreated",
+              "value": "={{ $json.totalCreated }}",
+              "type": "number"
+            },
+            {
+              "id": "o2",
+              "name": "totalImages",
+              "value": "={{ $json.totalImages }}",
+              "type": "number"
+            },
+            {
+              "id": "o3",
+              "name": "odooStoreUrl",
+              "value": "={{ $json.odooStoreUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "o4",
+              "name": "categories",
+              "value": "={{ $json.categories }}",
+              "type": "array"
+            },
+            {
+              "id": "o5",
+              "name": "status",
+              "value": "={{ $json.totalCreated > 0 ? 'success' : 'partial' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e1",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        180,
+        580
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "e2",
+      "name": "Set: Log Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        580
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "er1",
+              "name": "errorAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "er2",
+              "name": "errorMessage",
+              "value": "={{ $json.execution?.error?.message || 'Unknown error' }}",
+              "type": "string"
+            },
+            {
+              "id": "er3",
+              "name": "lastNode",
+              "value": "={{ $json.execution?.lastNodeExecuted || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Form Trigger: Scrape Cards": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Odoo Authenticate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Odoo Authenticate": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Pokemon TCG API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Pokemon TCG API": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Scryfall MTG Cards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Scryfall MTG Cards": {
+      "main": [
+        [
+          {
+            "node": "HTTP: YGO Cards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: YGO Cards": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Firecrawl Sports + Custom URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Firecrawl Sports + Custom URL": {
+      "main": [
+        [
+          {
+            "node": "Code: Aggregate Products + Build Claude Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Aggregate Products + Build Claude Prompt": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Claude Generate Descriptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Claude Generate Descriptions": {
+      "main": [
+        [
+          {
+            "node": "Code: Process Descriptions + Download Images + Create Odoo Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Process Descriptions + Download Images + Create Odoo Products": {
+      "main": [
+        [
+          {
+            "node": "Code: Final Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Final Summary": {
+      "main": [
+        [
+          {
+            "node": "Is Form Trigger?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Form Trigger?": {
+      "main": [
+        [
+          {
+            "node": "Form: Show Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set: Manual Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set: Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "tags": [
+    {
+      "name": "basic-workflow"
+    },
+    {
+      "name": "card-scraper"
+    },
+    {
+      "name": "odoo-products"
+    },
+    {
+      "name": "image-scraper"
+    }
+  ]
+}

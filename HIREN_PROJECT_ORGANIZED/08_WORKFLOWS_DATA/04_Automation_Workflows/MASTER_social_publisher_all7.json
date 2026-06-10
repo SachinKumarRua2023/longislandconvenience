@@ -1,0 +1,537 @@
+{
+  "name": "MASTER Social Publisher — All 7 Country Cove Sites",
+  "nodes": [
+
+    {
+      "id": "n1",
+      "name": "Every Day 11PM ET",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 4 * * *" }]
+        }
+      },
+      "notes": "4AM UTC = 11PM EST / 11PM EDT (handles daylight saving automatically)"
+    },
+
+    {
+      "id": "n2",
+      "name": "Define All 7 Business Configs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "parameters": {
+        "jsCode": "// ─────────────────────────────────────────────────────────────────\n// MASTER CONFIG — fill in Drive folder IDs + Odoo account IDs once\n// Get Drive folder IDs from the URL when you open each folder:\n//   drive.google.com/drive/folders/THIS_IS_THE_ID\n// Get Odoo social account IDs:\n//   Odoo → Social Marketing → Social Accounts → click account → check URL\n// ─────────────────────────────────────────────────────────────────\nconst businesses = [\n  {\n    name: 'Long Island Convenience',\n    websiteKeyword: 'long island',\n    driveFolderId: 'FILL_IN_LONGISLAND_DRIVE_FOLDER_ID',\n    drivePostedFolderId: 'FILL_IN_LONGISLAND_POSTED_FOLDER_ID',\n    odooAccountIds: [],  // FILL IN after connecting FB/IG in Odoo Social Marketing\n    claudeSystemPrompt: 'You are a viral social media expert for Country Cove Long Island, a one-stop convenience hub in Plainview, Long Island NY. They sell gift baskets, balloons, sports cards, greeting cards, cigars, and document services. Local Long Island community feel.',\n    hashtags: '#longisland #plainviewny #shoplocal #longislandbusiness #nassaucounty #longislandlife #shopsmall #countrycovelongisland #longislandshops #visitlongisland #supportlocal #longislandgifts'\n  },\n  {\n    name: 'Country Cove Balloons',\n    websiteKeyword: 'balloon',\n    driveFolderId: '1QSAOTPFBIg-kYlnSg3mchq2VU0cvFFb8',\n    drivePostedFolderId: 'FILL_IN_BALLOONS_POSTED_FOLDER_ID',\n    odooAccountIds: [],\n    claudeSystemPrompt: 'You are a viral social media expert for Country Cove Balloons, a luxury balloon decoration business in Plainview, Long Island NY. Focus on emotions, celebrations, birthdays, graduations, events.',\n    hashtags: '#balloon #balloonart #balloondecorations #birthdayballoons #partyballoons #balloonbouquet #eventdecor #balloondesign #longisland #plainviewny #balloondelivery #graduation2026 #partyplanning'\n  },\n  {\n    name: 'Country Cove Sports Cards',\n    websiteKeyword: 'sports',\n    driveFolderId: 'FILL_IN_SPORTSCARDS_DRIVE_FOLDER_ID',\n    drivePostedFolderId: 'FILL_IN_SPORTSCARDS_POSTED_FOLDER_ID',\n    odooAccountIds: [],\n    claudeSystemPrompt: 'You are a viral social media expert for Country Cove Sports Cards in Plainview Long Island NY. They sell PSA graded cards, raw sports cards, Pokémon, MTG, Yu-Gi-Oh. Speak to collectors and investors.',\n    hashtags: '#sportscards #psagraded #cardcollector #pokemoncards #tradingcards #longisland #plainviewny #baseballcards #basketballcards #footballcards #mtg #yugioh #collectibles'\n  },\n  {\n    name: 'Country Cove Greeting Cards',\n    websiteKeyword: 'greeting',\n    driveFolderId: 'FILL_IN_GREETINGCARDS_DRIVE_FOLDER_ID',\n    drivePostedFolderId: 'FILL_IN_GREETINGCARDS_POSTED_FOLDER_ID',\n    odooAccountIds: [],\n    claudeSystemPrompt: 'You are a viral social media expert for Country Cove Greeting Cards in Plainview Long Island NY. Physical greeting cards, digital e-cards, and monthly card club membership. Emotional, warm, heartfelt tone.',\n    hashtags: '#greetingcards #sendacard #handmadecards #longisland #plainviewny #birthdaycard #anniversarycard #cardmaking #digitalcard #thoughtfulgiving #cardclub'\n  },\n  {\n    name: 'Country Cove Gift Baskets',\n    websiteKeyword: 'gift basket',\n    driveFolderId: 'FILL_IN_GIFTBASKETS_DRIVE_FOLDER_ID',\n    drivePostedFolderId: 'FILL_IN_GIFTBASKETS_POSTED_FOLDER_ID',\n    odooAccountIds: [],\n    claudeSystemPrompt: 'You are a viral social media expert for Country Cove Gift Baskets in Plainview Long Island NY. Curated gift baskets for graduation, Father Day, birthdays, corporate. Free Long Island delivery. Emotional gifting tone.',\n    hashtags: '#giftbasket #giftbaskets #longisland #graduation2026 #fathersday #corporategifts #plainviewny #gifting #birthdaygift #shoplocal #longislanddelivery #handcrafted'\n  },\n  {\n    name: 'Country Cove Cigars',\n    websiteKeyword: 'cigar',\n    driveFolderId: 'FILL_IN_CIGARS_DRIVE_FOLDER_ID',\n    drivePostedFolderId: 'FILL_IN_CIGARS_POSTED_FOLDER_ID',\n    odooAccountIds: [],\n    claudeSystemPrompt: 'You are a social media expert for Country Cove Cigars and Smoke in Plainview Long Island NY. Premium cigars, smokeshop products, and CBD. Clean, sophisticated, no explicit language. Adults 21+ only. Strong brand impression.',\n    hashtags: '#cigars #premiumcigars #longisland #plainviewny #cigarlife #smokeshop #cbd #adultonly #cigarlounge #tobaccoshop'\n  },\n  {\n    name: 'Country Cove Print Copy',\n    websiteKeyword: 'print',\n    driveFolderId: 'FILL_IN_PRINTCOPY_DRIVE_FOLDER_ID',\n    drivePostedFolderId: 'FILL_IN_PRINTCOPY_POSTED_FOLDER_ID',\n    odooAccountIds: [],\n    claudeSystemPrompt: 'You are a social media expert for Country Cove Print and Copy in Plainview Long Island NY. Color printing, copying, faxing, scanning services. Professional, helpful, local community tone.',\n    hashtags: '#printing #copyshop #longisland #plainviewny #documentsservices #printservices #businessservices #shoplocal #officeservices'\n  }\n];\n\n// Return as separate items — n8n processes each one in the loop\nreturn businesses.map(b => ({ json: b }));"
+      }
+    },
+
+    {
+      "id": "n3",
+      "name": "Loop Over Businesses",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [440, 300],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+
+    {
+      "id": "n4",
+      "name": "Get Latest Unposted Video",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [660, 300],
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "list",
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.driveFolderId }}",
+          "mode": "id"
+        },
+        "limit": 10,
+        "options": {
+          "fields": ["id", "name", "modifiedTime", "size"],
+          "orderBy": "modifiedTime desc"
+        }
+      }
+    },
+
+    {
+      "id": "n5",
+      "name": "Find Unposted Video + Duplicate Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300],
+      "parameters": {
+        "jsCode": "// ── Duplicate detection using n8n static data (free, no external DB) ──\nconst staticData = $getWorkflowStaticData('global');\nconst postedFiles = staticData.postedFiles || {};\n\n// Get business config from the loop item\nconst items = $input.all();\nif (!items || items.length === 0) {\n  throw new Error('No Drive response received');\n}\n\n// Find the business config — it's the item that has driveFolderId\n// (comes from the batch, not the Drive node)\nconst batchItem = $('Loop Over Businesses').item?.json;\nif (!batchItem) throw new Error('Cannot read business config from batch');\n\nconst businessName = batchItem.name;\n\n// Get files from Drive response\nconst files = items\n  .map(i => i.json)\n  .filter(f => f && f.id && f.name)\n  .filter(f => /\\.(mp4|mov|avi|mkv|webm)$/i.test(f.name)); // videos only\n\nif (files.length === 0) {\n  return [{ json: {\n    hasVideo: false,\n    businessName,\n    reason: 'No video files in Drive folder',\n    config: batchItem\n  }}];\n}\n\n// Find first file NOT already posted\nconst alreadyPosted = postedFiles[businessName] || [];\nconst unpostedFile = files.find(f => !alreadyPosted.includes(f.id));\n\nif (!unpostedFile) {\n  return [{ json: {\n    hasVideo: false,\n    businessName,\n    reason: 'All videos in folder already posted. Add new content.',\n    config: batchItem\n  }}];\n}\n\nreturn [{ json: {\n  hasVideo: true,\n  businessName,\n  fileId: unpostedFile.id,\n  filename: unpostedFile.name,\n  config: batchItem\n}}];"
+      }
+    },
+
+    {
+      "id": "n6",
+      "name": "Has Unposted Video?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hasVideo }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "n7",
+      "name": "WhatsApp: No Video Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 480],
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v21.0/1155201714335421/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer EAAOM95s8ZCigBRXBn5ZBpBTJQVlZAoSW2Bylmq8ZAHXZAteKQwnqAKCy5Atd1ui3kZB8Hy5ScF7gF2kuAdisXsO8HZAXZCMn1abLZBK7ZAKuiREdEoZAI031HIqKjL72lQi6nsHM5eS7wRhveQZASSj69ODIRyhoy6GqkHVntHGvOyla3CUZBgEf8SiLe5FV4JYR5kyUURJTDBMRZCpGDdxtDysM0D2mVP26AllxbV4y9TY2ArtWz2iYZB2hqKXpTlxhVpGgfZCIgWxCWMlHbzj1x8cKYKZBA8yBx" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to", "value": "918130711383" },
+            { "name": "type", "value": "text" },
+            { "name": "text", "value": "={{ { body: '⚠️ Social Post Skipped\\n\\nBusiness: ' + $json.businessName + '\\nReason: ' + $json.reason + '\\nTime: ' + new Date().toLocaleString(\"en-US\", {timeZone:\"America/New_York\"}) + '\\n\\nAction: Add new video to the Drive folder.' } }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+
+    {
+      "id": "n8",
+      "name": "Generate Viral Content",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [1320, 200],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-6",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.config.claudeSystemPrompt + '\\n\\nToday is ' + $now.toFormat('MMMM d, yyyy') + '. Today video topic: \"' + $json.filename.replace(/\\.(mp4|mov|avi|mkv|webm)$/i,'').split(' - ')[0] + '\"\\n\\nCreate a VIRAL post. Return ONLY raw JSON, no markdown:\\n{\"title\":\"catchy viral title under 10 words with emojis\",\"caption\":\"3-4 sentence emotional caption with storytelling and strong CTA.\",\"hashtags\":\"' + $json.config.hashtags + '\"}' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+
+    {
+      "id": "n9",
+      "name": "Build Post Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 200],
+      "parameters": {
+        "jsCode": "// ── Parse Claude response safely ──\nconst raw = $input.first().json.text || $input.first().json?.content?.[0]?.text || '';\nif (!raw) throw new Error('Claude returned empty response');\n\nlet ai;\ntry {\n  // Extract JSON even if Claude wrapped it in markdown\n  const match = raw.match(/\\{[\\s\\S]*?\\}(?=[\\s]*$)/m) || raw.match(/\\{[\\s\\S]*\\}/);\n  if (!match) throw new Error('No JSON object found in Claude response: ' + raw.substring(0, 200));\n  ai = JSON.parse(match[0]);\n} catch(e) {\n  throw new Error('JSON parse failed: ' + e.message + ' | Raw: ' + raw.substring(0, 300));\n}\n\nif (!ai.title || !ai.caption) {\n  throw new Error('Claude JSON missing required fields. Got: ' + JSON.stringify(Object.keys(ai)));\n}\n\n// Get data from previous nodes\nconst videoInfo = $('Find Unposted Video + Duplicate Check').item.json;\nconst config = videoInfo.config;\n\n// Build post text\nconst fullText = ai.title + '\\n\\n' + ai.caption + '\\n\\n' + (ai.hashtags || config.hashtags);\n\n// Instagram hard limit = 2200 chars, Facebook = 63206 chars\n// Use 2000 to be safe with all platforms\nconst safeText = fullText.length > 2000 \n  ? fullText.substring(0, 1950) + '...'\n  : fullText;\n\nreturn [{ json: {\n  fileId: videoInfo.fileId,\n  filename: videoInfo.filename,\n  businessName: videoInfo.businessName,\n  config: config,\n  postText: safeText,\n  Title: ai.title\n} }];"
+      }
+    },
+
+    {
+      "id": "n10",
+      "name": "Download Video from Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1760, 200],
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.fileId }}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "videoData"
+        }
+      }
+    },
+
+    {
+      "id": "n11",
+      "name": "Upload to Cloudinary (Permanent)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.cloudinary.com/v1_1/YOUR_CLOUDINARY_CLOUD_NAME/video/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "videoData"
+            },
+            {
+              "name": "upload_preset",
+              "value": "YOUR_CLOUDINARY_UPLOAD_PRESET"
+            },
+            {
+              "name": "folder",
+              "value": "={{ 'countrycove/' + $('Build Post Data').item.json.businessName.toLowerCase().replace(/ /g, '_') }}"
+            },
+            {
+              "name": "resource_type",
+              "value": "video"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+
+    {
+      "id": "n12",
+      "name": "Validate Upload + Build Odoo Auth",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 200],
+      "parameters": {
+        "jsCode": "// ── Validate Cloudinary upload succeeded ──\nconst cloudRes = $input.first().json;\nconst videoUrl = cloudRes.secure_url;\n\nif (!videoUrl || !videoUrl.startsWith('https://')) {\n  throw new Error(\n    'Cloudinary upload failed. Response: ' + JSON.stringify(cloudRes).substring(0, 300) +\n    '\\nCheck: 1) cloud_name correct 2) upload_preset exists and is unsigned 3) free tier not exceeded'\n  );\n}\n\nconst postData = $('Build Post Data').item.json;\n\nreturn [{ json: {\n  videoUrl,\n  postText: postData.postText,\n  businessName: postData.businessName,\n  config: postData.config,\n  fileId: postData.fileId,\n  filename: postData.filename\n} }];"
+      }
+    },
+
+    {
+      "id": "n13",
+      "name": "Odoo: Authenticate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/session/authenticate",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\"jsonrpc\":\"2.0\",\"method\":\"call\",\"id\":1,\"params\":{\"db\":\"country-cove-inc\",\"login\":\"countrycoveinc@gmail.com\",\"password\":\"M@nhattan1234\"}}",
+        "options": {
+          "response": {
+            "response": { "fullResponse": true }
+          }
+        }
+      }
+    },
+
+    {
+      "id": "n14",
+      "name": "Extract + Validate Odoo Session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 200],
+      "parameters": {
+        "jsCode": "// ── Robust cookie extraction with full validation ──\nconst res = $input.first().json;\n\n// Try to get uid from body\nconst body = res.body || res;\nconst uid = body?.result?.uid;\nif (!uid) {\n  const errMsg = body?.error?.data?.message || JSON.stringify(body).substring(0, 200);\n  throw new Error('Odoo auth failed — uid not returned. Error: ' + errMsg + '\\nCheck: email/password correct, Odoo not in maintenance');\n}\n\n// Extract session_id from Set-Cookie header (multiple possible header formats)\nlet sessionCookie = '';\nconst headers = res.headers || {};\n\n// Header key can be 'set-cookie', 'Set-Cookie', or an array\nconst rawCookie = headers['set-cookie'] || headers['Set-Cookie'] || '';\nconst cookieArr = Array.isArray(rawCookie) ? rawCookie : [rawCookie];\n\nfor (const c of cookieArr) {\n  const match = c.match(/session_id=([^;]+)/);\n  if (match) {\n    sessionCookie = 'session_id=' + match[1];\n    break;\n  }\n}\n\n// If no cookie from header, try body result\nif (!sessionCookie && body?.result?.session_id) {\n  sessionCookie = 'session_id=' + body.result.session_id;\n}\n\nif (!sessionCookie) {\n  throw new Error(\n    'Odoo session cookie not found. uid=' + uid +\n    ' Headers available: ' + Object.keys(headers).join(', ') +\n    '\\nTry: Settings → Technical → API Keys → create one and use as password'\n  );\n}\n\n// Pass forward all needed data\nconst prev = $('Validate Upload + Build Odoo Auth').item.json;\nreturn [{ json: {\n  sessionCookie,\n  uid,\n  videoUrl: prev.videoUrl,\n  postText: prev.postText,\n  businessName: prev.businessName,\n  config: prev.config,\n  fileId: prev.fileId,\n  filename: prev.filename\n} }];"
+      }
+    },
+
+    {
+      "id": "n15",
+      "name": "Odoo: Get Social Accounts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2860, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Cookie", "value": "={{ $json.sessionCookie }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\"jsonrpc\":\"2.0\",\"method\":\"call\",\"id\":2,\"params\":{\"model\":\"social.account\",\"method\":\"search_read\",\"args\":[[]],\"kwargs\":{\"fields\":[\"id\",\"name\",\"media_type\",\"website_id\",\"is_media_disconnected\"],\"limit\":100}}}",
+        "options": {}
+      }
+    },
+
+    {
+      "id": "n16",
+      "name": "Resolve + Validate Accounts (Strict)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3080, 200],
+      "parameters": {
+        "jsCode": "// ── STRICT account resolution — NO FALLBACK TO ALL ACCOUNTS ──\nconst odooRes = $input.first().json;\nconst allAccounts = odooRes?.result || [];\n\nconst prev = $('Extract + Validate Odoo Session').item.json;\nconst config = prev.config;\nconst businessName = prev.businessName;\n\nif (allAccounts.length === 0) {\n  throw new Error(\n    'No social accounts found in Odoo for ' + businessName + '.\\n' +\n    'Action: Odoo → Social Marketing → Add Account → connect Facebook/Instagram'\n  );\n}\n\n// Strategy 1: Use hardcoded IDs from config (most reliable)\nlet accountIds = config.odooAccountIds || [];\n\n// Strategy 2: If no hardcoded IDs, filter by website name (strict match)\nif (accountIds.length === 0) {\n  const keyword = (config.websiteKeyword || '').toLowerCase();\n  const matched = allAccounts.filter(a => {\n    if (a.is_media_disconnected) return false; // skip disconnected accounts\n    const siteName = (a.website_id?.[1] || '').toLowerCase();\n    const acctName = (a.name || '').toLowerCase();\n    return siteName.includes(keyword) || acctName.includes(keyword);\n  });\n  accountIds = matched.map(a => a.id);\n}\n\n// HARD STOP — never post to wrong accounts\nif (accountIds.length === 0) {\n  throw new Error(\n    'Cannot find Odoo social accounts for: ' + businessName + '\\n' +\n    'Keyword searched: \"' + config.websiteKeyword + '\"\\n' +\n    'Available accounts: ' + allAccounts.map(a => a.name + '(id:' + a.id + ')').join(', ') + '\\n\\n' +\n    'Fix: Either 1) Fill odooAccountIds in business config OR 2) Name the account to include \"' + config.websiteKeyword + '\" OR 3) Connect account in Odoo Social Marketing'\n  );\n}\n\n// Check for disconnected accounts\nconst disconnected = allAccounts.filter(a => accountIds.includes(a.id) && a.is_media_disconnected);\nif (disconnected.length > 0) {\n  throw new Error(\n    'Social accounts disconnected for ' + businessName + ': ' +\n    disconnected.map(a => a.name).join(', ') +\n    '\\nFix: Odoo → Social Marketing → reconnect the account'\n  );\n}\n\nconsole.log('[' + businessName + '] Posting to account IDs:', accountIds);\n\nreturn [{ json: {\n  sessionCookie: prev.sessionCookie,\n  accountIds,\n  postText: prev.postText,\n  videoUrl: prev.videoUrl,\n  businessName,\n  config,\n  fileId: prev.fileId,\n  filename: prev.filename\n} }];"
+      }
+    },
+
+    {
+      "id": "n17",
+      "name": "Build Odoo Post Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3300, 200],
+      "parameters": {
+        "jsCode": "// ── Build proper Odoo JSON-RPC create request ──\n// Note: we build this in a Code node to avoid JSON-in-string expression issues\nconst prev = $input.first().json;\n\n// Build the many2many command: [[6, 0, [id1, id2, ...]]] = replace all with these IDs\nconst accountCommand = [[6, 0, prev.accountIds]];\n\n// Full message with video link\nconst message = prev.postText + '\\n\\n▶️ ' + prev.videoUrl;\n\nconst requestBody = {\n  jsonrpc: '2.0',\n  method: 'call',\n  id: 3,\n  params: {\n    model: 'social.post',\n    method: 'create',\n    args: [{\n      account_ids: accountCommand,\n      message: message\n    }],\n    kwargs: {}\n  }\n};\n\nreturn [{ json: {\n  requestBody: JSON.stringify(requestBody),\n  sessionCookie: prev.sessionCookie,\n  businessName: prev.businessName,\n  config: prev.config,\n  fileId: prev.fileId,\n  filename: prev.filename,\n  accountIds: prev.accountIds\n} }];"
+      }
+    },
+
+    {
+      "id": "n18",
+      "name": "Odoo: Create Social Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3520, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Cookie", "value": "={{ $json.sessionCookie }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "={{ $json.requestBody }}",
+        "options": {}
+      }
+    },
+
+    {
+      "id": "n19",
+      "name": "Extract Post ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3740, 200],
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst postId = res?.result;\n\nif (!postId || typeof postId !== 'number' || postId <= 0) {\n  const errDetail = res?.error?.data?.message || JSON.stringify(res).substring(0, 300);\n  throw new Error('Failed to create social.post in Odoo. Detail: ' + errDetail);\n}\n\nconst prev = $('Build Odoo Post Request').item.json;\nreturn [{ json: {\n  postId,\n  sessionCookie: prev.sessionCookie,\n  businessName: prev.businessName,\n  config: prev.config,\n  fileId: prev.fileId,\n  filename: prev.filename\n} }];"
+      }
+    },
+
+    {
+      "id": "n20",
+      "name": "Odoo: Publish Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3960, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Cookie", "value": "={{ $json.sessionCookie }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\"jsonrpc\":\"2.0\",\"method\":\"call\",\"id\":4,\"params\":{\"model\":\"social.post\",\"method\":\"action_post\",\"args\":[[{{ $json.postId }}]],\"kwargs\":{}}}",
+        "options": {}
+      }
+    },
+
+    {
+      "id": "n21",
+      "name": "Odoo: Read Post Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4180, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Cookie", "value": "={{ $('Extract Post ID').item.json.sessionCookie }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\"jsonrpc\":\"2.0\",\"method\":\"call\",\"id\":5,\"params\":{\"model\":\"social.post\",\"method\":\"read\",\"args\":[[{{ $('Extract Post ID').item.json.postId }}]],\"kwargs\":{\"fields\":[\"id\",\"state\",\"failure_reason\"]}}}",
+        "options": {}
+      }
+    },
+
+    {
+      "id": "n22",
+      "name": "Validate Publish + Mark as Posted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4400, 200],
+      "parameters": {
+        "jsCode": "const statusRes = $input.first().json;\nconst postInfo = statusRes?.result?.[0];\nconst prevData = $('Extract Post ID').item.json;\n\nif (!postInfo) {\n  throw new Error('Could not read post status from Odoo. Post ID: ' + prevData.postId);\n}\n\n// Check for failure\nif (postInfo.failure_reason) {\n  throw new Error(\n    'Post FAILED on platform for ' + prevData.businessName + '.\\n' +\n    'Odoo post ID: ' + prevData.postId + '\\n' +\n    'Failure: ' + postInfo.failure_reason + '\\n' +\n    'Fix: Odoo → Social Marketing → reconnect social account token'\n  );\n}\n\n// ── Mark file as posted in static data (duplicate prevention) ──\nconst staticData = $getWorkflowStaticData('global');\nconst postedFiles = staticData.postedFiles || {};\nconst businessName = prevData.businessName;\n\nif (!postedFiles[businessName]) postedFiles[businessName] = [];\n\n// Keep last 30 posted file IDs per business (prevent unbounded growth)\npostedFiles[businessName].push(prevData.fileId);\nif (postedFiles[businessName].length > 30) {\n  postedFiles[businessName] = postedFiles[businessName].slice(-30);\n}\nstaticData.postedFiles = postedFiles;\n\nconsole.log('[' + businessName + '] ✅ Post published. State: ' + postInfo.state + ' | FileId marked as posted.');\n\nreturn [{ json: {\n  status: 'SUCCESS',\n  businessName,\n  postId: prevData.postId,\n  odooState: postInfo.state,\n  filename: prevData.filename,\n  fileId: prevData.fileId,\n  config: prevData.config,\n  sessionCookie: prevData.sessionCookie,\n  odooUrl: 'https://country-cove-inc.odoo.com/web#model=social.post&id=' + prevData.postId,\n  timestamp: new Date().toLocaleString('en-US', {timeZone: 'America/New_York'})\n} }];"
+      }
+    },
+
+    {
+      "id": "n23",
+      "name": "Google Drive: Move to POSTED Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [4620, 200],
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.fileId }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.config.drivePostedFolderId }}",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+
+    {
+      "id": "n24",
+      "name": "Collect Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4840, 300],
+      "parameters": {
+        "jsCode": "// Collect result from whichever branch ran (success or no-video)\nconst item = $input.first().json;\nreturn [{ json: {\n  businessName: item.businessName || 'unknown',\n  status: item.status || 'SKIPPED',\n  reason: item.reason || null,\n  postId: item.postId || null,\n  odooUrl: item.odooUrl || null,\n  filename: item.filename || null,\n  timestamp: item.timestamp || new Date().toLocaleString('en-US', {timeZone: 'America/New_York'})\n} }];"
+      }
+    },
+
+    {
+      "id": "n25",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [4840, 200],
+      "parameters": {
+        "mode": "append"
+      }
+    },
+
+    {
+      "id": "n26",
+      "name": "Build + Send Daily Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5060, 300],
+      "parameters": {
+        "jsCode": "const results = $input.all().map(i => i.json);\n\nconst successes = results.filter(r => r.status === 'SUCCESS');\nconst skipped = results.filter(r => r.status === 'SKIPPED');\nconst failed = results.filter(r => r.status === 'FAILED');\n\nlet summary = '📊 Country Cove Daily Post Report\\n';\nsummary += new Date().toLocaleString('en-US', {timeZone: 'America/New_York'}) + '\\n\\n';\nsummary += '✅ Posted: ' + successes.length + '/7\\n';\nif (successes.length > 0) {\n  summary += successes.map(r => '  • ' + r.businessName + ': ' + (r.filename || '') ).join('\\n') + '\\n';\n}\nif (skipped.length > 0) {\n  summary += '\\n⏭️ Skipped (' + skipped.length + '):\\n';\n  summary += skipped.map(r => '  • ' + r.businessName + ': ' + r.reason).join('\\n') + '\\n';\n}\nif (failed.length > 0) {\n  summary += '\\n❌ Failed (' + failed.length + '):\\n';\n  summary += failed.map(r => '  • ' + r.businessName + ': ' + r.reason).join('\\n') + '\\n';\n}\nsummary += '\\n—\\nCountry Cove Auto-Publisher';\n\nreturn [{ json: { summaryText: summary } }];"
+      }
+    },
+
+    {
+      "id": "n27",
+      "name": "WhatsApp: Daily Summary to Sachin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [5280, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v21.0/1155201714335421/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer EAAOM95s8ZCigBRXBn5ZBpBTJQVlZAoSW2Bylmq8ZAHXZAteKQwnqAKCy5Atd1ui3kZB8Hy5ScF7gF2kuAdisXsO8HZAXZCMn1abLZBK7ZAKuiREdEoZAI031HIqKjL72lQi6nsHM5eS7wRhveQZASSj69ODIRyhoy6GqkHVntHGvOyla3CUZBgEf8SiLe5FV4JYR5kyUURJTDBMRZCpGDdxtDysM0D2mVP26AllxbV4y9TY2ArtWz2iYZB2hqKXpTlxhVpGgfZCIgWxCWMlHbzj1x8cKYKZBA8yBx" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to", "value": "918130711383" },
+            { "name": "type", "value": "text" },
+            { "name": "text", "value": "={{ { body: $json.summaryText } }}" }
+          ]
+        },
+        "options": {}
+      }
+    }
+
+  ],
+
+  "connections": {
+    "Every Day 11PM ET":          { "main": [[{ "node": "Define All 7 Business Configs", "type": "main", "index": 0 }]] },
+    "Define All 7 Business Configs": { "main": [[{ "node": "Loop Over Businesses", "type": "main", "index": 0 }]] },
+    "Loop Over Businesses": {
+      "main": [
+        [{ "node": "Get Latest Unposted Video", "type": "main", "index": 0 }],
+        [{ "node": "Build + Send Daily Summary", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Latest Unposted Video":  { "main": [[{ "node": "Find Unposted Video + Duplicate Check", "type": "main", "index": 0 }]] },
+    "Find Unposted Video + Duplicate Check": { "main": [[{ "node": "Has Unposted Video?", "type": "main", "index": 0 }]] },
+    "Has Unposted Video?": {
+      "main": [
+        [{ "node": "Generate Viral Content", "type": "main", "index": 0 }],
+        [{ "node": "WhatsApp: No Video Alert", "type": "main", "index": 0 }]
+      ]
+    },
+    "WhatsApp: No Video Alert":   { "main": [[{ "node": "Collect Result", "type": "main", "index": 0 }]] },
+    "Generate Viral Content":     { "main": [[{ "node": "Build Post Data", "type": "main", "index": 0 }]] },
+    "Build Post Data":            { "main": [[{ "node": "Download Video from Drive", "type": "main", "index": 0 }]] },
+    "Download Video from Drive":  { "main": [[{ "node": "Upload to Cloudinary (Permanent)", "type": "main", "index": 0 }]] },
+    "Upload to Cloudinary (Permanent)": { "main": [[{ "node": "Validate Upload + Build Odoo Auth", "type": "main", "index": 0 }]] },
+    "Validate Upload + Build Odoo Auth": { "main": [[{ "node": "Odoo: Authenticate", "type": "main", "index": 0 }]] },
+    "Odoo: Authenticate":         { "main": [[{ "node": "Extract + Validate Odoo Session", "type": "main", "index": 0 }]] },
+    "Extract + Validate Odoo Session": { "main": [[{ "node": "Odoo: Get Social Accounts", "type": "main", "index": 0 }]] },
+    "Odoo: Get Social Accounts":  { "main": [[{ "node": "Resolve + Validate Accounts (Strict)", "type": "main", "index": 0 }]] },
+    "Resolve + Validate Accounts (Strict)": { "main": [[{ "node": "Build Odoo Post Request", "type": "main", "index": 0 }]] },
+    "Build Odoo Post Request":    { "main": [[{ "node": "Odoo: Create Social Post", "type": "main", "index": 0 }]] },
+    "Odoo: Create Social Post":   { "main": [[{ "node": "Extract Post ID", "type": "main", "index": 0 }]] },
+    "Extract Post ID":            { "main": [[{ "node": "Odoo: Publish Post", "type": "main", "index": 0 }]] },
+    "Odoo: Publish Post":         { "main": [[{ "node": "Odoo: Read Post Status", "type": "main", "index": 0 }]] },
+    "Odoo: Read Post Status":     { "main": [[{ "node": "Validate Publish + Mark as Posted", "type": "main", "index": 0 }]] },
+    "Validate Publish + Mark as Posted": { "main": [[{ "node": "Google Drive: Move to POSTED Folder", "type": "main", "index": 0 }]] },
+    "Google Drive: Move to POSTED Folder": { "main": [[{ "node": "Collect Result", "type": "main", "index": 0 }]] },
+    "Collect Result":             { "main": [[{ "node": "Loop Over Businesses", "type": "main", "index": 0 }]] },
+    "Build + Send Daily Summary": { "main": [[{ "node": "WhatsApp: Daily Summary to Sachin", "type": "main", "index": 0 }]] }
+  },
+
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "MASTER_error_alert"
+  },
+
+  "meta": {
+    "description": "One workflow handles all 7 Country Cove businesses. Runs daily at 11PM ET. Gets video from Drive, generates AI caption, uploads to Cloudinary (permanent URL), posts via Odoo Social Marketing. Tracks posted files to prevent duplicates. Sends WhatsApp summary to Sachin after each run."
+  }
+}

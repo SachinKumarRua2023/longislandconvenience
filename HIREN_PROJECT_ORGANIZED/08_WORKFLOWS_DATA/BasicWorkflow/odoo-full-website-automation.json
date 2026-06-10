@@ -1,0 +1,295 @@
+{
+  "name": "Odoo Full Website Builder — Any Category",
+  "nodes": [
+
+    {
+      "id": "webhook_trigger",
+      "name": "Webhook: Build Website Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [120, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "build-website",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "build-website-trigger"
+    },
+
+    {
+      "id": "validate_input",
+      "name": "Validate & Normalize Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [380, 300],
+      "parameters": {
+        "jsCode": "// Expected POST body:\n// {\n//   site_id: 41,\n//   category: 'agency' | 'ecommerce' | 'tech' | 'local_business' | 'restaurant' | 'nonprofit',\n//   name: 'JHD Advisor',\n//   domain: 'https://www.jhdadvisor.com',\n//   phone: '+1 (917) 338-7086',\n//   email: 'info@jhdadvisor.com',\n//   location: 'Long Island, NY',\n//   tagline: 'Custom hero headline (optional)',\n//   color1: '#7c3aed (optional)',\n//   color2: '#06b6d4 (optional)'\n// }\n\nconst body = $input.first().json.body || $input.first().json;\n\nconst VALID_CATEGORIES = ['agency','ecommerce','tech','local_business','restaurant','nonprofit'];\n\nif (!body.site_id) throw new Error('site_id is required');\nif (!body.category || !VALID_CATEGORIES.includes(body.category)) {\n  throw new Error(`category must be one of: ${VALID_CATEGORIES.join(', ')}`);\n}\nif (!body.name) throw new Error('name is required');\n\nconst config = {\n  site_id:  parseInt(body.site_id),\n  category: body.category,\n  name:     body.name,\n  domain:   body.domain || '',\n  phone:    body.phone  || '',\n  email:    body.email  || '',\n  location: body.location || '',\n  tagline:  body.tagline  || '',\n  color1:   body.color1   || '',\n  color2:   body.color2   || '',\n  started_at: new Date().toISOString(),\n};\n\nconsole.log('Build config:', JSON.stringify(config, null, 2));\nreturn [{ json: config }];"
+      }
+    },
+
+    {
+      "id": "ai_content_generator",
+      "name": "AI: Generate Custom Content",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [640, 180],
+      "parameters": {
+        "model": "claude-sonnet-4-6",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an expert website copywriter and business consultant.\n\nGenerate custom website content for this business:\n\nBusiness Name: {{$json.name}}\nCategory: {{$json.category}}\nLocation: {{$json.location}}\nPhone: {{$json.phone}}\nCustom tagline (if provided): {{$json.tagline}}\n\nReturn ONLY valid JSON with this structure:\n{\n  \"hero_headline\": \"compelling 10-15 word headline for the homepage hero\",\n  \"hero_sub\": \"2-3 sentence description of what this business does and why customers should choose them\",\n  \"services\": [\n    {\"icon\": \"3-4 CHAR ABBREV\", \"name\": \"Service Name\", \"desc\": \"One sentence description\"}\n  ],\n  \"blog_topics\": [\n    [\"SEO-optimized blog post title\", \"One sentence subtitle describing the content\"]\n  ],\n  \"cta_headline\": \"Call-to-action section headline\",\n  \"cta_sub\": \"Supporting sentence for the CTA\",\n  \"footer_tagline\": \"Short brand tagline for footer (5-8 words)\"\n}\n\nProvide:\n- 6-8 services specific to this business category and name\n- 5 blog topics that would rank in Google for this business type and location\n- Make all copy specific to the business name and location\n- Hero headline should be powerful and specific, not generic\n- If a custom tagline was provided, use it as the hero_headline\n\nReturn ONLY the JSON object, no markdown, no explanation."
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 2000,
+          "temperature": 0.7
+        }
+      }
+    },
+
+    {
+      "id": "merge_ai_config",
+      "name": "Merge AI Content with Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "parameters": {
+        "jsCode": "const config = $('Validate & Normalize Input').first().json;\nconst aiRaw = $('AI: Generate Custom Content').first().json.text || $('AI: Generate Custom Content').first().json.content || '';\n\nlet aiContent = {};\ntry {\n  // Strip markdown code blocks if present\n  const clean = aiRaw.replace(/```json\\n?/g,'').replace(/```\\n?/g,'').trim();\n  aiContent = JSON.parse(clean);\n} catch(e) {\n  console.warn('AI JSON parse failed, using defaults:', e.message);\n}\n\nconst merged = {\n  ...config,\n  ai_hero_headline: aiContent.hero_headline || '',\n  ai_hero_sub:      aiContent.hero_sub      || '',\n  ai_services:      JSON.stringify(aiContent.services || []),\n  ai_blog_topics:   JSON.stringify(aiContent.blog_topics || []),\n  ai_cta_headline:  aiContent.cta_headline  || '',\n  ai_cta_sub:       aiContent.cta_sub       || '',\n  ai_footer_tagline:aiContent.footer_tagline|| '',\n};\n\nconsole.log('Merged config ready. Services count:', (aiContent.services||[]).length);\nreturn [{ json: merged }];"
+      }
+    },
+
+    {
+      "id": "odoo_set_website",
+      "name": "Odoo: Set Website Name & Domain",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1160, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{"name": "Content-Type", "value": "application/json"}]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "call",
+          "id": 1,
+          "params": {
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+              "country-cove-inc", 2, "M@nhattan1234",
+              "website", "write",
+              [["={{$json.site_id}}"],
+               {"name": "={{$json.name}}", "domain": "={{$json.domain}}"}]
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": "odoo_clear_menus",
+      "name": "Odoo: Get Existing Menus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1160, 340],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{"name": "Content-Type", "value": "application/json"}]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "call",
+          "id": 2,
+          "params": {
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+              "country-cove-inc", 2, "M@nhattan1234",
+              "website.menu", "search",
+              [[["website_id", "=", "={{$json.site_id}}"],
+                ["parent_id", "!=", false]]]
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": "build_homepage_payload",
+      "name": "Build Homepage HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1420, 300],
+      "parameters": {
+        "jsCode": "const cfg = $('Merge AI Content with Config').first().json;\n\n// Template colors per category\nconst COLORS = {\n  agency:         {c1:'#7c3aed', c2:'#06b6d4', dk:'#0a0a1a', lt:'#f7f8fb'},\n  ecommerce:      {c1:'#16a34a', c2:'#f59e0b', dk:'#14532d', lt:'#f0fdf4'},\n  tech:           {c1:'#2563eb', c2:'#7c3aed', dk:'#0f172a', lt:'#f8fafc'},\n  local_business: {c1:'#dc2626', c2:'#f59e0b', dk:'#1c1917', lt:'#fafaf9'},\n  restaurant:     {c1:'#b45309', c2:'#dc2626', dk:'#1c1917', lt:'#fffbeb'},\n  nonprofit:      {c1:'#0891b2', c2:'#f59e0b', dk:'#0c4a6e', lt:'#f0f9ff'},\n};\n\nconst colors  = COLORS[cfg.category] || COLORS.agency;\nconst c1 = cfg.color1 || colors.c1;\nconst c2 = cfg.color2 || colors.c2;\nconst dk = colors.dk;\nconst lt = colors.lt;\n\n// Parse AI services\nlet services = [];\ntry { services = JSON.parse(cfg.ai_services); } catch(e) {}\nif (!services.length) services = [\n  {icon:'SVC1', name:'Our Core Service', desc:'What we do best for our customers.'},\n  {icon:'SVC2', name:'Second Service',   desc:'Another key offering that sets us apart.'},\n  {icon:'SVC3', name:'Third Service',    desc:'How we go above and beyond for clients.'},\n];\n\n// Parse AI blog topics\nlet blogTopics = [];\ntry { blogTopics = JSON.parse(cfg.ai_blog_topics); } catch(e) {}\nif (!blogTopics.length) blogTopics = [\n  ['Key Topic 1 for Your Business in 2026', 'Why this matters for your customers.'],\n  ['Key Topic 2: A Guide for Business Owners', 'Practical steps you can take today.'],\n  ['How to Get the Most From Our Services', 'Tips and insights from our team.'],\n];\n\nconst heroHeadline = cfg.ai_hero_headline || cfg.tagline || `${cfg.name} — here to serve you.`;\nconst heroSub      = cfg.ai_hero_sub      || `${cfg.name} provides exceptional service for clients in ${cfg.location || 'your area'}.`;\nconst ctaHeadline  = cfg.ai_cta_headline  || `Ready to work with ${cfg.name}?`;\nconst ctaSub       = cfg.ai_cta_sub       || `Contact us today to get started.`;\nconst footerTag    = cfg.ai_footer_tagline || `Quality · Reliability · Results`;\n\n// Build service cards HTML\nconst svcCards = services.map(s =>\n  `<div class=\"wb-card\"><div class=\"wb-icon\">${s.icon||'SVC'}</div><h3>${s.name}</h3><p>${s.desc}</p></div>`\n).join('\\n');\n\n// Build blog cards HTML\nconst blogCards = blogTopics.slice(0,3).map(([title, sub]) =>\n  `<a href=\"/blog\" class=\"wb-blog-card\"><span class=\"wb-blog-tag\">Insights</span><h3>${title}</h3><p>${(sub||'').substring(0,120)}...</p></a>`\n).join('\\n');\n\nconst phoneHref = cfg.phone ? 'tel:' + cfg.phone.replace(/[^+\\d]/g,'') : '/contact';\nconst year = new Date().getFullYear();\n\nconst html = `<data><xpath expr=\"//div[@id='wrap']\" position=\"replace\">\n<div id=\"wrap\" class=\"oe_structure\">\n<style>\n:root{--c1:${c1};--c2:${c2};--dk:${dk};--lt:${lt};--ink:#111827;--muted:#5b6472;}\n*{box-sizing:border-box;margin:0;padding:0;}\nbody{font-family:Inter,system-ui,sans-serif;}\n.wb-hero{min-height:88vh;display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,.9fr);\ngap:40px;align-items:center;padding:90px 7vw;\nbackground:radial-gradient(circle at 70% 20%,color-mix(in srgb,${c1} 30%,transparent),transparent 40%),linear-gradient(140deg,${dk},color-mix(in srgb,${c1} 20%,#000) 55%,color-mix(in srgb,${c2} 15%,#000));\ncolor:#fff;}\n.wb-eyebrow{color:${c2};font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:900;margin-bottom:16px;}\n.wb-hero h1{font-size:clamp(32px,5vw,66px);line-height:1.04;font-weight:900;letter-spacing:-1px;margin-bottom:20px;}\n.wb-hero p{font-size:17px;line-height:1.8;color:rgba(255,255,255,.78);margin-bottom:28px;}\n.wb-actions{display:flex;gap:14px;flex-wrap:wrap;}\n.wb-btn{display:inline-flex;align-items:center;justify-content:center;padding:15px 28px;border-radius:10px;text-decoration:none;font-weight:900;font-size:15px;transition:all .22s;}\n.wb-primary{background:#fff;color:${dk};}\n.wb-secondary{border:1.5px solid rgba(255,255,255,.35);color:#fff;}\n.wb-panel{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);backdrop-filter:blur(18px);border-radius:16px;padding:28px;}\n.wb-panel-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.09);padding:16px 0;gap:16px;}\n.wb-panel-row:last-child{border-bottom:0;padding-bottom:0;}\n.wb-panel b{font-size:26px;color:${c2};font-weight:900;}\n.wb-panel span{color:rgba(255,255,255,.68);font-size:13px;line-height:1.4;}\n.wb-section{padding:84px 7vw;background:#fff;}\n.wb-section h2{font-size:clamp(26px,3.8vw,48px);line-height:1.06;margin-bottom:12px;color:var(--ink);font-weight:900;}\n.wb-section>p{color:var(--muted);font-size:17px;line-height:1.7;max-width:740px;margin-bottom:40px;}\n.wb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px;}\n.wb-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px;min-height:190px;box-shadow:0 4px 18px rgba(17,24,39,.06);transition:all .25s;}\n.wb-card:hover{transform:translateY(-5px);box-shadow:0 18px 48px rgba(0,0,0,.12);}\n.wb-icon{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,${c1},${c2});color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;flex-shrink:0;}\n.wb-card h3{font-size:17px;color:var(--ink);font-weight:800;}\n.wb-card p{font-size:13px;line-height:1.6;color:var(--muted);flex:1;}\n.wb-stats{padding:70px 7vw;background:linear-gradient(135deg,${dk},color-mix(in srgb,${c1} 40%,#000));color:#fff;}\n.wb-stats-label{font-size:11px;text-transform:uppercase;letter-spacing:3px;color:${c2};font-weight:900;margin-bottom:28px;}\n.wb-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}\n.wb-stat{text-align:center;padding:28px 16px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.05);}\n.wb-stat b{display:block;font-size:clamp(32px,5vw,50px);font-weight:900;background:linear-gradient(135deg,${c2},#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}\n.wb-stat span{color:rgba(255,255,255,.62);font-size:13px;margin-top:6px;display:block;}\n.wb-blog{padding:80px 7vw;background:${lt};}\n.wb-blog h2{font-size:clamp(24px,3.5vw,44px);color:var(--ink);font-weight:900;margin-bottom:10px;}\n.wb-blog>p{color:var(--muted);font-size:16px;margin-bottom:36px;}\n.wb-blog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}\n.wb-blog-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px;text-decoration:none;color:var(--ink);display:block;box-shadow:0 4px 18px rgba(17,24,39,.06);transition:all .25s;}\n.wb-blog-card:hover{transform:translateY(-4px);}\n.wb-blog-tag{font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:${c1};margin-bottom:10px;display:block;}\n.wb-blog-card h3{font-size:15px;font-weight:800;line-height:1.4;}\n.wb-blog-card p{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5;}\n.wb-cta{padding:80px 7vw;text-align:center;color:#fff;background:linear-gradient(135deg,color-mix(in srgb,${c1} 80%,#000),${dk},color-mix(in srgb,${c2} 30%,#000));}\n.wb-cta h2{font-size:clamp(26px,4vw,50px);font-weight:900;margin-bottom:14px;}\n.wb-cta p{color:rgba(255,255,255,.72);font-size:17px;margin-bottom:30px;}\n.wb-footer{background:${dk};color:rgba(255,255,255,.65);padding:60px 7vw 28px;}\n.wb-footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;margin-bottom:44px;}\n.wb-footer h4{color:#fff;font-size:14px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;}\n.wb-footer p{font-size:13px;line-height:1.7;}\n.wb-footer a{color:rgba(255,255,255,.55);text-decoration:none;display:block;font-size:13px;margin-bottom:8px;}\n.wb-footer a:hover{color:${c2};}\n.wb-footer-bar{border-top:1px solid rgba(255,255,255,.1);padding-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:12px;}\n@media(max-width:1100px){.wb-hero,.wb-footer-grid{grid-template-columns:1fr;}.wb-stats-grid{grid-template-columns:repeat(2,1fr);}.wb-blog-grid{grid-template-columns:repeat(2,1fr);}}\n@media(max-width:680px){.wb-grid,.wb-blog-grid,.wb-stats-grid{grid-template-columns:1fr;}.wb-hero,.wb-section,.wb-stats,.wb-blog,.wb-cta,.wb-footer{padding-left:5vw;padding-right:5vw;}}\n</style>\n\n<section class=\"wb-hero\">\n  <div>\n    <p class=\"wb-eyebrow\">${cfg.name} · ${cfg.location || 'Serving You'}</p>\n    <h1>${heroHeadline}</h1>\n    <p>${heroSub}</p>\n    <div class=\"wb-actions\">\n      <a class=\"wb-btn wb-primary\" href=\"/contact\">Get Started</a>\n      <a class=\"wb-btn wb-secondary\" href=\"/services\">Learn More</a>\n    </div>\n  </div>\n  <div class=\"wb-panel\">\n    <div class=\"wb-panel-row\"><b>100%</b><span>Committed to your success</span></div>\n    <div class=\"wb-panel-row\"><b>24/7</b><span>Support when you need it</span></div>\n    <div class=\"wb-panel-row\"><b>Fast</b><span>Quick turnaround, every time</span></div>\n    <div class=\"wb-panel-row\"><b>Best</b><span>Trusted by local businesses</span></div>\n  </div>\n</section>\n\n<section class=\"wb-section\" id=\"services\">\n  <p class=\"wb-eyebrow\">What We Offer</p>\n  <h2>Services built for your success.</h2>\n  <p>Everything your business needs — delivered with expertise, speed and accountability.</p>\n  <div class=\"wb-grid\">${svcCards}</div>\n</section>\n\n<section class=\"wb-stats\">\n  <p class=\"wb-stats-label\">By The Numbers</p>\n  <div class=\"wb-stats-grid\">\n    <div class=\"wb-stat\"><b>100%</b><span>Customer satisfaction goal</span></div>\n    <div class=\"wb-stat\"><b>Fast</b><span>Response time</span></div>\n    <div class=\"wb-stat\"><b>5★</b><span>Quality standard</span></div>\n    <div class=\"wb-stat\"><b>Now</b><span>Ready to help you</span></div>\n  </div>\n</section>\n\n<section class=\"wb-blog\">\n  <p class=\"wb-eyebrow\">Blog &amp; Insights</p>\n  <h2>Fresh content for your industry.</h2>\n  <p>Stay ahead with expert guides, tips and news from the ${cfg.name} team.</p>\n  <div class=\"wb-blog-grid\">${blogCards}</div>\n  <div style=\"text-align:center;margin-top:32px;\">\n    <a href=\"/blog\" class=\"wb-btn wb-primary\" style=\"background:${c1};color:#fff;display:inline-flex;\">Read All Posts →</a>\n  </div>\n</section>\n\n<section class=\"wb-cta\">\n  <h2>${ctaHeadline}</h2>\n  <p>${ctaSub}</p>\n  <div class=\"wb-actions\" style=\"justify-content:center;\">\n    ${cfg.phone ? `<a class=\"wb-btn wb-primary\" href=\"${phoneHref}\">${cfg.phone}</a>` : ''}\n    <a class=\"wb-btn wb-secondary\" href=\"/contact\">Send a Message</a>\n  </div>\n</section>\n\n<footer class=\"wb-footer\">\n  <div class=\"wb-footer-grid\">\n    <div>\n      <h4>${cfg.name}</h4>\n      <p>${footerTag}</p>\n      ${cfg.location ? `<p style=\"margin-top:12px;\">${cfg.location}</p>` : ''}\n      ${cfg.phone ? `<p style=\"margin-top:8px;\"><a href=\"${phoneHref}\">${cfg.phone}</a></p>` : ''}\n      ${cfg.email ? `<p><a href=\"mailto:${cfg.email}\">${cfg.email}</a></p>` : ''}\n    </div>\n    <div>\n      <h4>Quick Links</h4>\n      <a href=\"/\">Home</a>\n      <a href=\"/services\">Services</a>\n      <a href=\"/blog\">Blog</a>\n      <a href=\"/about\">About</a>\n      <a href=\"/contact\">Contact</a>\n    </div>\n    <div>\n      <h4>Contact Us</h4>\n      ${cfg.location ? `<p>${cfg.location}</p>` : ''}\n      ${cfg.phone ? `<a href=\"${phoneHref}\">${cfg.phone}</a>` : ''}\n      ${cfg.email ? `<a href=\"mailto:${cfg.email}\">${cfg.email}</a>` : ''}\n      <p style=\"margin-top:12px;font-size:12px;color:rgba(255,255,255,.4);\">Mon–Fri 9 AM–6 PM</p>\n    </div>\n  </div>\n  <div class=\"wb-footer-bar\">\n    <span>&copy; ${year} ${cfg.name}. All rights reserved.</span>\n    <span style=\"color:rgba(255,255,255,.35);\">Built on Odoo &middot; AI-Powered</span>\n  </div>\n</footer>\n\n</div></xpath></data>`;\n\nreturn [{ json: { ...cfg, homepage_html: html, blog_topics_parsed: blogTopics } }];"
+      }
+    },
+
+    {
+      "id": "odoo_write_homepage",
+      "name": "Odoo: Write Homepage View",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1680, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{"name": "Content-Type", "value": "application/json"}]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "call",
+          "id": 3,
+          "params": {
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+              "country-cove-inc", 2, "M@nhattan1234",
+              "ir.ui.view", "search_read",
+              [[["key", "=", "website.homepage"], ["website_id", "=", false]]],
+              {"fields": ["id"], "limit": 1}
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": "odoo_create_blog",
+      "name": "Odoo: Create Blog",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1680, 340],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{"name": "Content-Type", "value": "application/json"}]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "call",
+          "id": 4,
+          "params": {
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+              "country-cove-inc", 2, "M@nhattan1234",
+              "blog.blog", "create",
+              [{"name": "={{$('Build Homepage HTML').first().json.name}} Blog",
+                "website_id": "={{$('Build Homepage HTML').first().json.site_id}}"}]
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": "create_blog_posts_loop",
+      "name": "Create Blog Posts (Code Loop)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1940, 300],
+      "parameters": {
+        "jsCode": "const cfg       = $('Build Homepage HTML').first().json;\nconst blogId    = $('Odoo: Create Blog').first().json.result;\nconst blogTopics = cfg.blog_topics_parsed || [];\n\nconst ODOO = 'https://country-cove-inc.odoo.com';\nconst DB='country-cove-inc', UID=2, PASS='M@nhattan1234';\nconst AUTHORS = ['James Whitfield','Sarah Monroe','Daniel Hargrove','Emily Thornton','Michael Ashworth'];\n\nconst SAFE_COVER = JSON.stringify({\n  'background-image':'none',\n  'background_color_class':'o_cc3',\n  'opacity':'0.2',\n  'resize_class':''\n});\n\nlet rpcId = 100;\nasync function rpc(model, method, args, kw={}) {\n  const r = await fetch(`${ODOO}/jsonrpc`, {\n    method: 'POST',\n    headers: {'Content-Type':'application/json'},\n    body: JSON.stringify({\n      jsonrpc:'2.0', method:'call', id: ++rpcId,\n      params: { service:'object', method:'execute_kw',\n        args:[DB, UID, PASS, model, method, args, kw] }\n    })\n  });\n  const d = await r.json();\n  if (d.error) throw new Error(d.error.data?.message || 'RPC error');\n  return d.result;\n}\n\nconst results = [];\nfor (let i = 0; i < blogTopics.length; i++) {\n  const [title, subtitle] = blogTopics[i];\n  const author = AUTHORS[i % AUTHORS.length];\n\n  // Get or create partner\n  let partnerRows = await rpc('res.partner','search_read',\n    [[['name','=',author],['is_company','=',false]]],{fields:['id'],limit:1});\n  let partnerId = partnerRows[0]?.id || await rpc('res.partner','create',[{name:author,is_company:false}]);\n\n  const content = `<article style=\"font-family:Inter,system-ui,sans-serif;line-height:1.8;color:#1f2937;max-width:820px;\">\n<p style=\"font-size:18px;font-weight:600;color:#374151;\">${subtitle}</p>\n<h2 style=\"font-size:26px;margin:32px 0 12px;font-weight:900;\">Why This Matters in 2026</h2>\n<p>The business landscape is evolving faster than ever. Companies that invest in the right strategies\nand systems consistently outperform those relying on outdated approaches. This guide gives you\na practical roadmap to stay ahead.</p>\n<h2 style=\"font-size:26px;margin:32px 0 12px;font-weight:900;\">Key Action Steps</h2>\n<ol style=\"padding-left:24px;margin:0 0 16px;\">\n  <li><strong>Audit your current approach</strong> — identify what is working and what needs improvement</li>\n  <li><strong>Set clear, measurable goals</strong> — know what success looks like before you start</li>\n  <li><strong>Take targeted action</strong> — focus on high-impact changes first</li>\n  <li><strong>Measure and adjust</strong> — track results and refine your approach weekly</li>\n  <li><strong>Scale what works</strong> — double down on proven strategies</li>\n</ol>\n<h2 style=\"font-size:26px;margin:32px 0 12px;font-weight:900;\">Frequently Asked Questions</h2>\n<h3 style=\"font-size:18px;margin:20px 0 6px;font-weight:800;\">How quickly will I see results?</h3>\n<p>Most clients see measurable improvement within 30 days of consistent implementation.</p>\n<h3 style=\"font-size:18px;margin:20px 0 6px;font-weight:800;\">Do I need special expertise?</h3>\n<p>No. We guide you through every step. Our team handles the complexity so you can focus on your business.</p>\n<div style=\"background:linear-gradient(135deg,${cfg.color1||'#7c3aed'},${cfg.color2||'#06b6d4'});border-radius:16px;padding:36px;margin:40px 0;color:#fff;text-align:center;\">\n  <h3 style=\"margin:0 0 10px;font-size:22px;font-weight:900;\">Ready to get started?</h3>\n  <p style=\"margin:0 0 22px;opacity:.9;\">${cfg.name} is here to help. Contact us today.</p>\n  <a href=\"/contact\" style=\"display:inline-block;background:#fff;color:${cfg.color1||'#7c3aed'};font-weight:900;font-size:15px;padding:14px 28px;border-radius:10px;text-decoration:none;\">Contact Us</a>\n</div>\n</article>`;\n\n  const postId = await rpc('blog.post','create',[{\n    blog_id: blogId,\n    website_id: cfg.site_id,\n    name: title,\n    subtitle: subtitle,\n    content: content,\n    author_id: partnerId,\n    website_meta_title: title.substring(0,60),\n    website_meta_description: subtitle.substring(0,155),\n    website_published: true,\n    is_published: true,\n    cover_properties: SAFE_COVER,\n  }]);\n\n  results.push({ title, author, post_id: postId });\n}\n\nreturn [{ json: { ...cfg, blog_id: blogId, posts_created: results } }];"
+      }
+    },
+
+    {
+      "id": "notify_complete",
+      "name": "Email: Website Build Complete",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2200, 300],
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "kahpk1933@gmail.com",
+        "subject": "=Website build complete: {{$json.name}} ({{$json.category}})",
+        "message": "=<h2>Website Build Complete</h2>\n<p><strong>Site ID:</strong> {{$json.site_id}}<br>\n<strong>Business:</strong> {{$json.name}}<br>\n<strong>Category:</strong> {{$json.category}}<br>\n<strong>Domain:</strong> {{$json.domain}}<br>\n<strong>Blog posts created:</strong> {{$json.posts_created.length}}</p>\n<h3>Posts Created:</h3>\n<ul>\n{{#each posts_created}}<li><strong>{{title}}</strong> — by {{author}} (ID: {{post_id}})</li>{{/each}}\n</ul>\n<p><a href=\"{{$json.domain}}\">Visit the website →</a></p>",
+        "options": { "appendAttribution": false }
+      }
+    },
+
+    {
+      "id": "respond_success",
+      "name": "Respond: Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2200, 160],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"success\", \"site_id\": {{$('Create Blog Posts (Code Loop)').first().json.site_id}}, \"name\": \"{{$('Create Blog Posts (Code Loop)').first().json.name}}\", \"domain\": \"{{$('Create Blog Posts (Code Loop)').first().json.domain}}\", \"blog_id\": {{$('Create Blog Posts (Code Loop)').first().json.blog_id}}, \"posts_created\": {{$('Create Blog Posts (Code Loop)').first().json.posts_created.length}} }",
+        "options": { "responseCode": 200 }
+      }
+    }
+
+  ],
+
+  "connections": {
+    "Webhook: Build Website Request": {
+      "main": [[{"node": "Validate & Normalize Input", "type": "main", "index": 0}]]
+    },
+    "Validate & Normalize Input": {
+      "main": [[
+        {"node": "AI: Generate Custom Content", "type": "main", "index": 0},
+        {"node": "Merge AI Content with Config", "type": "main", "index": 0}
+      ]]
+    },
+    "AI: Generate Custom Content": {
+      "main": [[{"node": "Merge AI Content with Config", "type": "main", "index": 0}]]
+    },
+    "Merge AI Content with Config": {
+      "main": [[
+        {"node": "Odoo: Set Website Name & Domain", "type": "main", "index": 0},
+        {"node": "Odoo: Get Existing Menus", "type": "main", "index": 0},
+        {"node": "Build Homepage HTML", "type": "main", "index": 0}
+      ]]
+    },
+    "Build Homepage HTML": {
+      "main": [[
+        {"node": "Odoo: Write Homepage View", "type": "main", "index": 0},
+        {"node": "Odoo: Create Blog", "type": "main", "index": 0}
+      ]]
+    },
+    "Odoo: Write Homepage View": {
+      "main": [[{"node": "Create Blog Posts (Code Loop)", "type": "main", "index": 0}]]
+    },
+    "Odoo: Create Blog": {
+      "main": [[{"node": "Create Blog Posts (Code Loop)", "type": "main", "index": 0}]]
+    },
+    "Create Blog Posts (Code Loop)": {
+      "main": [[
+        {"node": "Email: Website Build Complete", "type": "main", "index": 0},
+        {"node": "Respond: Success", "type": "main", "index": 0}
+      ]]
+    }
+  },
+
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Calcutta",
+    "errorWorkflow": ""
+  },
+  "active": false,
+  "tags": ["Website Builder", "Odoo", "AI", "Automation", "Full-Stack"]
+}

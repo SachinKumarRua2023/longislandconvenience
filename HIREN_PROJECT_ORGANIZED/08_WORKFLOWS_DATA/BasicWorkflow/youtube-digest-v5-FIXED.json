@@ -1,0 +1,340 @@
+{
+  "name": "JHD AI Daily Digest — v5 FIXED (Direct YouTube Feed, No API Key Needed)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 12 * * *"
+            }
+          ]
+        }
+      },
+      "id": "60709112-7972-46d9-b2d3-7dfda1baddf5",
+      "name": "Schedule: Daily 8AM ET",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-1104, 144]
+    },
+    {
+      "parameters": {
+        "jsCode": "const channels = [\n  { id: 'UCsBjURrPoezykLs9EqgamOA', name: 'Fireship',       cat: 'Tech/Dev' },\n  { id: 'UCHlNU7kIZhRgSbhHvFoy72w', name: 'Hugging Face',   cat: 'AI Tools' },\n  { id: 'UCbfYPyITQ-7l4upoX8nvctg', name: 'Two Min Papers', cat: 'AI Research' },\n  { id: 'UCNJ1Ymd5yFuUPtn21xtRbbw', name: 'AI Explained',   cat: 'AI News' },\n  { id: 'UCSHZKyawb77ixDdsGog4iWA', name: 'Lex Fridman',    cat: 'Tech/AI/Biz' },\n  { id: 'UCxIJaCMEptJjxmmQgGFsnCg', name: 'Y Combinator',   cat: 'Startup' },\n  { id: 'UCnxrdFPXJMeHru_b4Q_vTPQ', name: 'NetworkChuck',   cat: 'Networking' },\n  { id: 'UCZHmQk67mSJgfCCTn7xBfew', name: 'Yannic Kilcher', cat: 'AI/ML' },\n  { id: 'UCBJycsmduvYEL83R_U4JriQ', name: 'MKBHD',          cat: 'Tech Reviews' },\n  { id: 'UC9-y-6csu5WGm29I7JiwpnA', name: 'Computerphile',  cat: 'CS/Tech' },\n  { id: 'UCCjyq_K1Xwfg8Lndy7lKMpA', name: 'TechCrunch',     cat: 'Tech News' },\n  { id: 'UCESLZhusAkFfsNsApnjF_Cg', name: 'All-In Podcast', cat: 'B2B/Startup' }\n];\nconst CLAUDE_KEY   = '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';\nconst CLAUDE_MODEL = 'claude-sonnet-4-6';\nconst DIGEST_EMAIL = 'countrycoveinc@gmail.com';\nconst cutoff = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();\nconst today  = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'America/New_York' });\nconsole.log('[Config] ' + channels.length + ' channels | cutoff: ' + cutoff);\nreturn [{ json: { channels, CLAUDE_KEY, CLAUDE_MODEL, DIGEST_EMAIL, cutoff, today } }];"
+      },
+      "id": "34ec9769-6984-4cbc-ac85-2a537ec7523e",
+      "name": "Config: Channels + Settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-880, 144]
+    },
+    {
+      "parameters": {
+        "url": "https://techcrunch.com/feed/",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "12113c65-f53b-4b6f-ba24-a92d77d64efd",
+      "name": "HTTP: TechCrunch RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-656, 144],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIX v5: Use direct YouTube Atom feed URLs — no rss2json, no API key, always works\nconst cfg = $('Config: Channels + Settings').item.json;\n\n// Get TechCrunch XML\nlet tcXml = '';\ntry {\n  const raw = $input.item.json;\n  tcXml = (typeof raw === 'string') ? raw : (raw.data || raw.body || '');\n} catch(e) { tcXml = ''; }\n\n// Parse TechCrunch RSS 2.0\nfunction parseTCItems(xml) {\n  const items = [];\n  let pos = 0;\n  while (items.length < 12) {\n    const s = xml.indexOf('<item>', pos);\n    if (s < 0) break;\n    const e = xml.indexOf('</item>', s);\n    if (e < 0) break;\n    const b = xml.slice(s + 6, e);\n    pos = e + 7;\n    const ts = b.indexOf('<title>'), te = b.indexOf('</title>');\n    let title = (ts >= 0 && te >= 0) ? b.slice(ts + 7, te) : '';\n    const cs = title.indexOf('<![CDATA['), ce = title.indexOf(']]>');\n    if (cs >= 0 && ce > cs) title = title.slice(cs + 9, ce);\n    title = title.replace(/<[^>]+>/g, '').trim();\n    if (!title || title.length < 4) continue;\n    const ls = b.indexOf('<link>'), le = b.indexOf('</link>');\n    const link = (ls >= 0 && le >= 0) ? b.slice(ls + 6, le).trim() : '';\n    const ds = b.indexOf('<description>'), de = b.indexOf('</description>');\n    let desc = '';\n    if (ds >= 0 && de >= 0) {\n      desc = b.slice(ds + 13, de);\n      const dc = desc.indexOf('<![CDATA['), dd = desc.indexOf(']]>');\n      if (dc >= 0 && dd > dc) desc = desc.slice(dc + 9, dd);\n      desc = desc.replace(/<[^>]+>/g,'').trim().slice(0, 250);\n    }\n    items.push({ source: 'TechCrunch', category: 'Trending', title, url: link, description: desc });\n  }\n  return items;\n}\n\nconst trendingItems = parseTCItems(tcXml);\nconsole.log('[Trending] ' + trendingItems.length + ' items parsed from TechCrunch');\n\n// FIX: Use direct YouTube Atom feed URL — no rss2json, no API key required\n// YouTube public feeds are always available and return last 15 videos as Atom XML\nreturn cfg.channels.map(function(ch) {\n  return {\n    json: {\n      channelId:    ch.id,\n      channelName:  ch.name,\n      channelCat:   ch.cat,\n      r2jUrl:       'https://www.youtube.com/feeds/videos.xml?channel_id=' + ch.id,\n      cutoff:       cfg.cutoff,\n      today:        cfg.today,\n      CLAUDE_KEY:   cfg.CLAUDE_KEY,\n      CLAUDE_MODEL: cfg.CLAUDE_MODEL,\n      DIGEST_EMAIL: cfg.DIGEST_EMAIL,\n      trendingItems: trendingItems\n    }\n  };\n});"
+      },
+      "id": "91943087-3a26-46c3-afdf-128871d6bf24",
+      "name": "Code: Parse Trending + Prep Channels",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-448, 144]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "f0735bcd-a233-40eb-84e2-11bb2ce392ca",
+      "name": "Split: One Channel at a Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-224, 144]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.r2jUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 20000
+        }
+      },
+      "id": "f44d13a1-94c2-42e0-84c7-1c352d65c1ef",
+      "name": "HTTP: YouTube Feed Per Channel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIX v5: Parse YouTube Atom XML directly (no rss2json dependency)\n// YouTube feeds are Atom format, not RSS — uses <entry> not <item>\nlet chInfo = {};\ntry { chInfo = $('Split: One Channel at a Time').item.json || {}; } catch(e) {}\n\nconst chName        = chInfo.channelName || 'Unknown';\nconst chCat         = chInfo.channelCat  || 'General';\nconst cutoff        = new Date(chInfo.cutoff || (Date.now() - 7 * 24 * 3600 * 1000));\nconst trendingItems = Array.isArray(chInfo.trendingItems) ? chInfo.trendingItems : [];\nconst meta = {\n  today:        chInfo.today,\n  CLAUDE_KEY:   chInfo.CLAUDE_KEY,\n  CLAUDE_MODEL: chInfo.CLAUDE_MODEL,\n  DIGEST_EMAIL: chInfo.DIGEST_EMAIL\n};\n\nconst EMPTY = [{ json: Object.assign({ channelName: chName, category: chCat, videos: [], trendingItems }, meta) }];\n\n// Extract raw XML from n8n HTTP text response\nlet xml = '';\ntry {\n  const raw = $input.item.json;\n  if (typeof raw === 'string')          xml = raw;\n  else if (raw && typeof raw.data   === 'string') xml = raw.data;\n  else if (raw && typeof raw.body   === 'string') xml = raw.body;\n  else xml = '';\n} catch(e) {\n  console.log('[' + chName + '] Input read error: ' + e.message);\n  return EMPTY;\n}\n\nconsole.log('[' + chName + '] XML response length: ' + xml.length);\nif (xml.length < 100) {\n  console.log('[' + chName + '] Response too short or empty — skipping');\n  return EMPTY;\n}\n\n// Check for error response (YouTube returns HTML error pages on bad channel IDs)\nif (xml.indexOf('<entry>') < 0) {\n  console.log('[' + chName + '] No <entry> tags found in response — channel may have no videos or ID is wrong');\n  return EMPTY;\n}\n\n// Parse YouTube Atom feed <entry> blocks\n// YouTube Atom structure:\n//   <yt:videoId>VIDEO_ID</yt:videoId>\n//   <title>TITLE</title>\n//   <published>ISO_DATE</published>\n//   <media:description>DESC</media:description>\n//   <media:thumbnail url=\"URL\" />\n//   <media:statistics views=\"COUNT\" />\nfunction parseAtomEntries(xml) {\n  var entries = [];\n  var pos = 0;\n  while (true) {\n    var s = xml.indexOf('<entry>', pos);\n    if (s < 0) break;\n    var e = xml.indexOf('</entry>', s);\n    if (e < 0) break;\n    var block = xml.slice(s + 7, e);\n    pos = e + 8;\n\n    // Video ID\n    var vidS = block.indexOf('<yt:videoId>');\n    var vidE = block.indexOf('</yt:videoId>');\n    var videoId = (vidS >= 0 && vidE > vidS) ? block.slice(vidS + 12, vidE).trim() : null;\n    if (!videoId || videoId.length !== 11) continue;\n\n    // Title\n    var tS = block.indexOf('<title>'), tE = block.indexOf('</title>');\n    var title = (tS >= 0 && tE > tS) ? block.slice(tS + 7, tE) : '';\n    title = title.replace(/<\\!\\[CDATA\\[/g, '').replace(/\\]\\]>/g, '').replace(/<[^>]+>/g, '').trim();\n    if (!title) continue;\n\n    // Published date\n    var pS = block.indexOf('<published>'), pE = block.indexOf('</published>');\n    var published = (pS >= 0 && pE > pS) ? block.slice(pS + 11, pE).trim() : '';\n\n    // Description from <media:description>\n    var dS = block.indexOf('<media:description>'), dE = block.indexOf('</media:description>');\n    var description = '';\n    if (dS >= 0 && dE > dS) {\n      description = block.slice(dS + 19, dE);\n      var cdS = description.indexOf('<![CDATA['), cdE = description.indexOf(']]>');\n      if (cdS >= 0 && cdE > cdS) description = description.slice(cdS + 9, cdE);\n      description = description.replace(/<[^>]+>/g, '').trim().slice(0, 500);\n    }\n\n    // Thumbnail — prefer <media:thumbnail url=\"...\"> attribute\n    var thS = block.indexOf('<media:thumbnail url=\"');\n    var thumbnail = 'https://i.ytimg.com/vi/' + videoId + '/hqdefault.jpg';\n    if (thS >= 0) {\n      var thE = block.indexOf('\"', thS + 22);\n      if (thE > thS + 22) thumbnail = block.slice(thS + 22, thE);\n    }\n\n    // View count from <media:statistics views=\"...\">\n    var vsS = block.indexOf('<media:statistics views=\"');\n    var views = 0;\n    if (vsS >= 0) {\n      var vsE = block.indexOf('\"', vsS + 25);\n      if (vsE > vsS + 25) views = parseInt(block.slice(vsS + 25, vsE)) || 0;\n    }\n\n    entries.push({ videoId: videoId, title: title, published: published, description: description, thumbnail: thumbnail, views: views });\n  }\n  return entries;\n}\n\nvar rawEntries = parseAtomEntries(xml);\nconsole.log('[' + chName + '] Parsed ' + rawEntries.length + ' entries from Atom feed');\n\nvar videos = [];\nfor (var i = 0; i < rawEntries.length; i++) {\n  var entry = rawEntries[i];\n  // Apply 7-day cutoff filter\n  if (entry.published) {\n    var pubDate = new Date(entry.published);\n    if (!isNaN(pubDate.getTime()) && pubDate < cutoff) continue;\n  }\n  videos.push({\n    videoId:     entry.videoId,\n    title:       entry.title,\n    url:         'https://www.youtube.com/watch?v=' + entry.videoId,\n    published:   entry.published,\n    description: entry.description,\n    thumbnail:   entry.thumbnail,\n    views:       entry.views,\n    channel:     chName,\n    category:    chCat\n  });\n}\n\nconsole.log('[' + chName + '] ' + videos.length + ' videos within 7-day window');\nreturn [{ json: Object.assign({ channelName: chName, category: chCat, videos: videos, trendingItems: trendingItems }, meta) }];"
+      },
+      "id": "51f8639c-6d9c-4709-b729-d37f8ab9e198",
+      "name": "Code: Parse Channel Videos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 0]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "allChannels",
+        "options": {}
+      },
+      "id": "ce573ee9-4b15-411a-a89a-cfeaf8b87ebb",
+      "name": "Aggregate: All Channels",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [0, 272]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allChannels = $input.item.json.allChannels || [];\n\nlet allVideos = [], trendingItems = [];\nlet today = '', CLAUDE_KEY = '', CLAUDE_MODEL = '', DIGEST_EMAIL = '';\n\nfor (var i = 0; i < allChannels.length; i++) {\n  const ch = allChannels[i];\n  if (Array.isArray(ch.videos) && ch.videos.length > 0) allVideos = allVideos.concat(ch.videos);\n  if (Array.isArray(ch.trendingItems) && ch.trendingItems.length > trendingItems.length) trendingItems = ch.trendingItems;\n  if (ch.today)        today        = ch.today;\n  if (ch.CLAUDE_KEY)   CLAUDE_KEY   = ch.CLAUDE_KEY;\n  if (ch.CLAUDE_MODEL) CLAUDE_MODEL = ch.CLAUDE_MODEL;\n  if (ch.DIGEST_EMAIL) DIGEST_EMAIL = ch.DIGEST_EMAIL;\n}\n\n// Deduplicate by videoId, sort newest first\nconst seen = new Set();\nallVideos = allVideos\n  .filter(function(v) { if (seen.has(v.videoId)) return false; seen.add(v.videoId); return true; })\n  .sort(function(a, b) { return new Date(b.published || 0) - new Date(a.published || 0); });\n\nconsole.log('[Prompt] ' + allVideos.length + ' unique videos | ' + trendingItems.length + ' trending');\n\nconst videoSection = allVideos.length > 0\n  ? allVideos.map(function(v, i) {\n      return (i+1) + '. [' + v.category + '] ' + v.channel + ': \"' + v.title + '\"\\nLink: ' + v.url + '\\nDescription: ' + (v.description || '(none)').slice(0, 300);\n    }).join('\\n\\n')\n  : 'No videos found this week.';\n\nconst trendingSection = trendingItems.length > 0\n  ? trendingItems.map(function(t) { return '• ' + t.title + (t.url ? ' | ' + t.url : '') + (t.description ? ' — ' + t.description.slice(0,120) : ''); }).join('\\n')\n  : 'No trending data available.';\n\nconst prompt =\n  'You are a sharp AI + Tech + Business curator. Today is ' + today + '.\\n\\n'\n  + '== TRENDING TECH NEWS (TechCrunch, last 24h) ==\\n' + trendingSection + '\\n\\n'\n  + '== YOUTUBE VIDEOS THIS WEEK (' + allVideos.length + ' videos from 12 tracked channels) ==\\n' + videoSection + '\\n\\n'\n  + '== YOUR TASK ==\\n'\n  + 'Write a high-value daily digest. Use EXACTLY these section headers (ALL CAPS):\\n\\n'\n  + 'HEADLINE OF THE DAY\\nOne bold sentence — the single most important story right now.\\n\\n'\n  + 'TOP VIDEOS THIS WEEK\\nFor each top video: title | channel | 2-3 sentence summary drawing from the description | direct link\\n\\n'\n  + 'KEY INSIGHTS\\n5 specific, non-obvious bullets drawn directly from the video descriptions. Quote actual details, numbers, or concepts mentioned.\\n\\n'\n  + 'AI & AUTOMATION HIGHLIGHTS\\n3 bullets on the most important AI/automation developments from this week content.\\n\\n'\n  + 'BUSINESS & STARTUP SIGNALS\\n2 bullets — key business/startup/SaaS signals from TechCrunch and YouTube.\\n\\n'\n  + 'TRENDING IN TECH\\n3 TechCrunch stories with a one-line commentary on why each matters right now.\\n\\n'\n  + 'WHAT TO BUILD THIS WEEK\\n1 specific, concrete product or automation idea inspired directly by this week content.\\n\\n'\n  + 'QUOTE OF THE DAY\\nOne memorable, specific insight from a video description (cite the channel name).\\n\\n'\n  + 'Tone: direct, intelligent, no filler. Plain text — NO markdown asterisks or headers.';\n\nconst claudeRequest = JSON.stringify({\n  model:      CLAUDE_MODEL || 'claude-sonnet-4-6',\n  max_tokens: 4000,\n  messages:   [{ role: 'user', content: prompt }]\n});\n\nreturn [{ json: { allVideos, trendingItems, totalVideos: allVideos.length, transcriptCount: 0, today, CLAUDE_KEY, CLAUDE_MODEL, DIGEST_EMAIL, claudeRequest } }];"
+      },
+      "id": "00356f34-0a5e-428f-989b-e941b0d8f4a3",
+      "name": "Code: Build Claude Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 272]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $json.CLAUDE_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.claudeRequest }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 90000
+        }
+      },
+      "id": "94befa0d-e343-487d-b2cb-b3e958e12aba",
+      "name": "HTTP: Claude — Write Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [448, 272],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev       = $('Code: Build Claude Request').item.json;\nconst claudeResp = $input.item.json;\n\nlet digestText = 'Digest generation failed — Claude API did not respond.';\ntry {\n  const t = claudeResp && claudeResp.content && claudeResp.content[0] && claudeResp.content[0].text;\n  if (t && t.length > 50) digestText = t;\n} catch(e) { console.log('[Claude parse] ' + e.message); }\n\nconst allVideos     = prev.allVideos     || [];\nconst trendingItems = prev.trendingItems || [];\n\nfunction timeAgo(s) {\n  if (!s) return '';\n  const d = Math.floor((Date.now() - new Date(s.replace(' ','T')).getTime()) / 86400000);\n  return d <= 0 ? 'Today' : d + 'd ago';\n}\n\nfunction fmtViews(n) {\n  const x = parseInt(n) || 0;\n  if (x >= 1000000) return (x/1000000).toFixed(1) + 'M views';\n  if (x >= 1000)    return (x/1000).toFixed(0) + 'K views';\n  return x > 0 ? x + ' views' : '';\n}\n\n// Video thumbnail cards (top 6)\nconst videoCards = allVideos.slice(0, 6).map(function(v, i) {\n  const viewStr = fmtViews(v.views);\n  return '<div style=\"border:1px solid #1f2937;border-radius:10px;overflow:hidden;margin-bottom:14px;background:#111827;\">'\n    + '<table cellpadding=\"0\" cellspacing=\"0\" width=\"100%\"><tr>'\n    + '<td width=\"150\" valign=\"top\" style=\"padding:0;\">'\n    + '<a href=\"' + v.url + '\" target=\"_blank\"><img src=\"' + (v.thumbnail || '') + '\" width=\"150\" height=\"85\" alt=\"\" style=\"display:block;\"/></a>'\n    + '</td><td valign=\"top\" style=\"padding:10px 12px;\">'\n    + '<p style=\"margin:0 0 3px;font-size:10px;color:#6b7280;\">#' + (i+1) + ' &nbsp;<span style=\"background:#1d4ed8;color:#bfdbfe;padding:1px 7px;border-radius:8px;font-size:9px;font-weight:700;\">' + (v.category || '') + '</span>&nbsp; ' + timeAgo(v.published) + (viewStr ? ' &nbsp;&#128065; ' + viewStr : '') + '</p>'\n    + '<a href=\"' + v.url + '\" target=\"_blank\" style=\"text-decoration:none;\"><p style=\"margin:0 0 3px;color:#f9fafb;font-size:13px;font-weight:700;line-height:1.4;\">' + (v.title || '') + '</p></a>'\n    + '<p style=\"margin:0;color:#9ca3af;font-size:11px;\">&#128250; ' + (v.channel || '') + '</p>'\n    + '</td></tr></table></div>';\n}).join('');\n\n// Trending pills\nconst trendingHtml = trendingItems.slice(0, 6).map(function(t) {\n  return '<p style=\"margin:0 0 7px;color:#d1d5db;font-size:12px;border-left:3px solid #7c3aed;padding-left:8px;\">'\n    + '<a href=\"' + (t.url || '#') + '\" style=\"color:#a78bfa;text-decoration:none;font-weight:600;\">' + (t.title || '') + '</a></p>';\n}).join('');\n\n// Section extractor — finds content between known ALL-CAPS headers\nconst SECTIONS = ['HEADLINE OF THE DAY','TOP VIDEOS THIS WEEK','KEY INSIGHTS','AI & AUTOMATION HIGHLIGHTS','BUSINESS & STARTUP SIGNALS','TRENDING IN TECH','WHAT TO BUILD THIS WEEK','QUOTE OF THE DAY'];\nfunction extract(text, heading) {\n  const idx = text.indexOf(heading);\n  if (idx < 0) return '';\n  const start = idx + heading.length;\n  let end = text.length;\n  SECTIONS.forEach(function(s) {\n    if (s === heading) return;\n    const ni = text.indexOf(s, start);\n    if (ni > 0 && ni < end) end = ni;\n  });\n  return text.slice(start, end).trim();\n}\nfunction sectionBlock(heading, content, color) {\n  if (!content) return '';\n  const lines = content.split('\\n').filter(function(l) { return l.trim().length > 0; });\n  const body = lines.map(function(line) {\n    const linked = line.replace(/(https?:\\/\\/[^\\s]+)/g, '<a href=\"$1\" style=\"color:#818cf8;\">$1</a>');\n    if (/^[•\\-*]|^\\d+\\./.test(line.trim())) return '<p style=\"margin:4px 0 4px 8px;color:#d1d5db;font-size:13px;\">' + linked + '</p>';\n    return '<p style=\"margin:4px 0;color:#e5e7eb;font-size:13px;line-height:1.65;\">' + linked + '</p>';\n  }).join('');\n  return '<div style=\"margin-bottom:22px;\"><p style=\"margin:0 0 8px;font-size:10px;font-weight:800;color:' + color + ';text-transform:uppercase;letter-spacing:1.5px;\">' + heading + '</p>' + body + '</div>';\n}\n\nconst headline = extract(digestText, 'HEADLINE OF THE DAY');\nconst subject  = '\\uD83D\\uDCFA ' + (prev.today || '') + ' \\u2014 AI+Tech Digest (' + prev.totalVideos + ' videos, ' + trendingItems.length + ' trending)';\n\nconst emailHtml = '<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head>'\n  + '<body style=\"margin:0;padding:0;background:#030712;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif;\">'\n  + '<div style=\"max-width:660px;margin:0 auto;padding:20px 0;\">'\n\n  // Header\n  + '<div style=\"background:linear-gradient(135deg,#1e1b4b,#312e81,#1e1b4b);padding:36px 32px;border-radius:14px 14px 0 0;text-align:center;\">'\n  + '<div style=\"font-size:44px;\">\\uD83D\\uDCFA</div>'\n  + '<h1 style=\"margin:8px 0 4px;color:#fff;font-size:22px;font-weight:900;\">AI + Tech + Business Daily Digest</h1>'\n  + '<p style=\"color:rgba(255,255,255,0.65);margin:0 0 14px;font-size:13px;\">' + (prev.today || '') + '</p>'\n  + '<span style=\"background:rgba(255,255,255,0.1);color:#a5b4fc;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;\">\\uD83D\\uDCF9 ' + prev.totalVideos + ' VIDEOS</span>'\n  + ' <span style=\"background:rgba(255,255,255,0.1);color:#fcd34d;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;\">\\uD83D\\uDD25 ' + trendingItems.length + ' TRENDING</span>'\n  + '</div>'\n\n  // Headline banner\n  + (headline ? '<div style=\"background:#1f2937;border-left:4px solid #7c3aed;padding:16px 20px;\"><p style=\"margin:0 0 4px;font-size:10px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1.5px;\">\\uD83D\\uDCA5 HEADLINE OF THE DAY</p><p style=\"margin:0;font-size:15px;color:#f9fafb;font-weight:700;line-height:1.5;\">' + headline + '</p></div>' : '')\n\n  // Body\n  + '<div style=\"background:#111827;padding:26px 30px;\">'\n\n  // Video cards\n  + (allVideos.length > 0 ? '<p style=\"margin:0 0 12px;font-size:10px;font-weight:800;color:#6366f1;text-transform:uppercase;letter-spacing:1.5px;\">\\uD83C\\uDFC6 TOP VIDEOS THIS WEEK</p>' + videoCards : '<p style=\"color:#6b7280;font-size:13px;margin-bottom:20px;\">No new videos found this week across tracked channels.</p>')\n\n  + sectionBlock('\\uD83D\\uDCC4 VIDEO SUMMARIES', extract(digestText, 'TOP VIDEOS THIS WEEK'), '#818cf8')\n  + sectionBlock('\\uD83D\\uDCA1 KEY INSIGHTS', extract(digestText, 'KEY INSIGHTS'), '#34d399')\n  + sectionBlock('\\uD83E\\uDD16 AI & AUTOMATION HIGHLIGHTS', extract(digestText, 'AI & AUTOMATION HIGHLIGHTS'), '#60a5fa')\n  + sectionBlock('\\uD83D\\uDCBC BUSINESS & STARTUP SIGNALS', extract(digestText, 'BUSINESS & STARTUP SIGNALS'), '#f59e0b')\n\n  + (trendingItems.length > 0 ? '<div style=\"margin-bottom:22px;\"><p style=\"margin:0 0 10px;font-size:10px;font-weight:800;color:#f87171;text-transform:uppercase;letter-spacing:1.5px;\">\\uD83D\\uDD25 TRENDING IN TECH</p>' + trendingHtml + '</div>' : '')\n\n  + sectionBlock('\\uD83D\\uDD28 WHAT TO BUILD THIS WEEK', extract(digestText, 'WHAT TO BUILD THIS WEEK'), '#a3e635')\n\n  + (extract(digestText, 'QUOTE OF THE DAY') ? '<div style=\"background:#1f2937;border:1px solid #374151;border-radius:10px;padding:18px;margin-bottom:20px;\"><p style=\"margin:0 0 6px;font-size:10px;font-weight:800;color:#fbbf24;text-transform:uppercase;letter-spacing:1.5px;\">\\uD83D\\uDDE8 QUOTE OF THE DAY</p><p style=\"margin:0;font-size:14px;color:#f3f4f6;font-style:italic;line-height:1.7;\">' + extract(digestText, 'QUOTE OF THE DAY') + '</p></div>' : '')\n\n  + '</div>'\n  + '<div style=\"background:#030712;padding:14px;text-align:center;border-radius:0 0 14px 14px;border-top:1px solid #1f2937;\"><p style=\"color:#374151;font-size:10px;margin:0;\">\\uD83E\\uDD16 Auto-generated by JHD Advisor AI &mdash; YouTube Direct Feed + Claude API &mdash; Daily 8AM ET</p></div>'\n  + '</div></body></html>';\n\nconsole.log('[Email] Subject: ' + subject + ' | videoCards: ' + allVideos.slice(0,6).length);\nreturn [{ json: Object.assign({}, prev, { emailHtml, subject, digestText }) }];"
+      },
+      "id": "5f3e0ba6-d9a5-4bb9-9448-9133019c6a15",
+      "name": "Code: Format HTML Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [672, 272]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.DIGEST_EMAIL }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.emailHtml }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "da02aa9c-43fb-4c68-abfd-b8094b7adb9f",
+      "name": "Gmail: Send Digest",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [880, 272],
+      "webhookId": "aa2a3be4-de61-4043-9325-f98d92d74317",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "HqHUkn2g403O8D7o",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule: Daily 8AM ET": {
+      "main": [
+        [
+          {
+            "node": "Config: Channels + Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config: Channels + Settings": {
+      "main": [
+        [
+          {
+            "node": "HTTP: TechCrunch RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: TechCrunch RSS": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Trending + Prep Channels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Trending + Prep Channels": {
+      "main": [
+        [
+          {
+            "node": "Split: One Channel at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split: One Channel at a Time": {
+      "main": [
+        [
+          {
+            "node": "HTTP: YouTube Feed Per Channel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aggregate: All Channels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: YouTube Feed Per Channel": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Channel Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Channel Videos": {
+      "main": [
+        [
+          {
+            "node": "Split: One Channel at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate: All Channels": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Claude Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Claude Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Claude — Write Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Claude — Write Digest": {
+      "main": [
+        [
+          {
+            "node": "Code: Format HTML Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Format HTML Email": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Send Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2438f323414ba3851c46d2bb57627e2215bbb8bde60d2ead230658315596a5c9"
+  }
+}

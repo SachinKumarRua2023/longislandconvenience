@@ -1,0 +1,33 @@
+{
+  "name": "WF-14 — Daily Social Post Generator",
+  "description": "Claude generates 3 social posts daily (product spotlight, tip, promo) with image captions for FB + Instagram",
+  "status": "PENDING BUILD",
+  "trigger": "Daily cron 8 AM",
+  "posts_per_day": 3,
+  "post_types": [
+    "Product Spotlight — feature one product with local Long Island angle",
+    "Local Tip — neighborhood tip, area event, or local news hook",
+    "Promotion — discount, deal, or limited offer for the week"
+  ],
+  "steps": [
+    "1. Cron trigger 8 AM daily",
+    "2. Claude API → generate 3 posts (captions + hashtags for each)",
+    "3. OpenAI → generate matching image for each post",
+    "4. Save to Google Sheets (content calendar)",
+    "5. Trigger WF-17 at 10 AM to auto-post to FB + Instagram",
+    "6. Send Telegram preview to admin for approval (optional gate)"
+  ],
+  "hashtag_strategy": [
+    "#LongIsland", "#Plainview", "#LongIslandNY", "#ConvenienceStore",
+    "#LongIslandDelivery", "#PlainviewNY", "#HicksvilleNY", "#LocalBusiness",
+    "#NYLocal", "#LongIslandBusiness"
+  ],
+  "n8n_nodes": [
+    "Cron Trigger",
+    "HTTP Request (Claude API — 3 posts)",
+    "HTTP Request (OpenAI Images — 3 images)",
+    "Google Sheets (save to content calendar)",
+    "Telegram (send preview to admin)",
+    "Wait (until 10 AM) OR Execute Workflow (WF-17)"
+  ]
+}

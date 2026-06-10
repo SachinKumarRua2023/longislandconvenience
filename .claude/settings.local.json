@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(python fix_category_images.py)",
+      "Bash(python set_product_specific_images.py)",
+      "Bash(python final_product_images.py)",
+      "Bash(python add_cc_products.py)",
+      "PowerShell($env:PYTHONIOENCODING = 'utf-8'; cd \"c:\\\\Users\\\\Sachin Kumar\\\\OneDrive\\\\Desktop\\\\HirenTask\\\\sites\\\\42_country_cove\"; python check_images.py)",
+      "PowerShell($env:PYTHONIOENCODING = 'utf-8'; cd \"c:\\\\Users\\\\Sachin Kumar\\\\OneDrive\\\\Desktop\\\\HirenTask\\\\sites\\\\42_country_cove\"; python add_cc_products.py 2>&1 | tail -30)",
+      "PowerShell($env:PYTHONIOENCODING = 'utf-8'; cd \"c:\\\\Users\\\\Sachin Kumar\\\\OneDrive\\\\Desktop\\\\HirenTask\\\\sites\\\\42_country_cove\"; python add_cc_products.py)",
+      "PowerShell($env:PYTHONIOENCODING = 'utf-8'; cd \"c:\\\\Users\\\\Sachin Kumar\\\\OneDrive\\\\Desktop\\\\HirenTask\\\\sites\\\\42_country_cove\"; python final_real_images.py)",
+      "PowerShell($env:PYTHONIOENCODING = 'utf-8'; cd \"c:\\\\Users\\\\Sachin Kumar\\\\OneDrive\\\\Desktop\\\\HirenTask\\\\sites\\\\42_country_cove\"; python create_and_upload.py)",
+      "Bash(python \"HIREN_PROJECT_ORGANIZED\\\\02_N8N_WORKFLOWS\\\\SCRIPTS_BY_WEBSITE\\\\WEBSITE_36_LONG_ISLAND_CARDS\\\\fix_hero_pokemon_overlay.py\")"
+    ]
+  }
+}

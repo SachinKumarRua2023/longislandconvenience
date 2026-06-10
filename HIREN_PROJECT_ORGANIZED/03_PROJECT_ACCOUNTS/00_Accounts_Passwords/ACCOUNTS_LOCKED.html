@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🔐 Accounts Vault — SeekHowItHRua</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --yellow: #d29922;
+      --text: #e6edf3;
+      --muted: #8b949e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    /* ── LOCK SCREEN ── */
+    #lock-screen {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      background: radial-gradient(ellipse at top, #1a1f2e 0%, #0d1117 70%);
+    }
+    .lock-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%; max-width: 440px;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,.6);
+    }
+    .lock-icon {
+      font-size: 56px; margin-bottom: 8px;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    .lock-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .lock-card .sub { font-size: 13px; color: var(--muted); margin-bottom: 32px; line-height: 1.5; }
+    .input-wrap { position: relative; margin-bottom: 16px; }
+    .input-wrap input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 48px 14px 16px;
+      color: var(--text); font-size: 16px;
+      outline: none; transition: border-color .2s;
+      letter-spacing: 2px;
+    }
+    .input-wrap input:focus { border-color: var(--accent); }
+    .input-wrap input.error { border-color: var(--red); animation: shake .35s ease; }
+    .input-wrap input.success { border-color: var(--green); }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+    .eye-btn {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; font-size: 18px;
+      color: var(--muted); transition: color .2s;
+    }
+    .eye-btn:hover { color: var(--text); }
+    .unlock-btn {
+      width: 100%; padding: 14px;
+      background: var(--accent);
+      border: none; border-radius: 10px;
+      color: #fff; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+    }
+    .unlock-btn:hover { background: #79b8ff; transform: translateY(-1px); }
+    .unlock-btn:active { transform: translateY(0); }
+    .unlock-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; }
+    .error-msg {
+      color: var(--red); font-size: 13px; margin-top: 12px;
+      display: none; align-items: center; justify-content: center; gap: 6px;
+    }
+    .attempts-left { font-size: 11px; color: var(--muted); margin-top: 10px; }
+    .lock-footer { font-size: 11px; color: var(--muted); margin-top: 32px; line-height: 1.6; }
+    .lock-footer strong { color: var(--yellow); }
+    .progress-bar {
+      height: 3px; background: var(--border); border-radius: 2px;
+      margin-top: 16px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; width: 0; background: var(--accent);
+      border-radius: 2px; transition: width .4s ease;
+    }
+
+    /* ── VAULT CONTENT ── */
+    #vault { display: none; }
+    .vault-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .vault-header-left { display: flex; align-items: center; gap: 12px; }
+    .vault-header-left h1 { font-size: 16px; font-weight: 700; color: var(--green); }
+    .vault-header-left p { font-size: 12px; color: var(--muted); }
+    .header-actions { display: flex; gap: 8px; }
+    .hbtn {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 7px 14px;
+      font-size: 12px; cursor: pointer; transition: all .2s;
+    }
+    .hbtn:hover { border-color: var(--accent); color: var(--accent); }
+    .hbtn.danger:hover { border-color: var(--red); color: var(--red); }
+
+    /* Search */
+    .vault-search {
+      padding: 16px 28px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .vault-search input {
+      width: 100%; max-width: 500px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px;
+      color: var(--text); font-size: 14px; outline: none;
+    }
+    .vault-search input:focus { border-color: var(--accent); }
+
+    /* Markdown content */
+    #md-output {
+      max-width: 960px; margin: 0 auto;
+      padding: 32px 28px 60px;
+    }
+    #md-output h1 { font-size: 24px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin: 28px 0 16px; }
+    #md-output h2 { font-size: 18px; color: var(--text); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    #md-output h3 { font-size: 15px; color: var(--yellow); margin: 20px 0 10px; }
+    #md-output p { font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 12px; }
+    #md-output blockquote {
+      border-left: 3px solid var(--yellow);
+      padding: 10px 16px; margin: 16px 0;
+      background: rgba(210,153,34,.08); border-radius: 0 8px 8px 0;
+      font-size: 13px; color: var(--yellow);
+    }
+    #md-output table {
+      width: 100%; border-collapse: collapse;
+      margin: 16px 0; font-size: 13px;
+      background: var(--surface);
+      border-radius: 8px; overflow: hidden;
+    }
+    #md-output th {
+      background: var(--surface2); color: var(--accent);
+      padding: 10px 14px; text-align: left;
+      font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
+    }
+    #md-output td {
+      padding: 9px 14px; border-top: 1px solid var(--border);
+      color: var(--text);
+    }
+    #md-output tr:hover td { background: var(--surface2); }
+    #md-output code {
+      background: var(--surface2); padding: 2px 6px;
+      border-radius: 4px; font-family: 'Courier New', monospace;
+      font-size: 12px; color: var(--green);
+    }
+    #md-output hr {
+      border: none; border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+    #md-output strong { color: var(--text); font-weight: 600; }
+    #md-output em { color: var(--muted); font-style: italic; }
+
+    /* Copy cell */
+    td .copy-val {
+      background: none; border: none;
+      color: var(--muted); cursor: pointer; font-size: 11px;
+      padding: 2px 5px; border-radius: 3px;
+      transition: color .15s;
+    }
+    td .copy-val:hover { color: var(--accent); }
+    td .copy-val.ok { color: var(--green); }
+
+    /* Highlight search */
+    mark { background: rgba(210,153,34,.25); color: var(--yellow); border-radius: 2px; padding: 0 1px; }
+
+    /* Section nav */
+    .section-nav {
+      position: fixed; right: 20px; top: 50%;
+      transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .section-nav a {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); display: block;
+      transition: all .2s; cursor: pointer;
+    }
+    .section-nav a:hover { background: var(--accent); width: 10px; height: 10px; }
+
+    @media(max-width:600px){
+      .lock-card { padding: 32px 20px; }
+      .vault-header, .vault-search, #md-output { padding-left: 16px; padding-right: 16px; }
+      .section-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ LOCK SCREEN ═══════════════════════════ -->
+<div id="lock-screen">
+  <div class="lock-card">
+    <div class="lock-icon" id="lock-icon">🔐</div>
+    <h1>Accounts Vault</h1>
+    <p class="sub">Client: Hiren Kumar &nbsp;·&nbsp; SeekHowItHRua<br>Enter the vault password to access credentials.</p>
+
+    <div class="input-wrap">
+      <input type="password" id="pw-input" placeholder="Enter vault password…" autocomplete="off" autofocus/>
+      <button class="eye-btn" id="eye-btn" onclick="toggleEye()" title="Show/hide password">👁️</button>
+    </div>
+    <button class="unlock-btn" id="unlock-btn" onclick="tryUnlock()">Unlock Vault</button>
+    <div class="error-msg" id="error-msg">⚠️ <span id="error-text">Incorrect password</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="attempts-left" id="attempts-left"></div>
+
+    <div class="lock-footer">
+      <strong>⚠️ Confidential</strong><br>
+      Authorised access only. Managed by <strong>SeekHowItHRua</strong>.<br>
+      Share only with Hiren Kumar directly.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ VAULT ═══════════════════════════ -->
+<div id="vault">
+  <div class="vault-header">
+    <div class="vault-header-left">
+      <span style="font-size:22px">🔓</span>
+      <div>
+        <h1>Accounts Vault — Unlocked</h1>
+        <p id="unlock-time"></p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="hbtn" onclick="doSearch()">🔍 Search (Ctrl+F)</button>
+      <button class="hbtn" onclick="printVault()">🖨️ Print</button>
+      <button class="hbtn danger" onclick="lockVault()">🔐 Lock</button>
+    </div>
+  </div>
+  <div class="vault-search">
+    <input type="text" id="vault-search" placeholder="Search accounts, platforms, emails, URLs…" oninput="doSearch()" />
+  </div>
+  <div id="md-output"></div>
+</div>
+
+<script>
+// ─── Encrypted payload ───
+const PAYLOAD = "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";
+const PW_HASH = "bSVJuY3JkYw8HJPJKNDfSqwc5KC7F9H4z99ITzonk/U=";
+
+let attempts = 0;
+const MAX_ATTEMPTS = 10;
+
+// ─── Helpers ───
+function b64ToBytes(b64) {
+  const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return new Uint8Array(buf);
+}
+function bytesToB64(bytes) {
+  let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+
+// ─── Toggle password visibility ───
+function toggleEye() {
+  const inp = document.getElementById('pw-input');
+  const btn = document.getElementById('eye-btn');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁️'; }
+}
+
+// ─── Unlock ───
+async function tryUnlock() {
+  const pw = document.getElementById('pw-input').value;
+  if (!pw) return;
+
+  const btn = document.getElementById('unlock-btn');
+  btn.disabled = true; btn.textContent = 'Verifying…';
+
+  const verifyHash = await sha256(pw + '::hiren-verify');
+  const verifyB64 = bytesToB64(verifyHash);
+
+  if (verifyB64 !== PW_HASH) {
+    attempts++;
+    const inp = document.getElementById('pw-input');
+    inp.classList.add('error');
+    setTimeout(() => inp.classList.remove('error'), 500);
+    const errEl = document.getElementById('error-msg');
+    const remaining = MAX_ATTEMPTS - attempts;
+    document.getElementById('error-text').textContent =
+      remaining > 0 ? `Incorrect password. ${remaining} attempts remaining.` : 'Vault locked — too many attempts.';
+    errEl.style.display = 'flex';
+    document.getElementById('progress-fill').style.width = (attempts / MAX_ATTEMPTS * 100) + '%';
+    if (attempts >= MAX_ATTEMPTS) {
+      btn.textContent = 'Vault Locked';
+      document.getElementById('pw-input').disabled = true;
+    } else {
+      btn.disabled = false; btn.textContent = 'Unlock Vault';
+    }
+    document.getElementById('pw-input').value = '';
+    return;
+  }
+
+  // Correct — derive XOR key and decrypt
+  const keyBytes = await sha256(pw);
+  const cipherBytes = b64ToBytes(PAYLOAD);
+  const plain = new Uint8Array(cipherBytes.length);
+  for (let i = 0; i < cipherBytes.length; i++) plain[i] = cipherBytes[i] ^ keyBytes[i % keyBytes.length];
+  const markdown = new TextDecoder().decode(plain);
+
+  // Show vault
+  document.getElementById('lock-screen').style.display = 'none';
+  document.getElementById('vault').style.display = 'block';
+  document.getElementById('unlock-time').textContent =
+    'Unlocked at ' + new Date().toLocaleTimeString() + ' — Session active';
+  document.getElementById('md-output').innerHTML = renderMd(markdown);
+  addCopyButtons();
+}
+
+// ─── Enter key support ───
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryUnlock();
+});
+
+// ─── Lock vault ───
+function lockVault() {
+  document.getElementById('vault').style.display = 'none';
+  document.getElementById('lock-screen').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-input').disabled = false;
+  document.getElementById('unlock-btn').disabled = false;
+  document.getElementById('unlock-btn').textContent = 'Unlock Vault';
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('lock-icon').textContent = '🔐';
+  attempts = 0;
+}
+
+// ─── Print ───
+function printVault() { window.print(); }
+
+// ─── Simple Markdown renderer ───
+function renderMd(md) {
+  let html = md
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    // headings
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // blockquote
+    .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+    // hr
+    .replace(/^---$/gm, '<hr>')
+    // bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // italic
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // code inline
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Tables
+  html = html.replace(/((?:^\|.+\|\n?)+)/gm, match => {
+    const rows = match.trim().split('\n');
+    if (rows.length < 2) return match;
+    let out = '<table>';
+    rows.forEach((row, i) => {
+      if (/^\|[\s\-|]+\|$/.test(row)) return; // separator
+      const cells = row.split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+      const tag = i === 0 ? 'th' : 'td';
+      out += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+    });
+    return out + '</table>';
+  });
+
+  // Paragraphs (lines not already wrapped)
+  html = html.split('\n').map(line => {
+    if (!line.trim()) return '';
+    if (/^<(h[1-6]|blockquote|hr|table|tr|th|td)/.test(line)) return line;
+    return '<p>' + line + '</p>';
+  }).join('\n');
+
+  return html;
+}
+
+// ─── Add copy buttons to table cells with values ───
+function addCopyButtons() {
+  document.querySelectorAll('#md-output td').forEach(td => {
+    const txt = td.textContent.trim();
+    if (!txt || txt === '[PASSWORD]' || txt === '[EMAIL]' || txt === '[KEY]' || txt.startsWith('[')) return;
+    if (txt.length < 4) return;
+    const btn = document.createElement('button');
+    btn.className = 'copy-val'; btn.textContent = ' ⧉';
+    btn.title = 'Copy value';
+    btn.onclick = () => {
+      navigator.clipboard.writeText(txt).then(() => {
+        btn.textContent = ' ✓'; btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = ' ⧉'; btn.classList.remove('ok'); }, 1500);
+      });
+    };
+    td.appendChild(btn);
+  });
+}
+
+// ─── Search in vault ───
+function doSearch() {
+  const term = document.getElementById('vault-search').value.trim().toLowerCase();
+  document.querySelectorAll('mark').forEach(m => {
+    const t = document.createTextNode(m.textContent);
+    m.parentNode.replaceChild(t, m);
+  });
+  if (!term) return;
+  const walker = document.createTreeWalker(document.getElementById('md-output'), NodeFilter.SHOW_TEXT, null, false);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const idx = node.nodeValue.toLowerCase().indexOf(term);
+    if (idx === -1) return;
+    const span = document.createElement('span');
+    span.innerHTML = node.nodeValue.substring(0, idx) +
+      '<mark>' + node.nodeValue.substring(idx, idx + term.length) + '</mark>' +
+      node.nodeValue.substring(idx + term.length);
+    node.parentNode.replaceChild(span, node);
+  });
+  // Scroll to first match
+  const first = document.querySelector('mark');
+  if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Ctrl+F shortcut inside vault
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f' && document.getElementById('vault').style.display !== 'none') {
+    e.preventDefault();
+    document.getElementById('vault-search').focus();
+  }
+});
+</script>
+</body>
+</html>

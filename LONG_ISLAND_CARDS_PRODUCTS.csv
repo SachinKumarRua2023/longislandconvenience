@@ -1,0 +1,17 @@
+Category,Product Name,SKU,Price,Description,Image Name
+Sports Cards,Sports Card Pack - Legacy Series,SPORTS-001,49.99,Vintage sports cards from legendary athletes,sports-cards-left.png
+Sports Cards,Sports Card - Hall of Famers,SPORTS-002,39.99,Premium sports cards featuring hall of fame players,sports-cards-center.png
+Sports Cards,Sports Card - Signed Edition,SPORTS-003,59.99,Authenticated signed sports cards collection,sports-cards-right.png
+Pokemon Cards,Pokemon Card - Ancient Sol Ring,POKEMON-001,34.99,Rare Pokemon card with ancient Sol Ring design,pokemon-cards-left.png
+Pokemon Cards,Pokemon Card - Center Showcase,POKEMON-002,44.99,Premium Pokemon center card showcase,pokemon-cards-center.png
+Pokemon Cards,Pokemon Card - Dragon Collection,POKEMON-003,54.99,Exclusive dragon-themed Pokemon cards,pokemon-cards-right.png
+Magic: The Gathering,MTG Card - Left Collection,MTG-001,39.99,Magic: The Gathering starter card collection,mtg-cards-left.png
+Magic: The Gathering,MTG Card - Center Pack,MTG-002,49.99,MTG premium center card pack,mtg-cards-center.png
+Magic: The Gathering,MTG Card - Right Bundle,MTG-003,59.99,MTG exclusive right side bundle,mtg-cards-right.png
+Yu-Gi-Oh!,Yu-Gi-Oh Card Pack,YUGIOH-001,29.99,Classic Yu-Gi-Oh trading card pack,yugioh-cards-left.png
+Yu-Gi-Oh!,Yu-Gi-Oh Starter Deck,YUGIOH-002,39.99,Yu-Gi-Oh complete starter deck,yugioh-cards-center.png
+Yu-Gi-Oh!,Yu-Gi-Oh Premium Bundle,YUGIOH-003,49.99,Yu-Gi-Oh premium card collection bundle,yugioh-cards-right.png
+Graded Cards,Graded Cards - PSA Left,GRADED-001,79.99,PSA certified graded cards collection,graded-cards-left.png
+Graded Cards,Graded Cards - PSA Center,GRADED-002,89.99,PSA center showcase graded cards,graded-cards-center.png
+Graded Cards,Graded Cards - PSA Right,GRADED-003,99.99,PSA right collection premium graded cards,graded-cards-right.png
+Premium Collections,Premium Bundle - Dragon Collection,BUNDLE-001,149.99,Exclusive bulk dragon collection bundle,bulk-dragon-collection.png

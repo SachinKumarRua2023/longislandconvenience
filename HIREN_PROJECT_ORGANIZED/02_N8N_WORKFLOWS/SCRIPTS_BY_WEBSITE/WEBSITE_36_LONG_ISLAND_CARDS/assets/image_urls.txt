@@ -1,0 +1,15 @@
+sports-cards-left.png=/web/image/34000/sports-cards-left.png
+sports-cards-center.png=/web/image/34001/sports-cards-center.png
+sports-cards-right.png=/web/image/34002/sports-cards-right.png
+pokemon-cards-left.png=/web/image/34003/pokemon-cards-left.png
+pokemon-cards-center.png=/web/image/34004/pokemon-cards-center.png
+pokemon-cards-right.png=/web/image/34005/pokemon-cards-right.png
+mtg-cards-left.png=/web/image/34006/mtg-cards-left.png
+mtg-cards-center.png=/web/image/34007/mtg-cards-center.png
+mtg-cards-right.png=/web/image/34008/mtg-cards-right.png
+yugioh-cards-left.png=/web/image/34009/yugioh-cards-left.png
+yugioh-cards-center.png=/web/image/34010/yugioh-cards-center.png
+yugioh-cards-right.png=/web/image/34011/yugioh-cards-right.png
+graded-cards-left.png=/web/image/34012/graded-cards-left.png
+graded-cards-center.png=/web/image/34013/graded-cards-center.png
+graded-cards-right.png=/web/image/34014/graded-cards-right.png

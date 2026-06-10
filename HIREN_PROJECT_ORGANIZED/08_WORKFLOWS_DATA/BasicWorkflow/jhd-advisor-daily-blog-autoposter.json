@@ -1,0 +1,182 @@
+{
+  "name": "JHD Advisor - Daily Trending IT Blog Autoposter",
+  "nodes": [
+    {
+      "id": "schedule_daily",
+      "name": "Daily Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [120, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fetch_trends",
+      "name": "Fetch Google Trends RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [360, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US",
+        "responseFormat": "string",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "parse_and_generate",
+      "name": "Pick Trend + Generate Blog",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [620, 300],
+      "parameters": {
+        "jsCode": "const xml = $input.first().json.data || $input.first().json.body || '';\nconst titleMatches = [...xml.matchAll(/<title><!\\[CDATA\\[(.*?)\\]\\]><\\/title>|<title>(.*?)<\\/title>/g)].map(m => (m[1] || m[2] || '').replace(/&amp;/g, '&').trim()).filter(Boolean).filter(t => !/daily search trends/i.test(t));\nconst trend = titleMatches[0] || 'AI automation for small business';\nconst serviceAngles = [\n  'AI business automation',\n  'n8n workflow automation',\n  'ecommerce automation',\n  'web app development',\n  'AI chatbots and voice agents',\n  'SEO and GEO search strategy',\n  'data dashboards and BI',\n  'API integrations',\n  'cloud and cybersecurity',\n  'startup MVP launch'\n];\nconst dayIndex = Math.floor(Date.now() / 86400000) % serviceAngles.length;\nconst angle = serviceAngles[dayIndex];\nconst date = new Date().toISOString().slice(0, 10);\nconst title = `${angle}: what ${trend} tells business owners in 2026`;\nconst subtitle = `A daily JHD Advisor brief connecting today's search demand to practical automation, ecommerce, AI and web app execution.`;\nconst slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);\nconst content = `<section style=\"font-family:Inter,Arial,sans-serif;line-height:1.75;color:#1f2937;\">\n<p><strong>Trending signal:</strong> ${trend}</p>\n<p>Search behavior changes fast. JHD Advisor turns those signals into practical business systems: automations that capture leads, ecommerce stores that sell, web apps that organize work, and AI agents that reduce manual follow-up.</p>\n<h2>Why this matters for ${angle}</h2>\n<p>When a trend starts moving, customers ask new questions. The businesses that win are the ones that publish helpful answers, connect those answers to offers, and automate the response path from page visit to CRM follow-up.</p>\n<h2>Recommended action plan</h2>\n<ol>\n<li>Create one focused landing page answering the trend-driven question.</li>\n<li>Add schema markup, internal links and a clear call to action.</li>\n<li>Connect the form to Odoo CRM, email, WhatsApp or your preferred sales workflow.</li>\n<li>Use AI to summarize inquiries, route leads and create follow-up drafts.</li>\n<li>Track conversion rate, response time and revenue per topic.</li>\n</ol>\n<h2>JHD Advisor services that fit</h2>\n<ul>\n<li>AI business automation and agent workflows</li>\n<li>n8n workflow automation</li>\n<li>Odoo, Shopify and WooCommerce ecommerce builds</li>\n<li>Web app and SaaS MVP development</li>\n<li>SEO, GEO and AI Overview optimization</li>\n</ul>\n<p><a href=\"https://www.jhdadvisor.com/contact\" style=\"display:inline-block;background:#7c3aed;color:#fff;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:800;\">Book a JHD Advisor strategy call</a></p>\n</section>`;\nreturn [{ json: { trend, angle, date, title, subtitle, slug, content } }];"
+      }
+    },
+    {
+      "id": "odoo_find_blog",
+      "name": "Odoo: Find JHD Blog",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "call",
+          "id": 1,
+          "params": {
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+              "country-cove-inc",
+              2,
+              "M@nhattan1234",
+              "blog.blog",
+              "search_read",
+              [[["name", "=", "JHD Advisor Growth Lab"], ["website_id", "=", 41]]],
+              { "fields": ["id"], "limit": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "prepare_odoo_post",
+      "name": "Prepare Odoo Blog Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "parameters": {
+        "jsCode": "const blogResult = $('Odoo: Find JHD Blog').first().json.result || [];\nconst blogId = blogResult[0]?.id || 1;\nconst post = $('Pick Trend + Generate Blog').first().json;\nreturn [{ json: { blogId, ...post } }];"
+      }
+    },
+    {
+      "id": "odoo_create_post",
+      "name": "Odoo: Create Daily Blog Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1380, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "call",
+          "id": 2,
+          "params": {
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+              "country-cove-inc",
+              2,
+              "M@nhattan1234",
+              "blog.post",
+              "create",
+              [{
+                "blog_id": "={{$json.blogId}}",
+                "website_id": 41,
+                "name": "={{$json.title}}",
+                "subtitle": "={{$json.subtitle}}",
+                "content": "={{$json.content}}",
+                "website_meta_title": "={{$json.title.substring(0, 60)}}",
+                "website_meta_description": "={{$json.subtitle.substring(0, 155)}}",
+                "website_published": true,
+                "is_published": true
+              }]
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "owner_email",
+      "name": "Email: Owner Daily Blog Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1620, 300],
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "countrycoveinc@gmail.com",
+        "subject": "=JHD Advisor daily blog posted: {{$node['Pick Trend + Generate Blog'].json.title}}",
+        "message": "=Daily JHD Advisor blog was posted.<br><br><b>Trend:</b> {{$node['Pick Trend + Generate Blog'].json.trend}}<br><b>Angle:</b> {{$node['Pick Trend + Generate Blog'].json.angle}}<br><br>View site: https://www.jhdadvisor.com/blog",
+        "options": {
+          "appendAttribution": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily Schedule": {
+      "main": [[{ "node": "Fetch Google Trends RSS", "type": "main", "index": 0 }]]
+    },
+    "Fetch Google Trends RSS": {
+      "main": [[{ "node": "Pick Trend + Generate Blog", "type": "main", "index": 0 }]]
+    },
+    "Pick Trend + Generate Blog": {
+      "main": [[{ "node": "Odoo: Find JHD Blog", "type": "main", "index": 0 }]]
+    },
+    "Odoo: Find JHD Blog": {
+      "main": [[{ "node": "Prepare Odoo Blog Payload", "type": "main", "index": 0 }]]
+    },
+    "Prepare Odoo Blog Payload": {
+      "main": [[{ "node": "Odoo: Create Daily Blog Post", "type": "main", "index": 0 }]]
+    },
+    "Odoo: Create Daily Blog Post": {
+      "main": [[{ "node": "Email: Owner Daily Blog Alert", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Calcutta"
+  },
+  "active": false,
+  "tags": ["JHD Advisor", "SEO", "Automation", "Daily Blog"]
+}

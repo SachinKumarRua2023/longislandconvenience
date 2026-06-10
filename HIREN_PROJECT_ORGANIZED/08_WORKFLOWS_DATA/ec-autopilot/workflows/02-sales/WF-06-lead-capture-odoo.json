@@ -1,0 +1,26 @@
+{
+  "name": "WF-06 — Lead Capture → Odoo CRM",
+  "description": "Captures leads from FB Lead Ads, website forms, or Telegram → creates contact in Odoo → triggers follow-up",
+  "status": "PENDING BUILD",
+  "trigger": "Facebook Lead Ad webhook OR website form webhook OR Telegram /newlead",
+  "steps": [
+    "1. Webhook trigger (FB Lead Ad / form submission)",
+    "2. Parse: name, email, phone, source, interest",
+    "3. Create lead in Odoo CRM via JSONRPC (model: crm.lead)",
+    "4. Assign to salesperson (round-robin or by area)",
+    "5. Send welcome email to lead (SMTP)",
+    "6. Send Telegram alert to sales team with lead details",
+    "7. Trigger WF-07 (Follow-up Sequence)"
+  ],
+  "odoo_fields": {
+    "model": "crm.lead",
+    "fields": ["partner_name", "email_from", "mobile", "source_id", "description", "tag_ids"]
+  },
+  "n8n_nodes": [
+    "Webhook Trigger",
+    "HTTP Request (Odoo create lead)",
+    "SMTP (welcome email)",
+    "Telegram (sales team alert)",
+    "Execute Workflow (WF-07)"
+  ]
+}

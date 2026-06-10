@@ -1,0 +1,39 @@
+{
+  "homepage_categories": [
+    {
+      "name": "Sports",
+      "keyword": "baseball basketball football hockey cards",
+      "enabled": true,
+      "notes": "Sports trading cards collection"
+    },
+    {
+      "name": "Pokemon",
+      "keyword": "pokemon trading cards collection",
+      "enabled": true,
+      "notes": "Pokémon trading cards"
+    },
+    {
+      "name": "MTG",
+      "keyword": "magic the gathering cards",
+      "enabled": true,
+      "notes": "Magic: The Gathering cards"
+    },
+    {
+      "name": "Yu-Gi-Oh!",
+      "keyword": "yugioh trading cards",
+      "enabled": true,
+      "notes": "Yu-Gi-Oh! trading cards"
+    },
+    {
+      "name": "Graded",
+      "keyword": "graded trading cards PSA BGS",
+      "enabled": true,
+      "notes": "Graded and slabbed cards"
+    }
+  ],
+  "settings": {
+    "image_download_timeout": 15,
+    "api_fetch_timeout": 10
+  },
+  "notes": "Edit keywords to customize what images appear on homepage. Category names must match Odoo exactly."
+}

@@ -1,0 +1,20 @@
+﻿EXISTS  : Long Island Convenience (ID 1)
+EXISTS  : Country Cove Sports and Cards (ID 13)
+EXISTS  : Country Cove Gift Baskets (ID 14)
+EXISTS  : Country Cove Gift Cards (ID 15)
+EXISTS  : Country Cove Game Cards (ID 16)
+EXISTS  : Country Cove Balloons (ID 17)
+EXISTS  : Country Cove Greeting Cards (ID 18)
+EXISTS  : Cyber Consulting (ID 25)
+
+--- FINAL WEBSITE LIST ---
+  ID  1 | Long Island Convenience                  | https://www.longislandconvenience.com
+  ID 13 | Country Cove Sports and Cards            | https://countrycovesportscards.com
+  ID 14 | Country Cove Gift Baskets                | https://countrycovegiftbaskets.com
+  ID 15 | Country Cove Gift Cards                  | https://countrycovegiftcards.com
+  ID 16 | Country Cove Game Cards                  | https://countrycovegamecards.com
+  ID 17 | Country Cove Balloons                    | https://countrycoveballoons.com
+  ID 18 | Country Cove Greeting Cards              | https://countrycovecards.com
+  ID 25 | Cyber Consulting                         | https://www.consultcyber.net
+
+TOTAL: 8 websites

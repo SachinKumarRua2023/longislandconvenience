@@ -1,0 +1,223 @@
+{
+  "name": "YouTube Daily Digest — Tech, AI, Automation, Business",
+  "nodes": [
+    {
+      "id": "yt1",
+      "name": "Schedule: Daily 7AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [160, 400],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 7 * * *" }]
+        }
+      }
+    },
+    {
+      "id": "yt2",
+      "name": "Config: Channels + Keys",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 400],
+      "parameters": {
+        "jsCode": "const channels = [\n  { id: 'UCsBjURrPoezykLs9EqgamOA', name: 'Fireship',           cat: 'Tech/Dev' },\n  { id: 'UCHlNU7kIZhRgSbhHvFoy72w', name: 'Hugging Face',       cat: 'AI Tools' },\n  { id: 'UCbfYPyITQ-7l4upoX8nvctg', name: 'Two Minute Papers',  cat: 'AI Research' },\n  { id: 'UCNJ1Ymd5yFuUPtn21xtRbbw', name: 'AI Explained',       cat: 'AI News' },\n  { id: 'UCSHZKyawb77ixDdsGog4iWA', name: 'Lex Fridman',        cat: 'Tech/AI/Business' },\n  { id: 'UCxIJaCMEptJjxmmQgGFsnCg', name: 'Y Combinator',       cat: 'Startup/Business' },\n  { id: 'UCnxrdFPXJMeHru_b4Q_vTPQ', name: 'NetworkChuck',       cat: 'Tech/Networking' },\n  { id: 'UCZHmQk67mSJgfCCTn7xBfew', name: 'Yannic Kilcher',     cat: 'AI/ML Deep Dive' },\n  { id: 'UCBJycsmduvYEL83R_U4JriQ', name: 'MKBHD',             cat: 'Tech Reviews' },\n  { id: 'UC9-y-6csu5WGm29I7JiwpnA',  name: 'Computerphile',     cat: 'CS/Tech' },\n  { id: 'UCCjyq_K1Xwfg8Lndy7lKMpA', name: 'TechCrunch',         cat: 'Tech News' },\n  { id: 'UCESLZhusAkFfsNsApnjF_Cg', name: 'All-In Podcast',     cat: 'B2B/Startup' }\n];\n\nconst rssFeeds = channels.map(c => ({\n  channelId:   c.id,\n  channelName: c.name,\n  category:    c.cat,\n  rssUrl:      'https://www.youtube.com/feeds/videos.xml?channel_id=' + c.id\n}));\n\nconst FIRECRAWL_KEY = 'fc-471db502e79143e0982f3d2638b8ccdb';\nconst CLAUDE_KEY    = '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';\nconst CLAUDE_MODEL  = 'claude-sonnet-4-6';\nconst DIGEST_EMAIL  = 'countrycoveinc@gmail.com';\nconst cutoff = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();\nconst today  = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });\n\nconst manualVideoUrls = [\n  'https://www.youtube.com/watch?v=aircAruvnKk'\n];\n\nconsole.log('[Config] ' + rssFeeds.length + ' channels | cutoff: ' + cutoff + ' | manual: ' + manualVideoUrls.length);\nreturn [{ json: { channels, rssFeeds, FIRECRAWL_KEY, CLAUDE_KEY, CLAUDE_MODEL, DIGEST_EMAIL, cutoff, today, manualVideoUrls } }];"
+      }
+    },
+    {
+      "id": "yt3",
+      "name": "HTTP: Fetch Trending News RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 400],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "https://techcrunch.com/feed/",
+        "options": { "timeout": 15000, "response": { "response": { "responseFormat": "text" } } }
+      }
+    },
+    {
+      "id": "yt4",
+      "name": "Code: Parse Trending + Build RSS List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 400],
+      "parameters": {
+        "jsCode": "const cfg = $('Config: Channels + Keys').item.json;\nlet xmlText = '';\ntry { xmlText = $input.item.json?.data || $input.item.json?.body || (typeof $input.item.json === 'string' ? $input.item.json : '') || ''; } catch(e) { xmlText = ''; }\n\nfunction xmlVal(str, tag) {\n  const m = str.match(new RegExp('<' + tag + '[^>]*>([\\\\s\\\\S]*?)<\\/' + tag + '>'));\n  return m ? m[1].replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g, '$1').trim() : '';\n}\n\nlet trendingItems = [];\ntry {\n  const itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\n  let m;\n  while ((m = itemRegex.exec(xmlText)) !== null && trendingItems.length < 12) {\n    const block = m[1];\n    const title = xmlVal(block, 'title');\n    const link  = xmlVal(block, 'link') || (block.match(/<link\\s*\\/>\\s*([^<]+)/) || [])[1] || '';\n    const desc  = xmlVal(block, 'description').replace(/<[^>]+>/g, '').slice(0, 300);\n    const pub   = xmlVal(block, 'pubDate');\n    if (title && title.length > 3) trendingItems.push({ source: 'TechCrunch', category: 'Trending Now', title, url: link, description: desc, published: pub || new Date().toISOString() });\n  }\n} catch(e) {\n  console.log('[Trending] Parse failed: ' + e.message);\n  trendingItems = [];\n}\n\nconsole.log('[Trending] ' + trendingItems.length + ' items from TechCrunch RSS (direct XML)');\nreturn cfg.rssFeeds.map(feed => ({\n  json: { ...feed, trendingItems, cfg }\n}));"
+      }
+    },
+    {
+      "id": "yt5",
+      "name": "Split: One Channel at a Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1180, 400],
+      "parameters": {
+        "batchSize": 1,
+        "options": { "reset": false }
+      }
+    },
+    {
+      "id": "yt6",
+      "name": "HTTP: Fetch Channel RSS Feed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 260],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.rssUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "User-Agent", "value": "Mozilla/5.0 (compatible; n8n-digest-bot/1.0)" }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "response": { "response": { "responseFormat": "text" } }
+        }
+      }
+    },
+    {
+      "id": "yt7",
+      "name": "Code: Parse RSS XML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1700, 260],
+      "parameters": {
+        "jsCode": "let prev = {};\ntry { prev = $('Split: One Channel at a Time').item.json || {}; } catch(e) { prev = {}; }\nconst safeChannel = prev.channelName || 'Unknown';\nconst safeCat     = prev.category    || 'General';\nconst safeCfg     = prev.cfg         || {};\nconst safeCutoff  = new Date(safeCfg.cutoff || (Date.now() - 72*3600*1000));\nconst safeTrend   = Array.isArray(prev.trendingItems) ? prev.trendingItems : [];\n\nconst EMPTY = [{ json: { channelName: safeChannel, category: safeCat, videos: [], trendingItems: safeTrend, cfg: safeCfg } }];\n\nlet xmlText = '';\ntry {\n  const raw = $input.item.json;\n  xmlText = raw?.data || raw?.body || (typeof raw === 'string' ? raw : '') || '';\n} catch(e) { return EMPTY; }\n\nif (!xmlText || xmlText.length < 50) {\n  console.log('[RSS] ' + safeChannel + ': empty or too-short response');\n  return EMPTY;\n}\n\n// Parse YouTube Atom XML — each video is an <entry> block\nfunction atomVal(str, tag) {\n  const m = str.match(new RegExp('<' + tag + '[^>]*>([\\\\s\\\\S]*?)<\\/' + tag + '>'));\n  return m ? m[1].replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g, '$1').trim() : '';\n}\n\nconst videos = [];\nconst entryRegex = /<entry>([\\s\\S]*?)<\\/entry>/g;\nlet m;\nwhile ((m = entryRegex.exec(xmlText)) !== null) {\n  try {\n    const block = m[1];\n    const published = atomVal(block, 'published');\n    if (published) {\n      const pubDate = new Date(published);\n      if (pubDate < safeCutoff) continue;\n    }\n    const title   = atomVal(block, 'title');\n    const linkM   = block.match(/<link[^>]+href=\"([^\"]+)\"/);\n    const url     = linkM ? linkM[1] : '';\n    const desc    = atomVal(block, 'media:description').replace(/<[^>]+>/g, '').slice(0, 200);\n    if (!title || !url.includes('youtube.com/watch')) continue;\n    videos.push({ source: 'Channel RSS', category: safeCat, channel: safeChannel, title, url, published: published || '', views: 0, description: desc });\n  } catch(e) { continue; }\n}\n\nconsole.log('[RSS] ' + safeChannel + ': ' + videos.length + ' new videos (72h, direct XML)');\nreturn [{ json: { channelName: safeChannel, category: safeCat, videos, trendingItems: safeTrend, cfg: safeCfg } }];"
+      }
+    },
+    {
+      "id": "yt8",
+      "name": "Aggregate: All Channel Results",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [1960, 400],
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "allChannels",
+        "options": {}
+      }
+    },
+    {
+      "id": "yt13",
+      "name": "Code: Scrape Manual Videos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2090, 400],
+      "parameters": {
+        "jsCode": "const allChannels = $input.item.json.allChannels || [];\nlet cfg = {};\nfor (const ch of allChannels) { if (ch.cfg && Object.keys(ch.cfg).length > 0) { cfg = ch.cfg; break; } }\n\nconst manualVideoUrls = Array.isArray(cfg.manualVideoUrls) ? cfg.manualVideoUrls : [];\nconst manualVideos = [];\n\nfunction extractVideoId(url) {\n  const m = url.match(/(?:v=|youtu\\.be\\/)([A-Za-z0-9_-]{11})/);\n  return m ? m[1] : null;\n}\n\nfunction msToTimestamp(ms) {\n  const totalSecs = Math.floor(ms / 1000);\n  const h = Math.floor(totalSecs / 3600);\n  const m = Math.floor((totalSecs % 3600) / 60);\n  const s = totalSecs % 60;\n  return (h > 0 ? h + ':' : '') + (h > 0 ? String(m).padStart(2,'0') : m) + ':' + String(s).padStart(2,'0');\n}\n\nfunction sampleSegments(segs, max) {\n  if (segs.length <= max) return segs;\n  const step = segs.length / max;\n  return Array.from({ length: max }, (_, i) => segs[Math.floor(i * step)]);\n}\n\nfor (const url of manualVideoUrls) {\n  const videoId = extractVideoId(url);\n  let title = url;\n  let transcript = '';\n  let source = '';\n\n  // Get title via YouTube oEmbed\n  if (videoId) {\n    try {\n      const oe = await $helpers.httpRequest({ method: 'GET', url: 'https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + videoId + '&format=json' });\n      const d = typeof oe === 'string' ? JSON.parse(oe) : oe;\n      if (d.title) title = d.title;\n    } catch(e) { console.log('[Manual] oEmbed failed: ' + e.message); }\n  }\n\n  // Step 1: Supadata — strongest free transcript API, works from any server IP\n  if (videoId && !transcript) {\n    try {\n      const resp = await $helpers.httpRequest({\n        method: 'GET',\n        url: 'https://api.supadata.ai/v1/youtube/transcript?url=https://www.youtube.com/watch?v=' + videoId + '&text=false'\n      });\n      const data = typeof resp === 'string' ? JSON.parse(resp) : resp;\n      if (data?.content && Array.isArray(data.content) && data.content.length > 0) {\n        const allSegs = data.content\n          .map(seg => '[' + msToTimestamp(seg.offset || 0) + '] ' + (seg.text || '').replace(/\\n/g,' ').trim())\n          .filter(l => l.length > 8);\n        const sampled = sampleSegments(allSegs, 200);\n        transcript = sampled.join('\\n');\n        source = 'Supadata API — ' + sampled.length + ' of ' + allSegs.length + ' segments (timestamped)';\n        console.log('[Manual] Supadata: ' + allSegs.length + ' segs → ' + sampled.length + ' for ' + videoId);\n      }\n    } catch(e) { console.log('[Manual] Supadata failed: ' + e.message); }\n  }\n\n  // Step 2: YouTube Timedtext API\n  if (videoId && !transcript) {\n    try {\n      const resp = await $helpers.httpRequest({\n        method: 'GET',\n        url: 'https://www.youtube.com/api/timedtext?v=' + videoId + '&lang=en&fmt=json3',\n        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' }\n      });\n      const data = typeof resp === 'string' ? JSON.parse(resp) : resp;\n      if (data?.events && data.events.length > 0) {\n        const allSegs = data.events\n          .filter(e => e.segs)\n          .map(e => '[' + msToTimestamp(e.tStartMs) + '] ' + e.segs.map(s => (s.utf8 || '').replace(/\\n/g,' ')).join('').trim())\n          .filter(l => l.length > 8);\n        const sampled = sampleSegments(allSegs, 200);\n        transcript = sampled.join('\\n');\n        source = 'YouTube Timedtext API — ' + sampled.length + ' of ' + allSegs.length + ' segments';\n        console.log('[Manual] Timedtext: ' + allSegs.length + ' segs → ' + sampled.length);\n      }\n    } catch(e) { console.log('[Manual] Timedtext failed: ' + e.message); }\n  }\n\n  // Step 3: Firecrawl full page scrape\n  if (!transcript) {\n    try {\n      const resp = await $helpers.httpRequest({\n        method: 'POST',\n        url: 'https://api.firecrawl.dev/v1/scrape',\n        headers: { 'Authorization': 'Bearer ' + cfg.FIRECRAWL_KEY, 'Content-Type': 'application/json' },\n        body: JSON.stringify({ url, formats: ['markdown'] })\n      });\n      const data = typeof resp === 'string' ? JSON.parse(resp) : resp;\n      const md = (data?.data?.markdown || '').slice(0, 5000);\n      if (!title || title === url) title = data?.data?.metadata?.title || data?.data?.title || url;\n      transcript = md;\n      source = 'Firecrawl page scrape (no timestamps)';\n      console.log('[Manual] Firecrawl fallback: ' + md.length + ' chars');\n    } catch(e) {\n      transcript = '(transcript unavailable — all 3 methods failed)';\n      source = 'failed';\n      console.log('[Manual] All methods failed for ' + url);\n    }\n  }\n\n  manualVideos.push({ url, title, transcript, source, videoId });\n}\n\nconsole.log('[Manual] ' + manualVideos.length + ' video(s) processed');\nreturn [{ json: { allChannels, manualVideos, cfg } }];"
+      }
+    },
+    {
+      "id": "yt9",
+      "name": "Code: Build Claude Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 400],
+      "parameters": {
+        "jsCode": "const allChannels  = $input.item.json.allChannels  || [];\nconst manualVideos = $input.item.json.manualVideos || [];\n\nlet allVideos     = [];\nlet trendingItems = [];\nlet cfg           = $input.item.json.cfg || {};\n\nfor (const ch of allChannels) {\n  if (Array.isArray(ch.videos))        allVideos.push(...ch.videos);\n  if (Array.isArray(ch.trendingItems)) trendingItems = ch.trendingItems;\n  if (ch.cfg && ch.cfg.CLAUDE_MODEL)   cfg = ch.cfg;\n}\n\nallVideos.sort((a, b) => (b.views || 0) - (a.views || 0));\nconst totalNew = allVideos.length;\nconsole.log('[Prompt] channel videos: ' + totalNew + ' | trending: ' + trendingItems.length + ' | manual: ' + manualVideos.length);\n\nconst channelSection = totalNew > 0\n  ? allVideos.map(v =>\n      '[' + v.category + '] ' + (v.channel||'') + ': \"' + v.title + '\"' +\n      (v.views > 0 ? ' | ' + v.views.toLocaleString() + ' views' : '') +\n      ' | ' + v.url\n    ).join('\\n')\n  : 'No new videos from tracked channels in the last 72 hours.';\n\nconst trendingSection = trendingItems.length > 0\n  ? trendingItems.map(t => t.title + (t.url ? ' | ' + t.url : '') + (t.description ? ' — ' + t.description.slice(0,120) : '')).join('\\n')\n  : 'Trending data unavailable today.';\n\nconst manualSection = manualVideos.length > 0\n  ? manualVideos.map(v =>\n      'TITLE: ' + v.title + '\\nURL: ' + v.url + '\\nSOURCE: ' + (v.source || 'unknown') + '\\nTRANSCRIPT:\\n' + (v.transcript || '(no transcript available)').slice(0, 6000)\n    ).join('\\n\\n---\\n\\n')\n  : 'No manually curated videos today.';\n\nconst prompt =\n  'You are a sharp tech + AI + business news curator. Today is ' + cfg.today + '.\\n\\n' +\n  'Below is fresh YouTube content from the last 72 hours.\\n\\n' +\n  '== TRENDING TECH/AI/BUSINESS WEB CONTENT ==\\n' + trendingSection + '\\n\\n' +\n  '== NEW VIDEOS FROM 12 TRACKED YOUTUBE CHANNELS ==\\n' + channelSection + '\\n\\n' +\n  '== MANUALLY CURATED VIDEOS (scraped transcript/content) ==\\n' + manualSection + '\\n\\n' +\n  '== YOUR TASK ==\\n' +\n  'Write a crisp professional daily digest. Use this exact structure:\\n\\n' +\n  'HEADLINE OF THE DAY\\n' +\n  'One bold sentence — the single biggest story/trend right now.\\n\\n' +\n  'TOP 5 MUST-WATCH\\n' +\n  'For each: title | channel | why it matters (2 sentences) | link\\n\\n' +\n  'AI & AUTOMATION HIGHLIGHTS\\n' +\n  '3 bullet points — most important AI/automation developments\\n\\n' +\n  'BUSINESS & STARTUP SIGNALS\\n' +\n  '2 bullet points — key business/startup/SaaS signals\\n\\n' +\n  'WHAT TO BUILD TODAY\\n' +\n  '1 specific actionable automation or product idea from today content\\n\\n' +\n  'QUOTE OF THE DAY\\n' +\n  'A memorable insight from today content\\n\\n' +\n  'Tone: smart, no fluff, like a briefing from a senior colleague. Plain text for email.';\n\nconst claudeRequest = JSON.stringify({\n  model:      cfg.CLAUDE_MODEL || 'claude-sonnet-4-6',\n  max_tokens: 3000,\n  messages:   [{ role: 'user', content: prompt }]\n});\n\nreturn [{ json: { ...cfg, allVideos, trendingItems, manualVideos, totalNew, claudeRequest } }];"
+      }
+    },
+    {
+      "id": "yt10",
+      "name": "HTTP: Claude — Write Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2480, 400],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",         "value": "={{ $json.CLAUDE_KEY }}" },
+            { "name": "anthropic-version",  "value": "2023-06-01" },
+            { "name": "Content-Type",       "value": "application/json" },
+            { "name": "Accept-Encoding",    "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.claudeRequest }}",
+        "options": { "timeout": 60000, "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "yt11",
+      "name": "Code: Format HTML Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2740, 400],
+      "parameters": {
+        "jsCode": "function decode(r) {\n  if (r?.content) return r;\n  if (!r?._readableState) return r;\n  try {\n    const chunks = Array.isArray(r._readableState.buffer) ? r._readableState.buffer : [];\n    const bytes  = [];\n    for (const c of chunks) {\n      const d = c?.data;\n      if (Array.isArray(d)) bytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) bytes.push(...d.data);\n    }\n    if (bytes.length) return JSON.parse(Buffer.from(bytes).toString('utf-8'));\n  } catch(e) {}\n  return r;\n}\n\nconst claudeResp = decode($input.item.json);\nconst prev       = $('Code: Build Claude Prompt').item.json;\nconst digestText = claudeResp?.content?.[0]?.text || 'Digest generation failed — please retry.';\n\nconst digestHtml = digestText.split('\\n').map(line => {\n  if (!line.trim()) return '<br/>';\n  const HEADINGS = ['HEADLINE OF THE DAY','TOP 5 MUST','AI & AUTO','BUSINESS &','WHAT TO BUILD','QUOTE OF'];\n  if (HEADINGS.some(h => line.toUpperCase().startsWith(h))) {\n    return '<h3 style=\"color:#7c3aed;margin:22px 0 6px;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:1px;\">' + line.trim() + '</h3>';\n  }\n  if (/^[•\\-\\d]/.test(line.trim())) {\n    const linked = line.replace(/(https?:\\/\\/[^\\s]+)/g,'<a href=\"$1\" style=\"color:#a78bfa;\">Watch →</a>');\n    return '<p style=\"margin:5px 0 5px 12px;color:#e2e8f0;font-size:14px;\">' + linked + '</p>';\n  }\n  const linked = line.replace(/(https?:\\/\\/[^\\s]+)/g,'<a href=\"$1\" style=\"color:#a78bfa;\">$1</a>');\n  return '<p style=\"margin:5px 0;color:#cbd5e1;font-size:14px;\">' + linked + '</p>';\n}).join('');\n\nconst emailHtml = '<div style=\"font-family:Inter,Arial,sans-serif;max-width:680px;margin:0 auto;background:#0f0a1e;border-radius:16px;overflow:hidden;\">'\n  + '<div style=\"background:linear-gradient(135deg,#7c3aed,#1d4ed8);padding:32px;\">'\n  + '<div style=\"font-size:36px;\">📺</div>'\n  + '<h1 style=\"margin:10px 0 4px;font-size:22px;font-weight:900;color:#fff;\">Daily Tech + AI + Business Digest</h1>'\n  + '<p style=\"color:rgba(255,255,255,0.8);margin:0;font-size:13px;\">' + prev.today + ' &nbsp;·&nbsp; ' + prev.totalNew + ' channel videos &nbsp;·&nbsp; ' + (prev.trendingItems?.length || 0) + ' trending items</p>'\n  + '</div>'\n  + '<div style=\"padding:28px 32px;\">' + digestHtml + '</div>'\n  + '<div style=\"background:#0d0a1a;padding:14px;text-align:center;border-top:1px solid #1e1b4b;\">'\n  + '<p style=\"color:#4b5563;font-size:11px;margin:0;\">🤖 JHD Advisor AI Digest · 12 Channels + Web Trending · <a href=\"https://jhdadvisor.com\" style=\"color:#7c3aed;\">jhdadvisor.com</a> · <a href=\"https://www.linkedin.com/in/jhd-adviser-08a183413/\" style=\"color:#0a66c2;\">LinkedIn</a></p>'\n  + '</div></div>';\n\nconst subject = '📺 ' + prev.today + ' — AI+Tech+Business Digest (' + prev.totalNew + ' videos)';\nconsole.log('[Email] Ready: ' + subject);\nreturn [{ json: { ...prev, digestText, emailHtml, subject } }];"
+      }
+    },
+    {
+      "id": "yt12",
+      "name": "Gmail: Send Daily Digest",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [3000, 400],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.DIGEST_EMAIL }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.emailHtml }}",
+        "options": {
+          "appendAttribution": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule: Daily 7AM": {
+      "main": [[{ "node": "Config: Channels + Keys", "type": "main", "index": 0 }]]
+    },
+    "Config: Channels + Keys": {
+      "main": [[{ "node": "HTTP: Fetch Trending News RSS", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Fetch Trending News RSS": {
+      "main": [[{ "node": "Code: Parse Trending + Build RSS List", "type": "main", "index": 0 }]]
+    },
+    "Code: Parse Trending + Build RSS List": {
+      "main": [[{ "node": "Split: One Channel at a Time", "type": "main", "index": 0 }]]
+    },
+    "Split: One Channel at a Time": {
+      "main": [
+        [{ "node": "HTTP: Fetch Channel RSS Feed",   "type": "main", "index": 0 }],
+        [{ "node": "Aggregate: All Channel Results", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP: Fetch Channel RSS Feed": {
+      "main": [[{ "node": "Code: Parse RSS XML", "type": "main", "index": 0 }]]
+    },
+    "Code: Parse RSS XML": {
+      "main": [[{ "node": "Split: One Channel at a Time", "type": "main", "index": 0 }]]
+    },
+    "Aggregate: All Channel Results": {
+      "main": [[{ "node": "Code: Scrape Manual Videos", "type": "main", "index": 0 }]]
+    },
+    "Code: Scrape Manual Videos": {
+      "main": [[{ "node": "Code: Build Claude Prompt", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Claude Prompt": {
+      "main": [[{ "node": "HTTP: Claude — Write Digest", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Claude — Write Digest": {
+      "main": [[{ "node": "Code: Format HTML Email", "type": "main", "index": 0 }]]
+    },
+    "Code: Format HTML Email": {
+      "main": [[{ "node": "Gmail: Send Daily Digest", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/New_York" },
+  "active": false,
+  "tags": ["YouTube", "Daily Digest", "AI", "Tech", "Automation", "JHD Advisor"]
+}

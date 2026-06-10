@@ -1,0 +1,509 @@
+{
+  "name": "Universal Website Cloner — Full Site + SEO + Telegram",
+  "nodes": [
+    {
+      "id": "node-01",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400],
+      "parameters": {
+        "path": "scrape-site",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "scrape-site-trigger"
+    },
+    {
+      "id": "node-01b",
+      "name": "Manual Test Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 560],
+      "parameters": {}
+    },
+    {
+      "id": "node-01c",
+      "name": "Set Test Inputs",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 560],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "targetUrl", "value": "https://books.toscrape.com", "type": "string" },
+            { "id": "a2", "name": "category", "value": "books", "type": "string" },
+            { "id": "a3", "name": "siteName", "value": "Books to Scrape", "type": "string" },
+            { "id": "a4", "name": "chatId", "value": "", "type": "string" },
+            { "id": "a5", "name": "pageLimit", "value": "50", "type": "string" },
+            { "id": "a6", "name": "maxImagesPerPage", "value": "3", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-02",
+      "name": "Validate & Setup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 460],
+      "parameters": {
+        "jsCode": "const body = $input.item.json.body || $input.item.json;\n\nconst targetUrl = (body.targetUrl || '').trim().replace(/\\/$/, '');\nconst category = (body.category || 'general').trim();\nconst siteName = (body.siteName || targetUrl.replace(/https?:\\/\\/(www\\.)?/,'').split('/')[0]).trim();\nconst chatId = (body.chatId || '').trim();\nconst pageLimit = parseInt(body.pageLimit || '50');\nconst maxImagesPerPage = parseInt(body.maxImagesPerPage || '3');\n\nif (!targetUrl || !targetUrl.startsWith('http')) {\n  throw new Error('Invalid targetUrl: ' + targetUrl);\n}\n\nconst domain = targetUrl.replace(/https?:\\/\\/(www\\.)?/,'').split('/')[0];\nconsole.log(`Cloning ${targetUrl} — limit: ${pageLimit} pages, ${maxImagesPerPage} images/page`);\n\nreturn [{ json: { targetUrl, category, siteName, domain, chatId, pageLimit, maxImagesPerPage, startedAt: new Date().toISOString() } }];"
+      }
+    },
+    {
+      "id": "node-03",
+      "name": "Firecrawl: Map All Pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 460],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/map",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer fc-471db502e79143e0982f3d2638b8ccdb" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ url: $json.targetUrl, limit: parseInt($json.pageLimit) || 50, ignoreSitemap: false }) }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "node-04",
+      "name": "Filter & Prepare Pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 460],
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst config = $('Validate & Setup').item.json;\nconst base = config.targetUrl;\n\nconst EXCLUDE = [\n  '/wp-admin', '/wp-login', '/admin/', '/login', '/logout',\n  '/cart', '/checkout', '/account', '/my-account',\n  '/cdn-cgi', '/wp-json', '/xmlrpc', '/feed', '/rss',\n  '.xml', '.txt', '.pdf', '.zip', '.exe', '.css', '.js',\n  'tel:', 'mailto:', 'javascript:'\n];\n\n// Handle Firecrawl map error — fall back to homepage only\nlet rawLinks = Array.isArray(data?.links) ? data.links : [];\nif (!rawLinks.length) {\n  console.log('Firecrawl map returned no links (error or blocked). Falling back to homepage only:', base);\n  rawLinks = [base];\n}\n\nconst seen = new Set();\nconst pages = rawLinks.filter(url => {\n  try {\n    if (!url.startsWith('http')) return false;\n    const domain = base.replace(/https?:\\/\\/(www\\.)?/,'').split('/')[0];\n    if (!url.includes(domain)) return false;\n    if (seen.has(url)) return false;\n    seen.add(url);\n    const path = url.replace(base,'').toLowerCase();\n    if (EXCLUDE.some(e => path.includes(e))) return false;\n    if (/[?&](page|p|paged|offset)=\\d/.test(url)) return false;\n    return true;\n  } catch (e) { return false; }\n});\n\nconst finalPages = pages.length ? pages : [base];\nconsole.log(`Cloning ${finalPages.length} pages from ${rawLinks.length} total URLs`);\n\nreturn finalPages.map(url => ({\n  json: {\n    url,\n    targetUrl: config.targetUrl,\n    siteName: config.siteName,\n    domain: config.domain,\n    category: config.category,\n    chatId: config.chatId,\n    maxImagesPerPage: config.maxImagesPerPage\n  }\n}));"
+      }
+    },
+    {
+      "id": "node-05",
+      "name": "Loop Pages",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1340, 460],
+      "parameters": {
+        "batchSize": 2,
+        "options": {}
+      }
+    },
+    {
+      "id": "node-06",
+      "name": "Firecrawl: Scrape Full Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 460],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer fc-471db502e79143e0982f3d2638b8ccdb" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ url: $json.url, formats: ['markdown', 'extract'], extract: { schema: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, price: { type: 'string' }, images: { type: 'array', items: { type: 'string' } }, pageType: { type: 'string' }, category: { type: 'string' }, brand: { type: 'string' } } } }, onlyMainContent: true }) }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "node-07",
+      "name": "Parse Page Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 460],
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst loopItem = $('Loop Pages').item.json;\n\nconst pageData = data?.data || data || {};\nconst extract = pageData?.extract || {};\nconst markdown = pageData?.markdown || '';\nconst metadata = pageData?.metadata || {};\n\nconst sourceUrl = loopItem.url || '';\nconst maxImages = loopItem.maxImagesPerPage || 3;\n\nconst title = extract.title || metadata.title || metadata.ogTitle || '';\n\nif (!title && !markdown) {\n  return [{ json: { _valid: false, _error: 'Empty page', sourceUrl, domain: loopItem.domain } }];\n}\n\nconst fullContent = markdown.length > 200\n  ? markdown.substring(0, 4000)\n  : (extract.description || metadata.description || '');\n\nif (!fullContent || fullContent.length < 50) {\n  return [{ json: { _valid: false, _error: 'Not enough content', sourceUrl, domain: loopItem.domain } }];\n}\n\nconst allImages = (extract.images || metadata.images || []).filter(url => {\n  if (!url || !url.startsWith('http')) return false;\n  if (/(logo|icon|badge|svg|pixel|spinner|placeholder)/i.test(url)) return false;\n  if (/\\.(svg|gif|ico)$/.test(url.split('?')[0])) return false;\n  return true;\n});\n\nconst pageImages = allImages.slice(0, maxImages);\nconst mainImageUrl = pageImages[0] || '';\n\nconst path = sourceUrl.replace(loopItem.targetUrl,'').toLowerCase();\nlet pageType = 'page';\nif (path === '' || path === '/') pageType = 'homepage';\nelse if (extract.price || /product|item|buy|shop/i.test(path)) pageType = 'product';\nelse if (/blog|news|article|post/i.test(path)) pageType = 'blog';\nelse if (/categor|collection|browse/i.test(path)) pageType = 'category';\n\nreturn [{ json: {\n  _valid: true,\n  title: title || sourceUrl.split('/').pop(),\n  fullContent,\n  price: extract.price || '',\n  category: extract.category || loopItem.category,\n  brand: extract.brand || '',\n  pageType,\n  sourceUrl,\n  domain: loopItem.domain,\n  siteName: loopItem.siteName,\n  chatId: loopItem.chatId,\n  mainImageUrl,\n  allImageUrls: pageImages,\n  imageCount: pageImages.length,\n  metaDescription: metadata.description || ''\n}}];"
+      }
+    },
+    {
+      "id": "node-08",
+      "name": "Is Valid Page?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2000, 460],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{ "id": "c1", "leftValue": "={{ $json._valid }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-09",
+      "name": "Build SEO Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 340],
+      "parameters": {
+        "jsCode": "const p = $input.item.json;\nconst geo = 'Long Island, Plainview, Hicksville, Syosset, Bethpage, Farmingdale, Westbury, New York';\n\nconst prompt = `You are an expert SEO copywriter for a business in ${geo}.\n\nPage type: ${p.pageType}\nSite: ${p.siteName} (${p.domain})\nCategory: ${p.category}\n${p.price ? 'Price: ' + p.price : ''}\n\nOriginal content:\n${p.fullContent}\n\nRewrite this page for maximum SEO + local geo-targeting (${geo}).\n\nReturn ONLY a JSON object:\n{\n  \"seo_title\": \"Max 60 chars with geo keyword\",\n  \"seo_content\": \"Full rewritten page content 400-800 words — keep all key facts, add geo-targeted language naturally, compelling for Long Island NY visitors\",\n  \"meta_title\": \"Max 60 chars, primary keyword first\",\n  \"meta_description\": \"Max 155 chars, geo-targeted CTA\",\n  \"keywords\": [\"8-12 keywords including Long Island NY area terms\"],\n  \"page_type\": \"${p.pageType}\"\n}`;\n\nreturn [{ json: { ...p, seoPrompt: prompt } }];"
+      }
+    },
+    {
+      "id": "node-10",
+      "name": "Claude: Rewrite Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2440, 340],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "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" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2500, messages: [{ role: 'user', content: $json.seoPrompt }] }) }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "node-11",
+      "name": "Parse SEO Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2660, 340],
+      "parameters": {
+        "jsCode": "const resp = $input.item.json;\nconst p = $('Build SEO Prompt').item.json;\n\nconst raw = resp?.content?.[0]?.text || '';\nlet ai = {};\ntry {\n  const m = raw.match(/\\{[\\s\\S]*\\}/);\n  if (m) ai = JSON.parse(m[0]);\n} catch (e) {\n  ai = {\n    seo_title: p.title.substring(0, 60),\n    seo_content: p.fullContent.substring(0, 800),\n    meta_title: p.title.substring(0, 60),\n    meta_description: p.metaDescription.substring(0, 155),\n    keywords: [p.category, p.domain, 'Long Island', 'New York']\n  };\n}\n\nreturn [{ json: {\n  title: p.title,\n  price: p.price,\n  category: p.category,\n  brand: p.brand,\n  pageType: p.pageType,\n  sourceUrl: p.sourceUrl,\n  domain: p.domain,\n  siteName: p.siteName,\n  chatId: p.chatId,\n  mainImageUrl: p.mainImageUrl,\n  allImageUrls: p.allImageUrls,\n  imageCount: p.imageCount,\n  originalContent: p.fullContent.substring(0, 500),\n  seo_title: ai.seo_title || p.title.substring(0,60),\n  seo_content: ai.seo_content || p.fullContent.substring(0,800),\n  meta_title: ai.meta_title || p.title.substring(0,60),\n  meta_description: ai.meta_description || '',\n  keywords: ai.keywords || [],\n  keywordsStr: (ai.keywords || []).join(', ')\n}}];"
+      }
+    },
+    {
+      "id": "node-12",
+      "name": "Has Image?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2880, 340],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{ "id": "c2", "leftValue": "={{ $json.mainImageUrl }}", "rightValue": "", "operator": { "type": "string", "operation": "notEquals" } }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-13",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3100, 220],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.mainImageUrl }}",
+        "options": { "response": { "response": { "responseFormat": "file" } } }
+      }
+    },
+    {
+      "id": "node-14",
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3320, 220],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "upload",
+        "name": "={{ $('Parse SEO Content').item.json.domain + '_' + $('Parse SEO Content').item.json.title.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40) + '.jpg' }}",
+        "driveId": { "__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive" },
+        "folderId": { "__rl": true, "value": "root", "mode": "list", "cachedResultName": "/ (Root)" },
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-15",
+      "name": "Set Drive Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3540, 220],
+      "parameters": {
+        "jsCode": "const dr = $input.item.json;\nconst p = $('Parse SEO Content').item.json;\nconst link = dr?.id ? `https://drive.google.com/file/d/${dr.id}/view` : '';\nreturn [{ json: { ...p, driveImageLink: link } }];"
+      }
+    },
+    {
+      "id": "node-16",
+      "name": "No Image — Skip",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3100, 460],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "driveImageLink", "value": "", "type": "string" }
+          ]
+        },
+        "options": { "includeOtherFields": true }
+      }
+    },
+    {
+      "id": "node-17b",
+      "name": "Format Row for Sheets",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3540, 460],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "f01", "name": "Timestamp",        "value": "={{ $now.toISO() }}",                                    "type": "string" },
+            { "id": "f02", "name": "Site",              "value": "={{ $json.siteName }}",                                  "type": "string" },
+            { "id": "f03", "name": "Page Type",         "value": "={{ $json.pageType }}",                                  "type": "string" },
+            { "id": "f04", "name": "Original Title",    "value": "={{ $json.title }}",                                     "type": "string" },
+            { "id": "f05", "name": "SEO Title",         "value": "={{ $json.seo_title }}",                                 "type": "string" },
+            { "id": "f06", "name": "Price",             "value": "={{ $json.price }}",                                     "type": "string" },
+            { "id": "f07", "name": "Category",          "value": "={{ $json.category }}",                                  "type": "string" },
+            { "id": "f08", "name": "Brand",             "value": "={{ $json.brand }}",                                     "type": "string" },
+            { "id": "f09", "name": "Original Content",  "value": "={{ $json.originalContent }}",                           "type": "string" },
+            { "id": "f10", "name": "SEO Content",       "value": "={{ $json.seo_content }}",                               "type": "string" },
+            { "id": "f11", "name": "Meta Title",        "value": "={{ $json.meta_title }}",                                "type": "string" },
+            { "id": "f12", "name": "Meta Description",  "value": "={{ $json.meta_description }}",                          "type": "string" },
+            { "id": "f13", "name": "Keywords",          "value": "={{ $json.keywordsStr }}",                               "type": "string" },
+            { "id": "f14", "name": "Source URL",        "value": "={{ $json.sourceUrl }}",                                 "type": "string" },
+            { "id": "f15", "name": "Drive Image",       "value": "={{ $json.driveImageLink }}",                            "type": "string" },
+            { "id": "f16", "name": "All Image URLs",    "value": "={{ ($json.allImageUrls || []).join(', ') }}",            "type": "string" },
+            { "id": "f17", "name": "Image Count",       "value": "={{ $json.imageCount }}",                                "type": "number" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-17",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [3760, 460],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1CWJr1h1q9ZGY6jo6G-r4iBTUuP5LjuHhaw8780jdTQY", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Products", "mode": "name" },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-18",
+      "name": "Loop Back",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3980, 460],
+      "parameters": {}
+    },
+    {
+      "id": "node-19",
+      "name": "Log Skipped Page",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [2220, 600],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1CWJr1h1q9ZGY6jo6G-r4iBTUuP5LjuHhaw8780jdTQY", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Errors", "mode": "name" },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-19b",
+      "name": "Format Error Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2000, 600],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "e1", "name": "Timestamp", "value": "={{ $now.toISO() }}", "type": "string" },
+            { "id": "e2", "name": "URL",        "value": "={{ $json.sourceUrl }}", "type": "string" },
+            { "id": "e3", "name": "Domain",     "value": "={{ $json.domain }}", "type": "string" },
+            { "id": "e4", "name": "Error",      "value": "={{ $json._error }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-20",
+      "name": "Send Done Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [4200, 460],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ `✅ *Website clone complete!*\\n\\n🌐 Site: *${$json.siteName}*\\n📄 All pages scraped + AI SEO rewritten\\n🖼 Images saved to Google Drive\\n📊 Full data in Google Sheets\\n\\n🔗 sheets.google.com/d/1CWJr1h1q9ZGY6jo6G-r4iBTUuP5LjuHhaw8780jdTQY\\n\\nSend *search [category]* to clone another site! 🚀` }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      }
+    },
+    {
+      "id": "node-21",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [240, 720],
+      "parameters": {}
+    },
+    {
+      "id": "node-22b",
+      "name": "Format Unhandled Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 720],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "u1", "name": "Timestamp", "value": "={{ $now.toISO() }}", "type": "string" },
+            { "id": "u2", "name": "URL",        "value": "unhandled-error", "type": "string" },
+            { "id": "u3", "name": "Error",      "value": "={{ $json.execution?.error?.message }}", "type": "string" },
+            { "id": "u4", "name": "Domain",     "value": "={{ $json.workflow?.name }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-22",
+      "name": "Log Unhandled Error",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [680, 720],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1CWJr1h1q9ZGY6jo6G-r4iBTUuP5LjuHhaw8780jdTQY", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Errors", "mode": "name" },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[ { "node": "Validate & Setup", "type": "main", "index": 0 } ]]
+    },
+    "Manual Test Trigger": {
+      "main": [[ { "node": "Set Test Inputs", "type": "main", "index": 0 } ]]
+    },
+    "Set Test Inputs": {
+      "main": [[ { "node": "Validate & Setup", "type": "main", "index": 0 } ]]
+    },
+    "Validate & Setup": {
+      "main": [[ { "node": "Firecrawl: Map All Pages", "type": "main", "index": 0 } ]]
+    },
+    "Firecrawl: Map All Pages": {
+      "main": [[ { "node": "Filter & Prepare Pages", "type": "main", "index": 0 } ]]
+    },
+    "Filter & Prepare Pages": {
+      "main": [[ { "node": "Loop Pages", "type": "main", "index": 0 } ]]
+    },
+    "Loop Pages": {
+      "main": [
+        [ { "node": "Firecrawl: Scrape Full Page", "type": "main", "index": 0 } ],
+        [ { "node": "Send Done Notification", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Firecrawl: Scrape Full Page": {
+      "main": [[ { "node": "Parse Page Content", "type": "main", "index": 0 } ]]
+    },
+    "Parse Page Content": {
+      "main": [[ { "node": "Is Valid Page?", "type": "main", "index": 0 } ]]
+    },
+    "Is Valid Page?": {
+      "main": [
+        [ { "node": "Build SEO Prompt", "type": "main", "index": 0 } ],
+        [ { "node": "Format Error Row", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Build SEO Prompt": {
+      "main": [[ { "node": "Claude: Rewrite Content", "type": "main", "index": 0 } ]]
+    },
+    "Claude: Rewrite Content": {
+      "main": [[ { "node": "Parse SEO Content", "type": "main", "index": 0 } ]]
+    },
+    "Parse SEO Content": {
+      "main": [[ { "node": "Has Image?", "type": "main", "index": 0 } ]]
+    },
+    "Has Image?": {
+      "main": [
+        [ { "node": "Download Image", "type": "main", "index": 0 } ],
+        [ { "node": "No Image — Skip", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Download Image": {
+      "main": [[ { "node": "Upload to Google Drive", "type": "main", "index": 0 } ]]
+    },
+    "Upload to Google Drive": {
+      "main": [[ { "node": "Set Drive Link", "type": "main", "index": 0 } ]]
+    },
+    "Set Drive Link": {
+      "main": [[ { "node": "Format Row for Sheets", "type": "main", "index": 0 } ]]
+    },
+    "No Image — Skip": {
+      "main": [[ { "node": "Format Row for Sheets", "type": "main", "index": 0 } ]]
+    },
+    "Format Row for Sheets": {
+      "main": [[ { "node": "Log to Google Sheets", "type": "main", "index": 0 } ]]
+    },
+    "Log to Google Sheets": {
+      "main": [[ { "node": "Loop Back", "type": "main", "index": 0 } ]]
+    },
+    "Loop Back": {
+      "main": [[ { "node": "Loop Pages", "type": "main", "index": 0 } ]]
+    },
+    "Format Error Row": {
+      "main": [[ { "node": "Log Skipped Page", "type": "main", "index": 0 } ]]
+    },
+    "Log Skipped Page": {
+      "main": [[ { "node": "Loop Pages", "type": "main", "index": 0 } ]]
+    },
+    "Error Trigger": {
+      "main": [[ { "node": "Format Unhandled Error", "type": "main", "index": 0 } ]]
+    },
+    "Format Unhandled Error": {
+      "main": [[ { "node": "Log Unhandled Error", "type": "main", "index": 0 } ]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "tags": [{ "name": "scraper" }, { "name": "website-clone" }, { "name": "seo" }, { "name": "telegram" }]
+}

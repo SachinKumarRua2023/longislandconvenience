@@ -1,0 +1,241 @@
+{
+  "name": "WF-B — Daily Blog Auto-Post (LongIslandConvenience.com)",
+  "nodes": [
+
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 12 * * *" }]
+        }
+      },
+      "id": "wfb-001",
+      "name": "Cron: 7AM EST Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "notes": "12:00 UTC = 7:00 AM EST (8:00 AM EDT in summer). Adjust if needed."
+    },
+
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://serpapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "engine", "value": "google_trends" },
+            { "name": "q", "value": "Long Island,Plainview NY,Nassau County,gift basket,convenience store" },
+            { "name": "geo", "value": "US-NY" },
+            { "name": "api_key", "value": "=FILL_YOUR_SERPAPI_KEY" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfb-002",
+      "name": "HTTP: SerpAPI — Trending Topics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 200]
+    },
+
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://serpapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "engine", "value": "google" },
+            { "name": "q", "value": "Long Island convenience store Plainview NY news 2026" },
+            { "name": "location", "value": "Plainview, New York, United States" },
+            { "name": "num", "value": "5" },
+            { "name": "api_key", "value": "=FILL_YOUR_SERPAPI_KEY" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfb-003",
+      "name": "HTTP: SerpAPI — Local News Headlines",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 420]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// Combine SerpAPI results into context for Claude\nconst trendsData = $('HTTP: SerpAPI — Trending Topics').item.json;\nconst newsData = $('HTTP: SerpAPI — Local News Headlines').item.json;\n\n// Extract trending topics\nlet trendingTopics = [];\nif (trendsData.interest_over_time && trendsData.interest_over_time.timeline_data) {\n  trendingTopics = trendsData.interest_over_time.timeline_data\n    .slice(0, 5)\n    .map(d => d.values ? d.values[0]?.query : 'Local events')\n    .filter(Boolean);\n}\nif (!trendingTopics.length) trendingTopics = ['Long Island summer events', 'Nassau County community', 'Local gift ideas'];\n\n// Extract local news snippets\nlet newsSnippets = [];\nif (newsData.organic_results) {\n  newsSnippets = newsData.organic_results\n    .slice(0, 3)\n    .map(r => r.snippet || r.title)\n    .filter(Boolean);\n}\n\n// Build today's context\nconst today = new Date();\nconst dateStr = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });\n\n// Seasonal/occasion context\nconst month = today.getMonth(); // 0-11\nconst occasions = {\n  0: 'New Year celebrations, Valentine Day prep',\n  1: 'Valentine Day, Presidents Day',\n  2: 'St Patricks Day, Spring events, Mardi Gras',\n  3: 'Easter, Passover, Spring cleaning',\n  4: \"Mother's Day, Graduations, Memorial Day\",\n  5: \"Father's Day, Graduations, Summer starts\",\n  6: 'Fourth of July, Summer BBQs, Back to school prep',\n  7: 'Back to school, Late summer events',\n  8: 'Labor Day, Fall begins, Rosh Hashanah, Yom Kippur',\n  9: 'Halloween, Columbus Day, Breast Cancer Awareness',\n  10: 'Thanksgiving, Veterans Day, Holiday shopping starts',\n  11: 'Christmas, Hanukkah, New Year prep, Holiday gifts',\n};\n\nconst context = {\n  date: dateStr,\n  trending: trendingTopics,\n  news: newsSnippets,\n  season_occasion: occasions[month],\n};\n\nreturn [{ json: context }];"
+      },
+      "id": "wfb-004",
+      "name": "Code: Build Topic Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"model\": \"claude-opus-4-7\",\n  \"max_tokens\": 2000,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Write a 700-800 word SEO-optimized blog post for LongIslandConvenience.com (a convenience hub in Plainview, Long Island NY selling gift baskets, balloons, sports cards, printing/shipping, and greeting cards).\\n\\nToday: {{ $json.date }}\\nSeasonal context: {{ $json.season_occasion }}\\nTrending topics: {{ $json.trending.join(', ') }}\\nLocal news context: {{ $json.news.join(' | ') }}\\n\\nRequirements:\\n- Title: compelling, includes 'Long Island' or 'Plainview NY' or 'Nassau County'\\n- Intro paragraph (2-3 sentences, hook the reader)\\n- 3-4 body sections with H2 headings\\n- Local angle — mention Long Island, Nassau County, Plainview NY naturally\\n- CTA at the end (visit us, call us, shop online)\\n- Tone: friendly, local, helpful\\n- Include keywords: Long Island convenience store, Plainview NY, Nassau County, gift basket, same-day pickup\\n\\nRespond in this exact JSON format (no markdown wrapper):\\n{\\n  \\\"title\\\": \\\"Blog post title here\\\",\\n  \\\"slug\\\": \\\"url-friendly-slug-here\\\",\\n  \\\"meta_description\\\": \\\"155 char SEO meta description\\\",\\n  \\\"tags\\\": [\\\"Long Island\\\", \\\"Plainview NY\\\", \\\"tag3\\\"],\\n  \\\"html_body\\\": \\\"<h2>Section 1</h2><p>...</p><h2>Section 2</h2>...\\\",\\n  \\\"social_caption\\\": \\\"Short 200-char social media caption with emojis\\\",\\n  \\\"hashtags\\\": [\\\"LongIsland\\\", \\\"PlainviewNY\\\", \\\"NassauCounty\\\"]\\n}\"\n    }\n  ]\n}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfb-005",
+      "name": "HTTP: Claude — Write Blog Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "anthropic-cred", "name": "Anthropic Claude API" }
+      }
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's JSON response\nconst response = $input.first().json;\nlet blogData;\n\ntry {\n  const content = response.content[0].text;\n  // Remove any accidental markdown code fences\n  const cleaned = content.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  blogData = JSON.parse(cleaned);\n} catch(e) {\n  // Fallback if Claude didn't return valid JSON\n  blogData = {\n    title: 'Your Long Island One-Stop Shop — News & Updates',\n    slug: 'long-island-convenience-update-' + Date.now(),\n    meta_description: 'Visit Long Island Convenience in Plainview NY for gift baskets, balloons, sports cards, printing and more.',\n    tags: ['Long Island', 'Plainview NY', 'Nassau County'],\n    html_body: '<h2>Visit Us Today</h2><p>Stop by Long Island Convenience at 605 Old Country Road, Plainview NY 11803.</p>',\n    social_caption: '🏪 Something exciting is happening at Long Island Convenience! Visit us in Plainview NY. #LongIsland #PlainviewNY',\n    hashtags: ['LongIsland', 'PlainviewNY', 'NassauCounty'],\n  };\n}\n\nreturn [{ json: blogData }];"
+      },
+      "id": "wfb-006",
+      "name": "Code: Parse Claude Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"model\": \"dall-e-3\",\n  \"prompt\": \"Professional lifestyle photo for a blog post about '{{ $json.title }}'. Long Island New York convenience store community. Bright, inviting, photorealistic. No text in image. Aspect ratio 16:9.\",\n  \"n\": 1,\n  \"size\": \"1792x1024\",\n  \"quality\": \"standard\",\n  \"response_format\": \"url\"\n}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfb-007",
+      "name": "HTTP: DALL-E 3 — Blog Featured Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 200],
+      "credentials": {
+        "httpHeaderAuth": { "id": "openai-cred", "name": "OpenAI API" }
+      }
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// Merge blog data with the generated image URL\nconst blogData = $('Code: Parse Claude Response').item.json;\nconst imageData = $('HTTP: DALL-E 3 — Blog Featured Image').item.json;\n\nconst imageUrl = imageData?.data?.[0]?.url || null;\n\n// Build Odoo JSON-RPC payload for blog.post creation\nconst today = new Date();\nconst blogPayload = {\n  // Blog data\n  blog_data: blogData,\n  image_url: imageUrl,\n  // Odoo model fields\n  odoo_fields: {\n    name: blogData.title,\n    subtitle: blogData.meta_description,\n    content: blogData.html_body,\n    website_published: true,\n    is_published: true,\n    website_id: 1,           // WID=1 — LongIslandConvenience.com\n    blog_id: 6,              // Blog ID=6 = "Long Island News" on WID=1 LIC\n    tag_ids: [],             // We'll add tags separately\n    website_meta_title: blogData.title + ' | Long Island Convenience',\n    website_meta_description: blogData.meta_description,\n    website_meta_keywords: blogData.tags.join(', '),\n  },\n  // For social sharing via WF-A\n  social_payload: {\n    brand: 'longislandconvenience',\n    content_type: 'blog',\n    text: blogData.social_caption,\n    text_long: blogData.social_caption,\n    image_url: imageUrl,\n    link_url: 'https://www.longislandconvenience.com/blog/' + blogData.slug,\n    hashtags: blogData.hashtags,\n    platforms: ['facebook', 'instagram', 'pinterest', 'twitter'],\n  },\n};\n\nreturn [{ json: blogPayload }];"
+      },
+      "id": "wfb-008",
+      "name": "Code: Build Odoo + Social Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 300]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"id\": 1,\n  \"params\": {\n    \"model\": \"blog.post\",\n    \"method\": \"create\",\n    \"args\": [{\n      \"name\": \"{{ $json.odoo_fields.name }}\",\n      \"subtitle\": \"{{ $json.odoo_fields.subtitle }}\",\n      \"content\": \"{{ $json.odoo_fields.content }}\",\n      \"website_published\": true,\n      \"is_published\": true,\n      \"website_id\": 1,\n      \"blog_id\": 1,\n      \"website_meta_title\": \"{{ $json.odoo_fields.website_meta_title }}\",\n      \"website_meta_description\": \"{{ $json.odoo_fields.website_meta_description }}\",\n      \"website_meta_keywords\": \"{{ $json.odoo_fields.website_meta_keywords }}\"\n    }],\n    \"kwargs\": {}\n  }\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Cookie", "value": "=FILL_YOUR_ODOO_SESSION_COOKIE" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfb-009",
+      "name": "HTTP: Odoo — Create Blog Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1680, 300],
+      "notes": "NOTE: Get session cookie by logging into Odoo in browser, copying the session_id cookie. Or use a Set Credentials HTTP node to authenticate first via /web/session/authenticate"
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=FILL_YOUR_N8N_BASE_URL/webhook/social-blast",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify($('Code: Build Odoo + Social Payload').item.json.social_payload) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfb-010",
+      "name": "HTTP: Trigger WF-A Social Blast",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1920, 300],
+      "notes": "Replace FILL_YOUR_N8N_BASE_URL with your n8n server URL, e.g. https://your-n8n.hostname.com"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// Log the result\nconst blogPost = $('Code: Build Odoo + Social Payload').item.json;\nconst odooResult = $('HTTP: Odoo — Create Blog Post').item.json;\nconst socialResult = $('HTTP: Trigger WF-A Social Blast').item.json;\n\nconsole.log('=== WF-B Daily Blog Complete ===');\nconsole.log('Blog title:', blogPost.blog_data.title);\nconsole.log('Odoo post ID:', odooResult.result);\nconsole.log('Social blast result:', JSON.stringify(socialResult));\n\nreturn [{\n  json: {\n    success: true,\n    title: blogPost.blog_data.title,\n    odoo_post_id: odooResult.result,\n    image_url: blogPost.image_url,\n    social_blast_status: socialResult.status,\n    timestamp: new Date().toISOString(),\n  }\n}];"
+      },
+      "id": "wfb-011",
+      "name": "Code: Log & Done",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2160, 300]
+    }
+
+  ],
+
+  "connections": {
+    "Cron: 7AM EST Daily": {
+      "main": [[
+        { "node": "HTTP: SerpAPI — Trending Topics", "type": "main", "index": 0 },
+        { "node": "HTTP: SerpAPI — Local News Headlines", "type": "main", "index": 0 }
+      ]]
+    },
+    "HTTP: SerpAPI — Trending Topics": {
+      "main": [[{ "node": "Code: Build Topic Context", "type": "main", "index": 0 }]]
+    },
+    "HTTP: SerpAPI — Local News Headlines": {
+      "main": [[{ "node": "Code: Build Topic Context", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Topic Context": {
+      "main": [[{ "node": "HTTP: Claude — Write Blog Post", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Claude — Write Blog Post": {
+      "main": [[{ "node": "Code: Parse Claude Response", "type": "main", "index": 0 }]]
+    },
+    "Code: Parse Claude Response": {
+      "main": [[
+        { "node": "HTTP: DALL-E 3 — Blog Featured Image", "type": "main", "index": 0 },
+        { "node": "Code: Build Odoo + Social Payload", "type": "main", "index": 0 }
+      ]]
+    },
+    "HTTP: DALL-E 3 — Blog Featured Image": {
+      "main": [[{ "node": "Code: Build Odoo + Social Payload", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Odoo + Social Payload": {
+      "main": [[{ "node": "HTTP: Odoo — Create Blog Post", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo — Create Blog Post": {
+      "main": [[{ "node": "HTTP: Trigger WF-A Social Blast", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Trigger WF-A Social Blast": {
+      "main": [[{ "node": "Code: Log & Done", "type": "main", "index": 0 }]]
+    }
+  },
+
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "America/New_York"
+  },
+  "tags": ["blog", "seo", "daily-automation", "long-island"],
+  "notes": "WF-B: Daily Blog — runs at 7AM EST. Fill in: SERPAPI_KEY, Anthropic API key, OpenAI API key, Odoo session cookie, n8n base URL. Requires WF-A to be active for social sharing."
+}

@@ -1,0 +1,485 @@
+<style>
+    .li-homepage-wrapper * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .li-homepage-wrapper {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #333;
+        background: #f5f5f5;
+    }
+
+    /* ========== TOP BANNER ========== */
+    .top-banner {
+        background: linear-gradient(90deg, #ff8c00, #ffa500);
+        color: white;
+        padding: 12px 0;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .top-banner span {
+        margin: 0 20px;
+        display: inline-block;
+    }
+
+    /* ========== HERO SECTION ========== */
+    .hero {
+        height: 400px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 40px 60px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero::before {
+        content: '';
+        position: absolute;
+        right: -100px;
+        top: -100px;
+        width: 400px;
+        height: 400px;
+        background: rgba(255,165,0,0.1);
+        border-radius: 50%;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        max-width: 50%;
+    }
+
+    .hero h1 {
+        font-size: 56px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .hero p {
+        font-size: 18px;
+        margin-bottom: 25px;
+        opacity: 0.95;
+    }
+
+    .hero-btn {
+        display: inline-block;
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+        padding: 12px 35px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 14px;
+    }
+
+    .hero-btn:hover {
+        background: white;
+        color: #667eea;
+    }
+
+    .hero-image {
+        position: relative;
+        z-index: 2;
+        max-width: 45%;
+        text-align: center;
+    }
+
+    .hero-image img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+
+    /* ========== CATEGORY SECTION ========== */
+    .categories-section {
+        padding: 80px 60px;
+        background: white;
+    }
+
+    .section-title {
+        text-align: center;
+        font-size: 42px;
+        font-weight: bold;
+        margin-bottom: 50px;
+        color: #333;
+    }
+
+    .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .category-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .category-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+
+    .category-card a {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .category-image {
+        width: 100%;
+        height: 280px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .category-info {
+        padding: 25px;
+        text-align: center;
+    }
+
+    .category-info h3 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .category-info p {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    /* ========== PRODUCTS SECTION ========== */
+    .products-section {
+        padding: 80px 60px;
+        background: #fafafa;
+    }
+
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .product-card {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .product-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .product-card a {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .product-image {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .product-info {
+        padding: 20px;
+        text-align: center;
+    }
+
+    .product-info h3 {
+        color: #333;
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .product-info p {
+        color: #666;
+        font-size: 13px;
+    }
+
+    /* ========== BUNDLE SHOWCASE ========== */
+    .bundle-showcase {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        padding: 80px 60px;
+        text-align: center;
+    }
+
+    .bundle-showcase h2 {
+        color: white;
+        font-size: 42px;
+        margin-bottom: 40px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .bundle-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .bundle-image-wrapper {
+        animation: floating-enhanced 4s ease-in-out infinite;
+    }
+
+    .bundle-image {
+        width: 400px;
+        height: auto;
+        max-width: 100%;
+        border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        animation: fire-border-circulate 2.5s ease-in-out infinite;
+        border: 6px solid #ff8c00;
+    }
+
+    .bundle-text h3 {
+        color: white;
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    .bundle-text p {
+        color: rgba(255,255,255,0.95);
+        font-size: 16px;
+        max-width: 400px;
+    }
+
+    /* ========== ANIMATIONS ========== */
+    @keyframes floating-enhanced {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-25px); }
+    }
+
+    @keyframes fire-border-circulate {
+        0% {
+            border-color: #ff8c00;
+            box-shadow: 0 12px 40px rgba(255, 140, 0, 0.8);
+        }
+        50% {
+            border-color: #ff0000;
+            box-shadow: 0 12px 60px rgba(255, 0, 0, 1);
+        }
+        100% {
+            border-color: #ff8c00;
+            box-shadow: 0 12px 40px rgba(255, 140, 0, 0.8);
+        }
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 768px) {
+        .hero {
+            flex-direction: column;
+            height: auto;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .hero-content, .hero-image {
+            max-width: 100%;
+        }
+
+        .hero h1 {
+            font-size: 36px;
+        }
+
+        .section-title {
+            font-size: 32px;
+        }
+
+        .categories-grid, .products-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .categories-section, .products-section, .bundle-showcase {
+            padding: 60px 20px;
+        }
+
+        .bundle-image {
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .bundle-content {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="li-homepage-wrapper">
+    <!-- TOP BANNER -->
+    <div class="top-banner">
+        <span>📱 1-888-440-9787</span>
+        <span>🌍 We Ship Internationally</span>
+        <span>🎁 FREE Gifts with orders $100+</span>
+    </div>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Trading Card Paradise</h1>
+            <p>Explore premium collectibles from your favorite brands</p>
+            <a href="/shop" class="hero-btn">Shop Now</a>
+        </div>
+        <div class="hero-image">
+            <img src="https://SachinKumarRua2023.github.io/longislandcards/images/bulk-dragon-collection.png" alt="Dragon Collection">
+        </div>
+    </section>
+
+    <!-- CATEGORIES SECTION -->
+    <section class="categories-section">
+        <h2 class="section-title">Browse Categories</h2>
+        <div class="categories-grid">
+            <!-- Sports Cards -->
+            <div class="category-card">
+                <a href="/shop/sports-cards">
+                    <img src="https://SachinKumarRua2023.github.io/longislandcards/images/sports-cards-center.png" alt="Sports Cards" class="category-image">
+                    <div class="category-info">
+                        <h3>Sports Cards</h3>
+                        <p>Baseball, Basketball & Football cards from legendary athletes</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Pokemon Cards -->
+            <div class="category-card">
+                <a href="/shop/pokemon-cards">
+                    <img src="https://SachinKumarRua2023.github.io/longislandcards/images/pokemon-cards-center.png" alt="Pokemon Cards" class="category-image">
+                    <div class="category-info">
+                        <h3>Pokemon Cards</h3>
+                        <p>Rare and classic Pokemon cards for collectors</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- MTG Cards -->
+            <div class="category-card">
+                <a href="/shop/mtg-cards">
+                    <img src="https://SachinKumarRua2023.github.io/longislandcards/images/mtg-cards-center.png" alt="Magic: MTG" class="category-image">
+                    <div class="category-info">
+                        <h3>Magic: The Gathering</h3>
+                        <p>Collectible cards from the legendary TCG</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Yu-Gi-Oh Cards -->
+            <div class="category-card">
+                <a href="/shop/yugioh-cards">
+                    <img src="https://SachinKumarRua2023.github.io/longislandcards/images/yugioh-cards-center.png" alt="Yu-Gi-Oh Cards" class="category-image">
+                    <div class="category-info">
+                        <h3>Yu-Gi-Oh!</h3>
+                        <p>Powerful trading cards for duelist collectors</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Graded Cards -->
+            <div class="category-card">
+                <a href="/shop/graded-cards">
+                    <img src="https://SachinKumarRua2023.github.io/longislandcards/images/graded-cards-center.png" alt="Graded Cards" class="category-image">
+                    <div class="category-info">
+                        <h3>Graded & Slabbed</h3>
+                        <p>PSA and CGC certified premium cards</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Premium Collections -->
+            <div class="category-card">
+                <a href="/shop/premium-collections">
+                    <img src="https://SachinKumarRua2023.github.io/longislandcards/images/product-graded-slabbed.png" alt="Premium Products" class="category-image">
+                    <div class="category-info">
+                        <h3>Premium Collections</h3>
+                        <p>Exclusive bundles and rare collections</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRODUCTS SECTION -->
+    <section class="products-section">
+        <h2 class="section-title">Featured Products</h2>
+        <div class="products-grid">
+            <div class="product-card">
+                <a href="/shop/exclusive-collections">
+                    <img src="https://SachinKumarRua2023.github.io/longislandcards/images/product-exclusive-collection.png" alt="Exclusive Collection" class="product-image">
+                    <div class="product-info">
+                        <h3>Exclusive Collections</h3>
+                        <p>Limited edition card sets</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="product-card">
+                <a href="/shop/graded-slabbed">
+                    <img src="https://SachinKumarRua2023.github.io/longislandcards/images/product-graded-slabbed.png" alt="Graded Cards" class="product-image">
+                    <div class="product-info">
+                        <h3>Graded & Slabbed Cards</h3>
+                        <p>Certified premium cards</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="product-card">
+                <a href="/shop/rare-editions">
+                    <img src="https://SachinKumarRua2023.github.io/longislandcards/images/product-rare-editions.png" alt="Rare Editions" class="product-image">
+                    <div class="product-info">
+                        <h3>Rare Editions</h3>
+                        <p>Hard-to-find collector items</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- BUNDLE SHOWCASE -->
+    <section class="bundle-showcase">
+        <h2>Special Bundle Showcase</h2>
+        <div class="bundle-content">
+            <div class="bundle-image-wrapper">
+                <img src="https://SachinKumarRua2023.github.io/longislandcards/images/bulk-dragon-collection.png" alt="Dragon Collection Bundle" class="bundle-image">
+            </div>
+            <div class="bundle-text">
+                <h3>Limited Time Bundles</h3>
+                <p>Get premium card collections at exclusive bundle prices. Limited stock available!</p>
+            </div>
+        </div>
+    </section>
+</div>

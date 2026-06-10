@@ -1,0 +1,279 @@
+{
+  "name": "Universal Scraper — Telegram Bot",
+  "nodes": [
+    {
+      "id": "node-01",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 460],
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      }
+    },
+    {
+      "id": "node-02",
+      "name": "Parse Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 460],
+      "parameters": {
+        "jsCode": "const msg = $input.item.json.message || {};\n\nconst chatId = String(msg.chat?.id || msg.from?.id || '');\nconst text = (msg.text || '').trim();\nconst textLower = text.toLowerCase();\nconst name = msg.from?.first_name || 'there';\n\n// Return empty array = stop silently (photo, sticker, no text, no chatId)\nif (!chatId || !text) return [];\n\nconst searchPrefixes = ['search ', 'find ', 'show ', 'scrape ', 'look for ', 'clone '];\nconst isSearch = searchPrefixes.some(p => textLower.startsWith(p));\nconst isNumber = /^([1-9]|10)$/.test(text.trim());\nconst helpWords = ['help', 'start', '/start', '/help', 'hi', 'hello', 'hey', '?', 'menu', 'begin'];\nconst isHelp = helpWords.some(w => textLower === w || textLower.startsWith(w + ' '));\n\nlet query = '';\nif (isSearch) {\n  for (const p of searchPrefixes) {\n    if (textLower.startsWith(p)) { query = textLower.replace(p, '').trim(); break; }\n  }\n}\n\nreturn [{ json: { chatId, text: textLower, name, isSearch, isNumber, isHelp, query } }];"
+      }
+    },
+    {
+      "id": "node-03",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 460],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "rules": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [{ "id": "r1", "leftValue": "={{ $json.isSearch }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "search"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [{ "id": "r2", "leftValue": "={{ $json.isNumber }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "select"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [{ "id": "r3", "leftValue": "={{ $json.isHelp }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "help"
+            }
+          ],
+          "fallbackOutput": 3
+        },
+        "options": {}
+      }
+    },
+
+    {
+      "id": "node-04",
+      "name": "Claude: Find Top 10 Sites",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 240],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "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" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: 'List top 10 active e-commerce websites that sell \"' + $json.query + '\". Real stores with scrapable product pages only. Return ONLY a JSON array: [{\"rank\":1,\"name\":\"Site Name\",\"url\":\"https://domain.com\",\"description\":\"what they sell in one line\"}]' }] }) }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "node-05",
+      "name": "Parse & Format Sites",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 240],
+      "parameters": {
+        "jsCode": "const resp = $input.item.json;\nconst orig = $('Parse Message').item.json;\n\nconst raw = resp?.content?.[0]?.text || '[]';\nlet sites = [];\ntry {\n  const m = raw.match(/\\[[\\s\\S]*\\]/);\n  if (m) sites = JSON.parse(m[0]);\n} catch (e) {}\nsites = sites.slice(0, 10);\n\nif (!sites.length) {\n  return [{ json: {\n    chatId: orig.chatId,\n    query: orig.query,\n    sites: [],\n    sitesJson: '[]',\n    replyText: `❌ Couldn't find sites for \"${orig.query}\". Try a different category!`\n  }}];\n}\n\nlet msg = `🔍 *Top ${sites.length} sites for \"${orig.query}\":*\\n\\n`;\nsites.forEach(s => {\n  msg += `*${s.rank}.* [${s.name}](${s.url})\\n_${s.description}_\\n\\n`;\n});\nmsg += `Reply with a number *1-${sites.length}* to start scraping that site ✅`;\n\nreturn [{ json: {\n  chatId: orig.chatId,\n  query: orig.query,\n  sites,\n  sitesJson: JSON.stringify(sites),\n  replyText: msg\n}}];"
+      }
+    },
+    {
+      "id": "node-06",
+      "name": "Save State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 240],
+      "parameters": {
+        "jsCode": "const d = $input.item.json;\nconst state = $getWorkflowStaticData('global');\nif (d.sites && d.sites.length) {\n  state[d.chatId] = JSON.stringify({\n    State: 'waiting_selection',\n    Category: d.query,\n    Results: d.sitesJson,\n    UpdatedAt: new Date().toISOString()\n  });\n}\nconsole.log('Saved state for chatId:', d.chatId, 'sites:', d.sites ? d.sites.length : 0);\nreturn [{ json: d }];"
+      }
+    },
+    {
+      "id": "node-07",
+      "name": "Send Sites List",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 240],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.replyText }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "disable_web_page_preview": true
+        }
+      }
+    },
+
+    {
+      "id": "node-08",
+      "name": "Get User State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 460],
+      "parameters": {
+        "jsCode": "const state = $getWorkflowStaticData('global');\nconst orig = $('Parse Message').item.json;\nconst raw = state[orig.chatId];\nlet row = {};\nif (raw) {\n  try { row = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e) { row = {}; }\n}\nconsole.log('Got state for chatId:', orig.chatId, '→', row.State || 'none');\nreturn [{ json: { ...row, chatId: orig.chatId, text: orig.text } }];"
+      }
+    },
+    {
+      "id": "node-09",
+      "name": "Extract Selected URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 460],
+      "parameters": {
+        "jsCode": "const row = $input.item.json;\nconst orig = $('Parse Message').item.json;\n\nconst num = parseInt(orig.text.trim());\nlet sites = [];\ntry { sites = JSON.parse(row.Results || '[]'); } catch (e) {}\n\nif (!sites.length) {\n  return [{ json: { _error: true, chatId: orig.chatId, errText: '❌ No active search. Send *search [category]* first!' } }];\n}\nif (num < 1 || num > sites.length) {\n  return [{ json: { _error: true, chatId: orig.chatId, errText: `❌ Send a number between 1 and ${sites.length}.` } }];\n}\n\nconst chosen = sites[num - 1];\nreturn [{ json: {\n  _error: false,\n  chatId: orig.chatId,\n  targetUrl: chosen.url,\n  siteName: chosen.name,\n  category: row.Category || chosen.name,\n  confirmText: `✅ Starting scrape of *${chosen.name}*\\n${chosen.url}\\n\\n⏳ This takes 5-10 minutes. I'll ping you when done!`\n}}];"
+      }
+    },
+    {
+      "id": "node-10",
+      "name": "Is Selection Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 460],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{ "id": "c1", "leftValue": "={{ $json._error }}", "rightValue": false, "operator": { "type": "boolean", "operation": "false" } }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-11",
+      "name": "Trigger Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 380],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://newworksatnight.app.n8n.cloud/webhook/scrape-site",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ targetUrl: $json.targetUrl, category: $json.category, siteName: $json.siteName, chatId: String($json.chatId) }) }}"
+      }
+    },
+    {
+      "id": "node-12",
+      "name": "Send Confirm",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1780, 380],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.confirmText }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      }
+    },
+    {
+      "id": "node-13",
+      "name": "Send Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 560],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.errText }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      }
+    },
+    {
+      "id": "node-14",
+      "name": "Send Help",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 660],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ `👋 Hi ${$json.name}! I'm *ecAutopilot* — your e-commerce website cloner bot.\\n\\n*How to use:*\\n\\n1️⃣ Send: search [category]\\n\\nExamples:\\n  • search sports cards\\n  • search pokemon cards\\n  • search sneakers\\n  • search vintage jewelry\\n\\n2️⃣ I find the *top 10 websites* in that category\\n\\n3️⃣ Reply with a number (1–10)\\n\\n4️⃣ I clone the full site with AI SEO rewriting + images\\n\\n🚀 Try it now — send *search [your category]*` }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      }
+    },
+    {
+      "id": "node-15",
+      "name": "Send Fallback",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 820],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ `🤔 I didn't understand that.\\n\\nTry:\\n• *search sports cards*\\n• *search sneakers*\\n• *search vintage jewelry*\\n\\nOr send *help* for full instructions.` }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[ { "node": "Parse Message", "type": "main", "index": 0 } ]]
+    },
+    "Parse Message": {
+      "main": [[ { "node": "Route by Intent", "type": "main", "index": 0 } ]]
+    },
+    "Route by Intent": {
+      "main": [
+        [ { "node": "Claude: Find Top 10 Sites", "type": "main", "index": 0 } ],
+        [ { "node": "Get User State", "type": "main", "index": 0 } ],
+        [ { "node": "Send Help", "type": "main", "index": 0 } ],
+        [ { "node": "Send Fallback", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Claude: Find Top 10 Sites": {
+      "main": [[ { "node": "Parse & Format Sites", "type": "main", "index": 0 } ]]
+    },
+    "Parse & Format Sites": {
+      "main": [[ { "node": "Save State", "type": "main", "index": 0 } ]]
+    },
+    "Save State": {
+      "main": [[ { "node": "Send Sites List", "type": "main", "index": 0 } ]]
+    },
+    "Get User State": {
+      "main": [[ { "node": "Extract Selected URL", "type": "main", "index": 0 } ]]
+    },
+    "Extract Selected URL": {
+      "main": [[ { "node": "Is Selection Valid?", "type": "main", "index": 0 } ]]
+    },
+    "Is Selection Valid?": {
+      "main": [
+        [ { "node": "Trigger Scraper", "type": "main", "index": 0 } ],
+        [ { "node": "Send Error", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Trigger Scraper": {
+      "main": [[ { "node": "Send Confirm", "type": "main", "index": 0 } ]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "saveManualExecutions": true },
+  "tags": [{ "name": "telegram" }, { "name": "bot" }, { "name": "universal-scraper" }]
+}

@@ -1,0 +1,329 @@
+{
+  "name": "Social Media Publisher - Long Island Convenience (via Odoo)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 23 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-001",
+      "name": "Every Day 11PM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "list",
+        "folderId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_LONGISLAND_DRIVE_FOLDER_ID",
+          "mode": "id",
+          "cachedResultName": "CONTENT VIDEO - Long Island"
+        },
+        "limit": 1,
+        "options": {
+          "fields": ["id", "name", "webViewLink", "modifiedTime"],
+          "orderBy": "modifiedTime desc"
+        }
+      },
+      "id": "drive-001",
+      "name": "Get Latest Video from Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [220, 200]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-6",
+          "mode": "list",
+          "cachedResultName": "claude-sonnet-4-6"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Today is {{ $now.toFormat('MMMM d, yyyy') }}. You are a viral social media expert for Country Cove Long Island — a one-stop convenience hub in Plainview, Long Island, NY. They sell gift baskets, balloons, sports cards, greeting cards, cigars, and document services.\n\nToday's video topic is: \"{{ $json.name.replace(/\\.(mp4|mov|avi|mkv)$/i, '').split(' - ')[0] }}\"\n\nCreate a VIRAL, engaging social media post for Facebook and Instagram.\n\nReturn ONLY raw JSON — no markdown, no explanation:\n{\"title\":\"catchy viral title under 10 words with emojis\",\"caption\":\"3-4 sentence caption with local Long Island feel, storytelling, strong call to action and emojis.\",\"hashtags\":\"#longisland #plainviewny #longislandny #shoplocal #longislandbusiness #nassaucounty #longislandlife #shopsmall #countrycovelongisland #longislandshops #visitlongisland #longislandlove #plainview #longislandlocal #nybusiness #newyork #supportlocal #longislandfood #longislandgifts #giftshopping\"}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "claude-001",
+      "name": "Generate Viral Post Content",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [440, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.text || ($input.first().json.content?.[0]?.text);\nconst match = raw.match(/\\{[\\s\\S]*\\}/);\nif (!match) throw new Error('No JSON from Claude: ' + raw.substring(0, 300));\nconst ai = JSON.parse(match[0]);\n\nconst file = $('Get Latest Video from Drive').item.json;\nif (!file || !file.id) throw new Error('No video found in Drive folder. Returned: ' + JSON.stringify(file).substring(0, 200));\n\nconst nameNoExt = (file.name || '').replace(/\\.(mp4|mov|avi|mkv|webm)$/i, '');\nconst topic = nameNoExt.split(' - ')[0] || nameNoExt;\nconst postText = ai.title + '\\n\\n' + ai.caption + '\\n\\n' + ai.hashtags;\n\nreturn [{ json: {\n  fileId: file.id,\n  filename: file.name,\n  topic: topic,\n  Title: ai.title,\n  Caption: ai.caption,\n  Hashtags: ai.hashtags,\n  postText: postText\n} }];"
+      },
+      "id": "build-001",
+      "name": "Build Post Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 200]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.fileId }}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "videoData"
+        }
+      },
+      "id": "drive-002",
+      "name": "Download Video from Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [880, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://litterbox.catbox.moe/resources/internals/api.php",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "fileToUpload",
+              "inputDataFieldName": "videoData"
+            },
+            {
+              "name": "reqtype",
+              "value": "fileupload"
+            },
+            {
+              "name": "time",
+              "value": "72h"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "publicUrl"
+            }
+          }
+        }
+      },
+      "id": "upload-001",
+      "name": "Upload Video to Public Host",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/session/authenticate",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"id\": 1,\n  \"params\": {\n    \"db\": \"country-cove-inc\",\n    \"login\": \"countrycoveinc@gmail.com\",\n    \"password\": \"M@nhattan1234\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "odoo-auth",
+      "name": "Odoo: Authenticate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract session cookie from Odoo auth response\nconst response = $input.first();\nconst headers = response.json.headers || {};\n\n// Get Set-Cookie header\nconst setCookie = response.json.headers?.['set-cookie'];\nlet sessionCookie = '';\nif (setCookie) {\n  const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];\n  const sessionMatch = cookies.find(c => c.includes('session_id'));\n  if (sessionMatch) {\n    sessionCookie = sessionMatch.split(';')[0]; // e.g. session_id=abc123\n  }\n}\n\n// Also get uid from body\nconst body = response.json.body || response.json;\nconst uid = body?.result?.uid;\n\nif (!uid) throw new Error('Odoo auth failed. Check credentials. Response: ' + JSON.stringify(body).substring(0, 300));\n\n// Pass through all previous data plus session info\nconst postData = $('Build Post Data').item.json;\nconst videoUrl = $('Upload Video to Public Host').item.json.publicUrl;\n\nreturn [{ json: {\n  sessionCookie: sessionCookie,\n  uid: uid,\n  postText: postData.postText,\n  Title: postData.Title,\n  videoUrl: videoUrl,\n  filename: postData.filename\n} }];"
+      },
+      "id": "extract-session",
+      "name": "Extract Odoo Session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "={{ $json.sessionCookie }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"id\": 2,\n  \"params\": {\n    \"model\": \"social.account\",\n    \"method\": \"search_read\",\n    \"args\": [[['website_id', '!=', false]]],\n    \"kwargs\": {\n      \"fields\": [\"id\", \"name\", \"media_type\", \"website_id\"],\n      \"limit\": 50\n    }\n  }\n}",
+        "options": {}
+      },
+      "id": "odoo-get-accounts",
+      "name": "Odoo: Get Social Accounts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find account IDs for Long Island Convenience website\n// Social accounts linked to the LI website in Odoo\nconst response = $input.first().json;\nconst accounts = response?.result || [];\n\nconsole.log('All social accounts:', JSON.stringify(accounts));\n\n// Filter accounts for Long Island Convenience website\n// website_id[1] is the website name — adjust if needed\nconst liAccounts = accounts.filter(a => \n  a.website_id && (\n    a.website_id[1]?.toLowerCase().includes('long island') ||\n    a.website_id[1]?.toLowerCase().includes('country cove')\n  )\n);\n\nconst accountIds = liAccounts.length > 0 \n  ? liAccounts.map(a => a.id)\n  : accounts.map(a => a.id); // fallback: use all accounts\n\nif (accountIds.length === 0) {\n  throw new Error('No social accounts found in Odoo. Connect Facebook/Instagram in Social Marketing first.');\n}\n\nconsole.log('Posting to account IDs:', accountIds);\n\nconst prev = $('Extract Odoo Session').item.json;\n\n// Build message with video link appended\nconst fullMessage = prev.postText + '\\n\\n▶️ Watch: ' + prev.videoUrl;\n\nreturn [{ json: {\n  sessionCookie: prev.sessionCookie,\n  accountIds: accountIds,\n  message: fullMessage,\n  videoUrl: prev.videoUrl,\n  Title: prev.Title\n} }];"
+      },
+      "id": "filter-accounts",
+      "name": "Filter LI Accounts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "={{ $json.sessionCookie }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"id\": 3,\n  \"params\": {\n    \"model\": \"social.post\",\n    \"method\": \"create\",\n    \"args\": [{\n      \"account_ids\": [[6, 0, {{ $json.accountIds }}]],\n      \"message\": {{ JSON.stringify($json.message) }},\n      \"state\": \"draft\"\n    }],\n    \"kwargs\": {}\n  }\n}",
+        "options": {}
+      },
+      "id": "odoo-create-post",
+      "name": "Odoo: Create Social Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2200, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst postId = response?.result;\nif (!postId || typeof postId !== 'number') {\n  throw new Error('Failed to create Odoo social post. Response: ' + JSON.stringify(response).substring(0, 300));\n}\nconsole.log('Created Odoo social post ID:', postId);\nconst prev = $('Filter LI Accounts').item.json;\nreturn [{ json: { sessionCookie: prev.sessionCookie, postId: postId } }];"
+      },
+      "id": "get-post-id",
+      "name": "Get Post ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2420, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "={{ $json.sessionCookie }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"id\": 4,\n  \"params\": {\n    \"model\": \"social.post\",\n    \"method\": \"action_post\",\n    \"args\": [[{{ $json.postId }}]],\n    \"kwargs\": {}\n  }\n}",
+        "options": {}
+      },
+      "id": "odoo-publish",
+      "name": "Odoo: Publish Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2640, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst postId = $('Get Post ID').item.json.postId;\nconsole.log('Publish response:', JSON.stringify(response));\nreturn [{ json: {\n  status: 'SUCCESS',\n  postId: postId,\n  odooPostUrl: 'https://country-cove-inc.odoo.com/web#model=social.post&id=' + postId,\n  message: 'Post published via Odoo Social Marketing for Long Island Convenience',\n  timestamp: new Date().toISOString()\n} }];"
+      },
+      "id": "success-log",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2860, 200]
+    }
+  ],
+  "connections": {
+    "Every Day 11PM": {
+      "main": [[{ "node": "Get Latest Video from Drive", "type": "main", "index": 0 }]]
+    },
+    "Get Latest Video from Drive": {
+      "main": [[{ "node": "Generate Viral Post Content", "type": "main", "index": 0 }]]
+    },
+    "Generate Viral Post Content": {
+      "main": [[{ "node": "Build Post Data", "type": "main", "index": 0 }]]
+    },
+    "Build Post Data": {
+      "main": [[{ "node": "Download Video from Drive", "type": "main", "index": 0 }]]
+    },
+    "Download Video from Drive": {
+      "main": [[{ "node": "Upload Video to Public Host", "type": "main", "index": 0 }]]
+    },
+    "Upload Video to Public Host": {
+      "main": [[{ "node": "Odoo: Authenticate", "type": "main", "index": 0 }]]
+    },
+    "Odoo: Authenticate": {
+      "main": [[{ "node": "Extract Odoo Session", "type": "main", "index": 0 }]]
+    },
+    "Extract Odoo Session": {
+      "main": [[{ "node": "Odoo: Get Social Accounts", "type": "main", "index": 0 }]]
+    },
+    "Odoo: Get Social Accounts": {
+      "main": [[{ "node": "Filter LI Accounts", "type": "main", "index": 0 }]]
+    },
+    "Filter LI Accounts": {
+      "main": [[{ "node": "Odoo: Create Social Post", "type": "main", "index": 0 }]]
+    },
+    "Odoo: Create Social Post": {
+      "main": [[{ "node": "Get Post ID", "type": "main", "index": 0 }]]
+    },
+    "Get Post ID": {
+      "main": [[{ "node": "Odoo: Publish Post", "type": "main", "index": 0 }]]
+    },
+    "Odoo: Publish Post": {
+      "main": [[{ "node": "Log Success", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Posts daily video from Google Drive to Long Island Convenience social accounts via Odoo Social Marketing. Claude generates viral captions. Runs every day at 11 PM."
+  }
+}

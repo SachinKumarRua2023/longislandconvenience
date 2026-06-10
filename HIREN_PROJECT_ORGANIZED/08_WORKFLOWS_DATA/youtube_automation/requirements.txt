@@ -1,0 +1,24 @@
+# ── Core pipeline ─────────────────────────────────────────────────────────────
+youtube-transcript-api==0.6.2
+yt-dlp>=2024.1.0
+feedparser==6.0.11
+schedule==1.2.1
+requests==2.31.0
+python-dotenv==1.0.1
+
+# ── AI ─────────────────────────────────────────────────────────────────────────
+openai>=1.30.0
+
+# ── Speech-to-text (Whisper fallback) ─────────────────────────────────────────
+# Uncomment if you need Whisper (downloads ~140 MB model on first use):
+# openai-whisper>=20231117
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+tqdm>=4.66.0
+
+# ── Notes ──────────────────────────────────────────────────────────────────────
+# FFmpeg is required for yt-dlp audio extraction (not a Python package).
+# Install separately:
+#   Windows : winget install Gyan.FFmpeg
+#   Ubuntu  : sudo apt install ffmpeg
+#   macOS   : brew install ffmpeg

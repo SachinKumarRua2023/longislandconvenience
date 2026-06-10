@@ -1,0 +1,26 @@
+{
+  "name": "WF-09 — Telegram Customer Support Bot",
+  "description": "Claude-powered support via @ecAutopilot_bot → logs to Odoo CRM",
+  "status": "PENDING BUILD",
+  "trigger": "Telegram message (any non-command message from customer)",
+  "steps": [
+    "1. Telegram Trigger → receive customer message",
+    "2. Check if order status query → if yes, lookup WooCommerce by order# or email",
+    "3. If content query → send to Claude API with system prompt as Long Island Convenience support agent",
+    "4. Claude generates reply",
+    "5. Send reply via Telegram",
+    "6. Log conversation to Odoo helpdesk ticket (JSONRPC)",
+    "7. If Claude flags as unresolved → assign ticket to human in Odoo"
+  ],
+  "claude_system_prompt": "You are a friendly customer support agent for Long Island Convenience Store, serving customers in Long Island, Plainview, Hicksville, and surrounding areas in New York. Help customers with orders, products, delivery, and general questions. Be warm, local, and helpful. If you cannot resolve an issue, say you will escalate it to a team member.",
+  "n8n_nodes": [
+    "Telegram Trigger",
+    "IF (order status check)",
+    "HTTP Request (WooCommerce order lookup)",
+    "HTTP Request (Claude API)",
+    "Telegram (send reply)",
+    "HTTP Request (Odoo create ticket)",
+    "IF (unresolved flag)",
+    "HTTP Request (Odoo assign agent)"
+  ]
+}

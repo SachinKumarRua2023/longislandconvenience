@@ -1,0 +1,17 @@
+Product Name,Category,SKU,Internal Reference,List Price,Cost Price,Description,Image File,Stock Quantity
+Sports Card Pack - Legacy Series,Sports Cards,LIC-SPC-001,LIC-SPC-001,49.99,25.00,Vintage sports cards from legendary athletes featuring hall of fame players,sports-cards-left.png,10
+Sports Card - Hall of Famers Collection,Sports Cards,LIC-SPC-002,LIC-SPC-002,39.99,20.00,Premium authenticated sports cards featuring baseball hall of fame legends,sports-cards-center.png,10
+Sports Card - Signed Edition Bundle,Sports Cards,LIC-SPC-003,LIC-SPC-003,59.99,30.00,Rare authenticated signed sports cards with certificate of authenticity,sports-cards-right.png,8
+Pokemon Card - Ancient Sol Ring Rare,Pokemon Cards,LIC-PKM-001,LIC-PKM-001,34.99,18.00,Collectible Pokemon card featuring Ancient Sol Ring with holographic finish,pokemon-cards-left.png,15
+Pokemon Card - Center Showcase Premium,Pokemon Cards,LIC-PKM-002,LIC-PKM-002,44.99,22.00,Premium Pokemon card showcase collection with multiple card pack,pokemon-cards-center.png,12
+Pokemon Card - Dragon Collection Exclusive,Pokemon Cards,LIC-PKM-003,LIC-PKM-003,54.99,28.00,Exclusive dragon-themed Pokemon cards with rare holographic variants,pokemon-cards-right.png,10
+Magic The Gathering - Starter Collection,Magic: The Gathering,LIC-MTG-001,LIC-MTG-001,39.99,20.00,Magic: The Gathering starter collection with essential cards,mtg-cards-left.png,12
+Magic The Gathering - Center Pack Premium,Magic: The Gathering,LIC-MTG-002,LIC-MTG-002,49.99,25.00,MTG premium center card pack with rare mythic rares,mtg-cards-center.png,10
+Magic The Gathering - Right Bundle Limited,Magic: The Gathering,LIC-MTG-003,LIC-MTG-003,59.99,30.00,Limited edition MTG card bundle with exclusive promotional cards,mtg-cards-right.png,8
+Yu-Gi-Oh Card Pack - Starter Deck,Yu-Gi-Oh!,LIC-YGO-001,LIC-YGO-001,29.99,15.00,Classic Yu-Gi-Oh trading card pack perfect for beginners,yugioh-cards-left.png,15
+Yu-Gi-Oh - Deck Builder Collection,Yu-Gi-Oh!,LIC-YGO-002,LIC-YGO-002,39.99,20.00,Complete Yu-Gi-Oh deck builder collection with synergy cards,yugioh-cards-center.png,12
+Yu-Gi-Oh - Premium Bundle Advanced,Yu-Gi-Oh!,LIC-YGO-003,LIC-YGO-003,49.99,25.00,Premium Yu-Gi-Oh card collection for advanced players with competitive cards,yugioh-cards-right.png,10
+Graded Cards - PSA Certified Left,Graded Cards,LIC-GRD-001,LIC-GRD-001,79.99,40.00,PSA certified graded cards with authentication and protective slabs,graded-cards-left.png,5
+Graded Cards - PSA Center Grade 9+,Graded Cards,LIC-GRD-002,LIC-GRD-002,89.99,45.00,PSA center showcase cards certified Grade 9+ mint condition,graded-cards-center.png,5
+Graded Cards - PSA Premium Grade 10,Graded Cards,LIC-GRD-003,LIC-GRD-003,99.99,50.00,Premium PSA graded cards certified Grade 10 gem mint condition,graded-cards-right.png,4
+Premium Bundle - Bulk Dragon Collection,Premium Collections,LIC-BDL-001,LIC-BDL-001,149.99,75.00,Exclusive bulk dragon collection bundle with rare holographic cards and bonus items,bulk-dragon-collection.png,6

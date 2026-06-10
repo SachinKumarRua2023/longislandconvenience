@@ -1,0 +1,140 @@
+{
+  "name": "LI Gift Basket — Celebration Auto-Greeting (Email + WhatsApp)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 9 * * *" }]
+        }
+      },
+      "id": "n1-cron",
+      "name": "Daily 9AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [100, 300],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── CELEBRATION CALENDAR ──────────────────────────────────────────────\n// Checks today's date and upcoming celebrations (7-day warning + day-of)\n// Returns array of celebrations needing messages today.\n\nconst today = new Date();\nconst todayStr = today.toISOString().split('T')[0];\nconst in7 = new Date(today); in7.setDate(in7.getDate() + 7);\nconst in3 = new Date(today); in3.setDate(in3.getDate() + 3);\nconst in1 = new Date(today); in1.setDate(in1.getDate() + 1);\n\n// Load templates from JSON file (uploaded to n8n)\n// In production: read from HTTP Request node pointing to your server\n// For now we embed the top 30 celebrations inline\nconst celebrations = [\n  { date: '2026-01-01', name: \"New Year's Day\", emoji: '🎆', discount: 15, code: 'NEWYEAR26', theme: 'new_year' },\n  { date: '2026-02-14', name: \"Valentine's Day\", emoji: '❤️', discount: 20, code: 'LOVE26', theme: 'valentine' },\n  { date: '2026-03-17', name: \"St. Patrick's Day\", emoji: '☘️', discount: 17, code: 'STPAT26', theme: 'st_patricks' },\n  { date: '2026-04-05', name: 'Easter Sunday', emoji: '🐣', discount: 20, code: 'EASTER26', theme: 'easter' },\n  { date: '2026-05-10', name: \"Mother's Day\", emoji: '🌹', discount: 25, code: 'MOM26', theme: 'mothers_day' },\n  { date: '2026-05-25', name: 'Memorial Day', emoji: '🎖️', discount: 15, code: 'MEMORIAL26', theme: 'military' },\n  { date: '2026-06-21', name: \"Father's Day\", emoji: '👔', discount: 25, code: 'DAD26', theme: 'fathers_day' },\n  { date: '2026-07-04', name: 'Independence Day', emoji: '🎆', discount: 20, code: 'JULY426', theme: 'fourth_july' },\n  { date: '2026-07-30', name: 'Friendship Day', emoji: '👫', discount: 15, code: 'FRIEND26', theme: 'friendship' },\n  { date: '2026-09-07', name: 'Labor Day', emoji: '👷', discount: 20, code: 'LABOR26', theme: 'holiday' },\n  { date: '2026-09-13', name: 'Grandparents Day', emoji: '👴👵', discount: 20, code: 'GRAND26', theme: 'grandparents' },\n  { date: '2026-10-31', name: 'Halloween', emoji: '🎃', discount: 20, code: 'HALLOW26', theme: 'halloween' },\n  { date: '2026-11-11', name: 'Veterans Day', emoji: '🎖️', discount: 20, code: 'VET26', theme: 'military' },\n  { date: '2026-11-26', name: 'Thanksgiving', emoji: '🦃', discount: 20, code: 'THANKS26', theme: 'thanksgiving' },\n  { date: '2026-11-27', name: 'Black Friday', emoji: '🛍️', discount: 30, code: 'BLACK26', theme: 'sale' },\n  { date: '2026-12-01', name: 'Cyber Monday', emoji: '💻', discount: 25, code: 'CYBER26', theme: 'sale' },\n  { date: '2026-12-25', name: 'Christmas Day', emoji: '🎄', discount: 25, code: 'XMAS26', theme: 'christmas' },\n  { date: '2026-12-31', name: \"New Year's Eve\", emoji: '🥂', discount: 20, code: 'NYE26', theme: 'new_year' },\n  { date: '2026-03-08', name: \"International Women's Day\", emoji: '👩', discount: 15, code: 'WOMENS26', theme: 'womens_day' },\n  { date: '2026-04-25', name: 'Administrative Professionals Day', emoji: '📋', discount: 15, code: 'ADMIN26', theme: 'corporate' },\n  { date: '2026-05-05', name: 'Cinco de Mayo', emoji: '🌮', discount: 15, code: 'CINCO26', theme: 'cultural' },\n];\n\nconst toSend = [];\n\nfor (const cel of celebrations) {\n  const celDate = new Date(cel.date);\n  const celDateStr = celDate.toISOString().split('T')[0];\n  const in7Str = in7.toISOString().split('T')[0];\n  const in3Str = in3.toISOString().split('T')[0];\n  const in1Str = in1.toISOString().split('T')[0];\n  \n  let sendType = null;\n  let daysUntil = Math.round((celDate - today) / (1000 * 60 * 60 * 24));\n  \n  if (celDateStr === todayStr) sendType = 'TODAY';\n  else if (celDateStr === in1Str) sendType = '1_DAY_BEFORE';\n  else if (celDateStr === in3Str) sendType = '3_DAYS_BEFORE';\n  else if (celDateStr === in7Str) sendType = '7_DAYS_BEFORE';\n  \n  if (sendType) {\n    toSend.push({ ...cel, sendType, daysUntil, todayStr });\n  }\n}\n\nif (toSend.length === 0) {\n  return [{ json: { skip: true, message: 'No celebrations to notify today: ' + todayStr } }];\n}\n\nreturn toSend.map(c => ({ json: c }));"
+      },
+      "id": "n2-check",
+      "name": "Check Today's Celebrations",
+      "type": "n8n-nodes-base.code",
+      "position": [300, 300],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{ "value1": "={{ $json.skip }}", "value2": true }]
+        }
+      },
+      "id": "n3-filter",
+      "name": "Skip if No Celebrations",
+      "type": "n8n-nodes-base.if",
+      "position": [500, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build personalized email and WhatsApp messages\nconst cel = $json;\nconst daysText = cel.daysUntil === 0 ? 'TODAY' : `in ${cel.daysUntil} day${cel.daysUntil > 1 ? 's' : ''}`;\nconst urgency = cel.daysUntil <= 1 ? '🚨 LAST CHANCE: ' : cel.daysUntil <= 3 ? '⏰ Almost time: ' : '📅 Coming up: ';\n\n// Email subject\nconst subject = `${cel.emoji} ${urgency}${cel.name} — ${cel.discount}% OFF Gift Baskets!`;\n\n// Email HTML body\nconst emailHtml = `\n<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;'>\n  <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;'>\n    <div style='font-size:64px;'>${cel.emoji}</div>\n    <h1 style='color:#fff;margin:10px 0;font-size:28px;'>${cel.name}</h1>\n    <p style='color:rgba(255,255,255,0.9);font-size:16px;'>Just ${daysText} away!</p>\n  </div>\n  <div style='padding:30px;'>\n    <p style='font-size:16px;color:#333;'>Dear Valued Customer,</p>\n    <p style='font-size:16px;color:#333;'>\n      <strong>${cel.name}</strong> is ${daysText}! \n      Celebrate with a beautiful gift basket from <strong>LI Gift Basket</strong> — \n      Long Island\\'s favorite gift shop in Plainview, NY.\n    </p>\n    <div style='background:#f8f9ff;border-radius:12px;padding:25px;margin:20px 0;text-align:center;'>\n      <div style='font-size:42px;font-weight:700;color:#667eea;'>${cel.discount}% OFF</div>\n      <div style='font-size:18px;color:#333;margin:5px 0;'>Use code:</div>\n      <div style='background:#FFD700;border-radius:8px;padding:10px 20px;display:inline-block;font-size:24px;font-weight:700;color:#333;letter-spacing:2px;'>${cel.code}</div>\n    </div>\n    <p style='font-size:15px;color:#333;'>🎁 Gift baskets starting from just $35<br>🚚 Free delivery across Nassau &amp; Suffolk County on orders $60+<br>🎀 Custom baskets available for any budget</p>\n    <div style='text-align:center;margin:30px 0;'>\n      <a href='https://ligiftbasket.com/shop' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:16px 40px;border-radius:50px;text-decoration:none;font-size:18px;font-weight:700;'>Shop Now 🛍️</a>\n    </div>\n  </div>\n  <div style='background:#f1f1f1;padding:20px;text-align:center;font-size:12px;color:#666;'>\n    LI Gift Basket | Plainview, Long Island, NY 11803<br>\n    <a href='https://ligiftbasket.com/unsubscribe'>Unsubscribe</a>\n  </div>\n</div>`;\n\n// WhatsApp message\nconst whatsapp = `${cel.emoji} *${urgency.replace(/:/,'').trim()}* ${cel.name} is ${daysText}!\\n\\nCelebrate with a beautiful gift basket from LI Gift Basket 🎁\\n\\n✨ *${cel.discount}% OFF* with code: *${cel.code}*\\n🚚 Free delivery on Long Island\\n🎀 Custom baskets from $35\\n\\n👉 https://ligiftbasket.com\\n\\n📍 Plainview, Long Island, NY`;\n\nreturn [{ json: { ...cel, emailSubject: subject, emailHtml, whatsappMessage: whatsapp } }];"
+      },
+      "id": "n4-compose",
+      "name": "Compose Messages",
+      "type": "n8n-nodes-base.code",
+      "position": [700, 200],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "={{ $json.recipientEmail || 'countrycoveinc@gmail.com' }}",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "html",
+        "message": "={{ $json.emailHtml }}",
+        "options": {
+          "replyTo": "countrycoveinc@gmail.com"
+        }
+      },
+      "id": "n5-gmail",
+      "name": "Send Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "position": [900, 150],
+      "typeVersion": 2.1,
+      "credentials": {
+        "gmailOAuth2": { "id": "gmail-cred-1", "name": "Gmail — countrycoveinc" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "from": "={{ $vars.TWILIO_WHATSAPP_FROM || 'whatsapp:+16315550100' }}",
+        "to": "whatsapp:+1{{ $json.recipientPhone || '5165550100' }}",
+        "message": "={{ $json.whatsappMessage }}"
+      },
+      "id": "n6-twilio",
+      "name": "Send WhatsApp (Twilio)",
+      "type": "n8n-nodes-base.twilio",
+      "position": [900, 300],
+      "typeVersion": 1,
+      "credentials": {
+        "twilioApi": { "id": "twilio-cred-1", "name": "Twilio — Long Island 631/516" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "resource": "message",
+        "model": "mail.message",
+        "fields": {
+          "subject": "={{ $json.emailSubject }}",
+          "body": "={{ $json.emailHtml }}",
+          "message_type": "email"
+        }
+      },
+      "id": "n7-odoo-log",
+      "name": "Log in Odoo CRM",
+      "type": "n8n-nodes-base.odoo",
+      "position": [900, 450],
+      "typeVersion": 1,
+      "credentials": {
+        "odooApi": { "id": "odoo-cred-1", "name": "Odoo — Country Cove Inc" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Summary\nconst results = $input.all();\nconst count = results.length;\nconsole.log(`✅ Celebration messages sent: ${count}`);\nreturn [{ json: { status: 'done', messagesSent: count, timestamp: new Date().toISOString() } }];"
+      },
+      "id": "n8-summary",
+      "name": "Log Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [1100, 300],
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "Daily 9AM Trigger": { "main": [[{ "node": "Check Today's Celebrations", "type": "main", "index": 0 }]] },
+    "Check Today's Celebrations": { "main": [[{ "node": "Skip if No Celebrations", "type": "main", "index": 0 }]] },
+    "Skip if No Celebrations": { "main": [[{ "node": "Compose Messages", "type": "main", "index": 0 }], []] },
+    "Compose Messages": {
+      "main": [[
+        { "node": "Send Gmail", "type": "main", "index": 0 },
+        { "node": "Send WhatsApp (Twilio)", "type": "main", "index": 0 },
+        { "node": "Log in Odoo CRM", "type": "main", "index": 0 }
+      ]]
+    },
+    "Send Gmail": { "main": [[{ "node": "Log Summary", "type": "main", "index": 0 }]] },
+    "Send WhatsApp (Twilio)": { "main": [[{ "node": "Log Summary", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "America/New_York"
+  },
+  "meta": {
+    "description": "Sends celebration greetings with discount offers via Gmail + WhatsApp for every major US/NY holiday. Runs daily at 9 AM EST. Fires 7 days before, 3 days before, 1 day before, and day-of each celebration. Import into n8n and configure Gmail + Twilio credentials.",
+    "website": "ligiftbasket.com",
+    "business": "LI Gift Basket — Plainview, Long Island, NY",
+    "created": "2026-05-24"
+  }
+}

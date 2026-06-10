@@ -1,0 +1,18 @@
+.env
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+
+# Generated data (do not commit)
+data/*.db
+data/audio/
+logs/*.log
+transcripts/
+summaries/
+!transcripts/.gitkeep
+!summaries/.gitkeep
+!logs/.gitkeep
+!data/.gitkeep

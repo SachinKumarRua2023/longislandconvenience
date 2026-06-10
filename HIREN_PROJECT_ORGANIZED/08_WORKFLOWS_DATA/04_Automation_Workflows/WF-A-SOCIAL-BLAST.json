@@ -1,0 +1,369 @@
+{
+  "name": "WF-A — Social Blast (Multi-Platform)",
+  "nodes": [
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "social-blast",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wfa-001",
+      "name": "Webhook: Receive Post Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "webhookId": "social-blast-webhook"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// WF-A STEP 1 — Validate & prepare content for all platforms\n// ============================================================\n// Expected input JSON:\n// {\n//   \"brand\": \"longislandconvenience\",\n//   \"content_type\": \"blog | product | video | image | promotion\",\n//   \"text\": \"Short caption (max 280 chars)\",\n//   \"text_long\": \"Full post text (1000 chars max)\",\n//   \"image_url\": \"https://...\",\n//   \"video_url\": \"https://... (optional)\",\n//   \"link_url\": \"https://longislandconvenience.com/blog/...\",\n//   \"hashtags\": [\"LongIsland\", \"Plainview\", \"NassauCounty\"],\n//   \"platforms\": [\"facebook\",\"instagram\",\"pinterest\",\"twitter\",\"linkedin\"]\n// }\n\nconst body = $input.first().json.body;\n\n// Brand configs — fill in your real IDs below\nconst BRAND_CONFIGS = {\n  longislandconvenience: {\n    fb_page_id:    'FILL_YOUR_FB_PAGE_ID',\n    ig_account_id: 'FILL_YOUR_IG_ACCOUNT_ID',\n    pinterest_board_id: 'FILL_YOUR_PINTEREST_BOARD_ID',\n    linkedin_org_id: 'FILL_YOUR_LINKEDIN_ORG_ID',\n    default_hashtags: ['LongIsland','PlainviewNY','NassauCounty','ShopLocal','LongIslandLife'],\n  },\n  longislandcards: {\n    fb_page_id:    'FILL_YOUR_FB_PAGE_ID_CARDS',\n    ig_account_id: 'FILL_YOUR_IG_ACCOUNT_ID_CARDS',\n    pinterest_board_id: null,\n    linkedin_org_id: null,\n    default_hashtags: ['SportsCards','LongIsland','PlainviewNY','PSAGraded','PokemonCards'],\n  },\n  ligiftbasket: {\n    fb_page_id:    'FILL_YOUR_FB_PAGE_ID_GIFT',\n    ig_account_id: 'FILL_YOUR_IG_ACCOUNT_ID_GIFT',\n    pinterest_board_id: 'FILL_YOUR_PINTEREST_BOARD_ID_GIFT',\n    linkedin_org_id: null,\n    default_hashtags: ['GiftBasket','LongIsland','PlainviewNY','GiftIdeas','CustomGifts'],\n  },\n  longislandballoonsdecor: {\n    fb_page_id:    'FILL_YOUR_FB_PAGE_ID_BALLOONS',\n    ig_account_id: 'FILL_YOUR_IG_ACCOUNT_ID_BALLOONS',\n    pinterest_board_id: 'FILL_YOUR_PINTEREST_BOARD_ID_BALLOONS',\n    linkedin_org_id: null,\n    default_hashtags: ['BalloonDecor','LongIsland','PlainviewNY','BalloonArch','EventDecor'],\n  },\n  longislandprintandmail: {\n    fb_page_id:    'FILL_YOUR_FB_PAGE_ID_PRINT',\n    ig_account_id: 'FILL_YOUR_IG_ACCOUNT_ID_PRINT',\n    pinterest_board_id: null,\n    linkedin_org_id: 'FILL_YOUR_LINKEDIN_ORG_ID_PRINT',\n    default_hashtags: ['PrintShop','LongIsland','PlainviewNY','BusinessCards','SameDay'],\n  },\n  jhdadvisor: {\n    fb_page_id:    'FILL_YOUR_FB_PAGE_ID_JHD',\n    ig_account_id: 'FILL_YOUR_IG_ACCOUNT_ID_JHD',\n    pinterest_board_id: null,\n    linkedin_org_id: 'FILL_YOUR_LINKEDIN_ORG_ID_JHD',\n    default_hashtags: ['AIAgency','DigitalMarketing','LongIsland','Automation','SEO'],\n  },\n};\n\n// Merge hashtags\nconst brandCfg = BRAND_CONFIGS[body.brand] || BRAND_CONFIGS.longislandconvenience;\nconst allTags = [...new Set([...(body.hashtags || []), ...brandCfg.default_hashtags])];\nconst hashtagString = allTags.map(t => `#${t.replace(/^#/,'')}`).join(' ');\n\n// Platform-specific text limits\nconst LIMITS = { facebook: 63206, instagram: 2200, pinterest: 500, twitter: 280, linkedin: 3000 };\n\nfunction truncate(text, max) {\n  if (!text) return '';\n  return text.length <= max ? text : text.slice(0, max - 3) + '...';\n}\n\nconst baseText = body.text_long || body.text || '';\nconst shortText = body.text || baseText.slice(0, 280);\n\n// Prepare platform payloads\nconst prepared = {\n  brand: body.brand,\n  brand_config: brandCfg,\n  image_url: body.image_url || null,\n  video_url: body.video_url || null,\n  link_url: body.link_url || null,\n  content_type: body.content_type || 'post',\n  platforms: body.platforms || ['facebook','instagram'],\n  \n  facebook_text: truncate(`${baseText}\\n\\n${hashtagString}${body.link_url ? '\\n\\n' + body.link_url : ''}`, 63206),\n  instagram_caption: truncate(`${baseText}\\n\\n${hashtagString}`, 2200),\n  pinterest_description: truncate(baseText, 500),\n  pinterest_title: truncate(shortText, 100),\n  twitter_text: truncate(`${shortText} ${allTags.slice(0,3).map(t=>'#'+t).join(' ')}${body.link_url ? ' ' + body.link_url : ''}`, 280),\n  linkedin_text: truncate(`${baseText}\\n\\n${hashtagString}`, 3000),\n};\n\nreturn [{ json: prepared }];"
+      },
+      "id": "wfa-002",
+      "name": "Code: Prepare Platform Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "fb-check",
+              "leftValue": "={{ $json.platforms.includes('facebook') }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ]
+        }
+      },
+      "id": "wfa-003",
+      "name": "IF: Facebook Enabled?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 160]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $('Code: Prepare Platform Content').item.json.brand_config.fb_page_id }}/feed",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "message", "value": "={{ $('Code: Prepare Platform Content').item.json.facebook_text }}" },
+            { "name": "link", "value": "={{ $('Code: Prepare Platform Content').item.json.link_url || '' }}" },
+            { "name": "access_token", "value": "={{ $credentials.facebookGraphApiToken }}" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfa-004",
+      "name": "HTTP: Post to Facebook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 80],
+      "credentials": {
+        "httpHeaderAuth": { "id": "meta-api-cred", "name": "Meta Graph API" }
+      }
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "ig-check",
+              "leftValue": "={{ $('Code: Prepare Platform Content').item.json.platforms.includes('instagram') }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ]
+        }
+      },
+      "id": "wfa-005",
+      "name": "IF: Instagram Enabled?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $('Code: Prepare Platform Content').item.json.brand_config.ig_account_id }}/media",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "image_url", "value": "={{ $('Code: Prepare Platform Content').item.json.image_url || 'https://via.placeholder.com/1080' }}" },
+            { "name": "caption", "value": "={{ $('Code: Prepare Platform Content').item.json.instagram_caption }}" },
+            { "name": "access_token", "value": "={{ $credentials.instagramAccessToken }}" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfa-006",
+      "name": "HTTP: Instagram Create Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 260],
+      "credentials": {
+        "httpHeaderAuth": { "id": "meta-api-cred", "name": "Meta Graph API" }
+      }
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $('Code: Prepare Platform Content').item.json.brand_config.ig_account_id }}/media_publish",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "creation_id", "value": "={{ $json.id }}" },
+            { "name": "access_token", "value": "={{ $credentials.instagramAccessToken }}" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfa-007",
+      "name": "HTTP: Instagram Publish",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 260]
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "pin-check",
+              "leftValue": "={{ $('Code: Prepare Platform Content').item.json.platforms.includes('pinterest') && $('Code: Prepare Platform Content').item.json.brand_config.pinterest_board_id !== null }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ]
+        }
+      },
+      "id": "wfa-008",
+      "name": "IF: Pinterest Enabled?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 460]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pinterest.com/v5/pins",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"board_id\": \"{{ $('Code: Prepare Platform Content').item.json.brand_config.pinterest_board_id }}\",\n  \"title\": \"{{ $('Code: Prepare Platform Content').item.json.pinterest_title }}\",\n  \"description\": \"{{ $('Code: Prepare Platform Content').item.json.pinterest_description }}\",\n  \"media_source\": {\n    \"source_type\": \"image_url\",\n    \"url\": \"{{ $('Code: Prepare Platform Content').item.json.image_url || 'https://via.placeholder.com/1080' }}\"\n  },\n  \"link\": \"{{ $('Code: Prepare Platform Content').item.json.link_url || '' }}\"\n}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfa-009",
+      "name": "HTTP: Post to Pinterest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 440],
+      "credentials": {
+        "httpHeaderAuth": { "id": "pinterest-cred", "name": "Pinterest API" }
+      }
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "tw-check",
+              "leftValue": "={{ $('Code: Prepare Platform Content').item.json.platforms.includes('twitter') }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ]
+        }
+      },
+      "id": "wfa-010",
+      "name": "IF: Twitter Enabled?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 620]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twitter.com/2/tweets",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"text\": \"{{ $('Code: Prepare Platform Content').item.json.twitter_text }}\"\n}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfa-011",
+      "name": "HTTP: Post to Twitter/X",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 600],
+      "credentials": {
+        "httpHeaderAuth": { "id": "twitter-cred", "name": "Twitter OAuth2" }
+      }
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "li-check",
+              "leftValue": "={{ $('Code: Prepare Platform Content').item.json.platforms.includes('linkedin') && $('Code: Prepare Platform Content').item.json.brand_config.linkedin_org_id !== null }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ]
+        }
+      },
+      "id": "wfa-012",
+      "name": "IF: LinkedIn Enabled?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 780]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/v2/ugcPosts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"author\": \"urn:li:organization:{{ $('Code: Prepare Platform Content').item.json.brand_config.linkedin_org_id }}\",\n  \"lifecycleState\": \"PUBLISHED\",\n  \"specificContent\": {\n    \"com.linkedin.ugc.ShareContent\": {\n      \"shareCommentary\": {\n        \"text\": \"{{ $('Code: Prepare Platform Content').item.json.linkedin_text }}\"\n      },\n      \"shareMediaCategory\": \"{{ $('Code: Prepare Platform Content').item.json.image_url ? 'IMAGE' : 'NONE' }}\"\n    }\n  },\n  \"visibility\": {\n    \"com.linkedin.ugc.MemberNetworkVisibility\": \"PUBLIC\"\n  }\n}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "wfa-013",
+      "name": "HTTP: Post to LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 760],
+      "credentials": {
+        "httpHeaderAuth": { "id": "linkedin-cred", "name": "LinkedIn API" }
+      }
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// Compile results from all platform nodes that ran\n// This node receives all outputs — build a summary\nconst results = {\n  timestamp: new Date().toISOString(),\n  status: 'completed',\n  platforms_attempted: $('Code: Prepare Platform Content').item.json.platforms,\n  brand: $('Code: Prepare Platform Content').item.json.brand,\n};\nreturn [{ json: results }];"
+      },
+      "id": "wfa-014",
+      "name": "Code: Build Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 300]
+    },
+
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "wfa-015",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1440, 300]
+    }
+
+  ],
+
+  "connections": {
+    "Webhook: Receive Post Request": {
+      "main": [[{ "node": "Code: Prepare Platform Content", "type": "main", "index": 0 }]]
+    },
+    "Code: Prepare Platform Content": {
+      "main": [[
+        { "node": "IF: Facebook Enabled?", "type": "main", "index": 0 },
+        { "node": "IF: Instagram Enabled?", "type": "main", "index": 0 },
+        { "node": "IF: Pinterest Enabled?", "type": "main", "index": 0 },
+        { "node": "IF: Twitter Enabled?", "type": "main", "index": 0 },
+        { "node": "IF: LinkedIn Enabled?", "type": "main", "index": 0 }
+      ]]
+    },
+    "IF: Facebook Enabled?": {
+      "main": [
+        [{ "node": "HTTP: Post to Facebook", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "HTTP: Post to Facebook": {
+      "main": [[{ "node": "Code: Build Summary", "type": "main", "index": 0 }]]
+    },
+    "IF: Instagram Enabled?": {
+      "main": [
+        [{ "node": "HTTP: Instagram Create Container", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "HTTP: Instagram Create Container": {
+      "main": [[{ "node": "HTTP: Instagram Publish", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Instagram Publish": {
+      "main": [[{ "node": "Code: Build Summary", "type": "main", "index": 0 }]]
+    },
+    "IF: Pinterest Enabled?": {
+      "main": [
+        [{ "node": "HTTP: Post to Pinterest", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "HTTP: Post to Pinterest": {
+      "main": [[{ "node": "Code: Build Summary", "type": "main", "index": 0 }]]
+    },
+    "IF: Twitter Enabled?": {
+      "main": [
+        [{ "node": "HTTP: Post to Twitter/X", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "HTTP: Post to Twitter/X": {
+      "main": [[{ "node": "Code: Build Summary", "type": "main", "index": 0 }]]
+    },
+    "IF: LinkedIn Enabled?": {
+      "main": [
+        [{ "node": "HTTP: Post to LinkedIn", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "HTTP: Post to LinkedIn": {
+      "main": [[{ "node": "Code: Build Summary", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Summary": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": ["social-media", "long-island", "marketing"],
+  "notes": "WF-A: Social Blast — Import this into n8n and fill in FILL_YOUR_* placeholders in Code: Prepare Platform Content node. Then set up credentials: Meta Graph API, Pinterest API, Twitter OAuth2, LinkedIn API."
+}

@@ -1,0 +1,35 @@
+{
+  "name": "WF-02 — SEO Geo Blog Generator",
+  "description": "Daily geo-targeted blog for Long Island / Plainview NY → auto-publishes to WordPress",
+  "status": "PENDING BUILD",
+  "trigger": "Daily cron 9 AM OR Telegram /writeblog",
+  "geo_targets": ["Long Island", "Plainview", "Hicksville", "Syosset", "Bethpage", "Farmingdale", "Westbury"],
+  "steps": [
+    "1. Cron/Telegram Trigger",
+    "2. Pick blog topic from rotating topic list (stored in Google Sheets or n8n variable)",
+    "3. Claude API → generate full blog post (800-1200 words, geo-keyword rich)",
+    "4. OpenAI → generate featured image",
+    "5. Upload image to WordPress media library",
+    "6. Publish post via WordPress REST API with SEO fields",
+    "7. Share to Facebook Page",
+    "8. Send Telegram confirmation with live URL"
+  ],
+  "sample_topics": [
+    "Best convenience store snacks in Plainview NY",
+    "Late night delivery Long Island — what's open near you",
+    "Weekly grocery deals Hicksville and Bethpage",
+    "Same day delivery Long Island convenience items",
+    "Top 10 snacks Long Island locals love",
+    "Convenience store near Syosset — everything you need delivered"
+  ],
+  "n8n_nodes": [
+    "Cron / Telegram Trigger",
+    "Google Sheets (get next topic)",
+    "HTTP Request (Claude API)",
+    "HTTP Request (OpenAI Images)",
+    "HTTP Request (WP Media Upload)",
+    "HTTP Request (WP Post Publish)",
+    "HTTP Request (Facebook Post)",
+    "Telegram (send confirmation)"
+  ]
+}

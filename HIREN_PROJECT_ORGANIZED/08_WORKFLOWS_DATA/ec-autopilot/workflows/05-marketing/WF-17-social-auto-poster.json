@@ -1,0 +1,31 @@
+{
+  "name": "WF-17 — Social Media Auto-Poster",
+  "description": "Posts generated content to Facebook Page + Instagram automatically at 10 AM daily",
+  "status": "PENDING BUILD",
+  "trigger": "Daily cron 10 AM OR triggered by WF-14",
+  "platforms": ["Facebook Page", "Instagram Business"],
+  "steps": [
+    "1. Cron 10 AM trigger",
+    "2. Read today's posts from Google Sheets content calendar",
+    "3. For each post: upload image to FB/IG via Meta Graph API",
+    "4. Post to Facebook Page (POST /me/photos or /me/feed)",
+    "5. Post to Instagram (POST /ig-user-id/media → /ig-user-id/media_publish)",
+    "6. Save post IDs + URLs back to Google Sheets",
+    "7. Send daily confirmation to Telegram with post links"
+  ],
+  "meta_api_flow": {
+    "instagram_step1": "POST /{ig-user-id}/media with image_url and caption",
+    "instagram_step2": "POST /{ig-user-id}/media_publish with creation_id",
+    "facebook": "POST /{page-id}/photos with url and message"
+  },
+  "n8n_nodes": [
+    "Cron Trigger",
+    "Google Sheets (read today's content)",
+    "Split In Batches (3 posts)",
+    "HTTP Request (Meta — upload image)",
+    "HTTP Request (Meta — publish IG)",
+    "HTTP Request (Meta — publish FB)",
+    "Google Sheets (save post IDs)",
+    "Telegram (send confirmation)"
+  ]
+}

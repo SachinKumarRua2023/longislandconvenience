@@ -1,0 +1,254 @@
+{
+  "name": "WF-C — AI Tech YouTube Daily Digest (8AM ET) [100% FREE]",
+  "nodes": [
+
+    {
+      "id": "ytd-001",
+      "name": "Schedule: 8AM ET Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 13 * * *" }]
+        }
+      },
+      "notes": "13:00 UTC = 9 AM EDT (summer) / 8 AM EST (winter). Timezone set to America/New_York in settings — handles DST automatically."
+    },
+
+    {
+      "id": "ytd-002",
+      "name": "Code: Build Search Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "jsCode": "// ═══════════════════════════════════════════════════════════════\n// Build rotating AI/Tech search queries by day of week\n// Each day covers a different AI domain — keeps digest fresh\n// ═══════════════════════════════════════════════════════════════\nconst now = new Date();\nconst dayOfWeek = now.getDay(); // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat\n\nconst QUERY_SETS = [\n  // Sunday — Weekly AI news recap\n  { q: 'artificial intelligence news this week AI roundup', order: 'relevance', label: 'Weekly AI Roundup' },\n  // Monday — LLM & models\n  { q: 'large language model LLM GPT Claude Gemini 2025 new release', order: 'relevance', label: 'LLMs & Models' },\n  // Tuesday — AI tools & productivity\n  { q: 'AI tools productivity automation workflow 2025', order: 'viewCount', label: 'AI Tools & Productivity' },\n  // Wednesday — AI image/video generation\n  { q: 'AI image generation video generation Sora Midjourney latest', order: 'relevance', label: 'AI Generation' },\n  // Thursday — AI agents & coding\n  { q: 'AI agent autonomous coding Claude Cursor Copilot tutorial', order: 'relevance', label: 'AI Agents & Code' },\n  // Friday — AI business & startups\n  { q: 'AI startup product launch business automation 2025', order: 'viewCount', label: 'AI Business' },\n  // Saturday — Deep dives & tutorials\n  { q: 'machine learning deep learning tutorial explained 2025', order: 'relevance', label: 'ML Tutorials' },\n];\n\nconst qs = QUERY_SETS[dayOfWeek];\n\n// Published in last 48 hours for fresh content\nconst publishedAfter = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();\n\nconst dateStr = now.toLocaleDateString('en-US', {\n  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',\n  timeZone: 'America/New_York'\n});\n\nconsole.log('Search query:', qs.q);\nconsole.log('Date:', dateStr);\n\nreturn [{ json: {\n  q: qs.q,\n  order: qs.order,\n  label: qs.label,\n  publishedAfter,\n  dateStr,\n  dayOfWeek,\n} }];"
+      }
+    },
+
+    {
+      "id": "ytd-003",
+      "name": "HTTP: YouTube Search API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "part",             "value": "snippet" },
+            { "name": "q",               "value": "={{ $json.q }}" },
+            { "name": "type",            "value": "video" },
+            { "name": "order",           "value": "={{ $json.order }}" },
+            { "name": "publishedAfter",  "value": "={{ $json.publishedAfter }}" },
+            { "name": "maxResults",      "value": "15" },
+            { "name": "videoDuration",   "value": "medium" },
+            { "name": "relevanceLanguage", "value": "en" },
+            { "name": "videoEmbeddable", "value": "true" },
+            { "name": "key",             "value": "FILL_YOUR_YOUTUBE_API_KEY" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "notes": "Get YouTube Data API v3 key FREE at: console.cloud.google.com → APIs → YouTube Data API v3. Free quota: 10,000 units/day. This search = 100 units."
+    },
+
+    {
+      "id": "ytd-004",
+      "name": "Code: Extract & Filter Video IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300],
+      "parameters": {
+        "jsCode": "const searchResp = $input.first().json;\nconst contextData = $('Code: Build Search Query').first().json;\n\nif (!searchResp.items || searchResp.items.length === 0) {\n  throw new Error('YouTube Search returned no results. Check API key and quota. Error: ' + JSON.stringify(searchResp).slice(0, 300));\n}\n\n// Extract unique video IDs and basic info\nconst seen = new Set();\nconst videos = [];\n\nfor (const item of searchResp.items) {\n  const vid = item.id?.videoId;\n  if (!vid || seen.has(vid)) continue;\n  seen.add(vid);\n  \n  videos.push({\n    videoId: vid,\n    title: item.snippet?.title || '',\n    channel: item.snippet?.channelTitle || '',\n    description: (item.snippet?.description || '').slice(0, 500),\n    publishedAt: item.snippet?.publishedAt || '',\n    thumbnail: item.snippet?.thumbnails?.high?.url ||\n               item.snippet?.thumbnails?.medium?.url ||\n               item.snippet?.thumbnails?.default?.url || '',\n  });\n}\n\n// Take top 10 unique videos\nconst top = videos.slice(0, 10);\nconst videoIds = top.map(v => v.videoId).join(',');\n\nconsole.log(`Found ${searchResp.items.length} results, ${top.length} unique taken`);\n\nreturn [{ json: {\n  videos: top,\n  videoIds,\n  count: top.length,\n  label: contextData.label,\n  dateStr: contextData.dateStr,\n} }];"
+      }
+    },
+
+    {
+      "id": "ytd-005",
+      "name": "HTTP: YouTube Video Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "part", "value": "snippet,statistics,contentDetails" },
+            { "name": "id",   "value": "={{ $json.videoIds }}" },
+            { "name": "key",  "value": "FILL_YOUR_YOUTUBE_API_KEY" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "notes": "Fetches full stats (views, likes, comments) + full description + duration. Costs 1 unit per video. 10 videos = 10 units."
+    },
+
+    {
+      "id": "ytd-006",
+      "name": "Code: Build Rich Video Profiles",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 300],
+      "parameters": {
+        "jsCode": "const detailsResp = $('HTTP: YouTube Video Details').first().json;\nconst searchData  = $('Code: Extract & Filter Video IDs').first().json;\n\nif (!detailsResp.items || detailsResp.items.length === 0) {\n  throw new Error('YouTube Video Details returned no items. Response: ' + JSON.stringify(detailsResp).slice(0, 300));\n}\n\n// Helper: parse ISO 8601 duration (PT4M30S)\nfunction parseDuration(iso) {\n  if (!iso) return 'Unknown';\n  const m = iso.match(/PT(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+)S)?/);\n  if (!m) return iso;\n  const h = parseInt(m[1] || 0);\n  const min = parseInt(m[2] || 0);\n  const sec = parseInt(m[3] || 0);\n  if (h > 0) return `${h}h ${min}m`;\n  if (min > 0) return `${min}m ${sec > 0 ? sec + 's' : ''}`;\n  return `${sec}s`;\n}\n\n// Helper: format large numbers\nfunction fmt(n) {\n  const num = parseInt(n || 0);\n  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';\n  if (num >= 1000)    return (num / 1000).toFixed(1) + 'K';\n  return num.toLocaleString();\n}\n\n// Map search thumbnails by videoId (higher quality than what details returns)\nconst thumbMap = {};\nfor (const sv of (searchData.videos || [])) {\n  thumbMap[sv.videoId] = sv.thumbnail;\n}\n\n// Build enriched profiles\nconst profiles = [];\nfor (const item of detailsResp.items) {\n  const snippet = item.snippet || {};\n  const stats   = item.statistics || {};\n  const content = item.contentDetails || {};\n  const vid     = item.id;\n\n  const fullDesc = (snippet.description || '').slice(0, 2000);\n  const tags     = (snippet.tags || []).slice(0, 12).join(', ');\n\n  profiles.push({\n    videoId:     vid,\n    title:       snippet.title || '',\n    channel:     snippet.channelTitle || '',\n    publishedAt: snippet.publishedAt || '',\n    duration:    parseDuration(content.duration),\n    views:       fmt(stats.viewCount),\n    likes:       fmt(stats.likeCount),\n    comments:    fmt(stats.commentCount),\n    description: fullDesc,\n    tags:        tags,\n    thumbnail:   thumbMap[vid] || `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`,\n    url:         `https://www.youtube.com/watch?v=${vid}`,\n  });\n}\n\nif (profiles.length === 0) {\n  throw new Error('No video profiles built after enrichment. Something is wrong with the API response.');\n}\n\nconsole.log(`Built ${profiles.length} rich video profiles for Claude`);\n\nreturn [{ json: {\n  profiles,\n  count:   profiles.length,\n  dateStr: searchData.dateStr,\n  label:   searchData.label,\n} }];"
+      }
+    },
+
+    {
+      "id": "ytd-007",
+      "name": "HTTP: Groq AI — Generate Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer FILL_YOUR_GROQ_API_KEY" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'llama-3.3-70b-versatile',\n  max_tokens: 4096,\n  temperature: 0.7,\n  messages: [\n    {\n      role: 'system',\n      content: 'You are an expert AI technology analyst and newsletter editor. Your job is to analyze YouTube videos about artificial intelligence and technology, then create a concise, high-value daily digest for busy tech professionals, entrepreneurs, and AI enthusiasts. Write in a clear, direct, and engaging tone. Focus on: key insights, practical takeaways, and why it matters. You have deep knowledge of AI trends, LLMs, agents, tools, and the AI business landscape. Always return valid JSON only — no markdown, no explanation, just the JSON object.'\n    },\n    {\n      role: 'user',\n      content: 'Create a comprehensive AI Tech YouTube Digest for ' + $json.dateStr + '.\\n\\nToday\\'s Theme: ' + $json.label + '\\nTotal Videos: ' + $json.count + '\\n\\n' + $json.profiles.map((v, i) =>\n        '── VIDEO ' + (i + 1) + ' ──\\n' +\n        'Title: ' + v.title + '\\n' +\n        'Channel: ' + v.channel + '\\n' +\n        'Duration: ' + v.duration + ' | Views: ' + v.views + ' | Likes: ' + v.likes + '\\n' +\n        'URL: ' + v.url + '\\n' +\n        'Published: ' + v.publishedAt + '\\n' +\n        'Tags: ' + v.tags + '\\n' +\n        'Description:\\n' + v.description\n      ).join('\\n\\n') + '\\n\\nReturn ONLY valid JSON (no markdown, no code fences, no explanation) in this exact format:\\n{\\n  \"digest_title\": \"AI Tech Digest — [date]\",\\n  \"theme\": \"' + $json.label + '\",\\n  \"headline_summary\": \"3-4 sentence executive summary of today\\'s most important AI developments and trends\",\\n  \"top_pick\": {\\n    \"videoId\": \"most important video ID\",\\n    \"title\": \"video title\",\\n    \"channel\": \"channel name\",\\n    \"url\": \"https://youtube.com/watch?v=ID\",\\n    \"why_top_pick\": \"2-3 sentences: why this is today\\'s must-watch and what makes it uniquely valuable\"\\n  },\\n  \"videos\": [\\n    {\\n      \"videoId\": \"id\",\\n      \"title\": \"title\",\\n      \"channel\": \"channel\",\\n      \"duration\": \"Xm Ys\",\\n      \"views\": \"Xk\",\\n      \"url\": \"url\",\\n      \"summary\": \"3-4 sentence summary: what the video covers, key arguments, and main value for the viewer\",\\n      \"key_takeaways\": [\"specific actionable takeaway 1\", \"specific takeaway 2\", \"specific takeaway 3\"],\\n      \"relevance_score\": 8,\\n      \"category\": \"Tutorial|News|Analysis|Demo|Interview|Review\",\\n      \"tags\": [\"AI\", \"tag2\", \"tag3\"]\\n    }\\n  ],\\n  \"todays_themes\": [\"major theme 1\", \"theme 2\", \"theme 3\"],\\n  \"tools_mentioned\": [\"tool or model name 1\", \"tool 2\"],\\n  \"key_companies\": [\"OpenAI\", \"company2\"],\\n  \"telegram_summary\": \"Short 3-4 line Telegram message with relevant emojis. Max 400 chars. Include video count and top highlight.\",\\n  \"one_liner\": \"One punchy sentence summarizing today\\'s AI world in under 20 words\"\\n}'\n    }\n  ]\n}) }}",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 60000
+        }
+      },
+      "notes": "FREE — Groq free tier: 14,400 req/day. Model: llama-3.3-70b-versatile (very capable). Get free key at: console.groq.com — no credit card needed."
+    },
+
+    {
+      "id": "ytd-008",
+      "name": "Code: Parse Groq Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1680, 300],
+      "parameters": {
+        "jsCode": "const response   = $input.first().json;\nconst videoData  = $('Code: Build Rich Video Profiles').first().json;\n\n// Extract Groq's text response (OpenAI-compatible format)\n// Groq returns: response.choices[0].message.content\nlet raw = '';\ntry {\n  raw = response.choices[0].message.content;\n} catch(e) {\n  console.log('Groq response error:', JSON.stringify(response).slice(0, 400));\n  throw new Error('Groq API call failed. Check your free API key at console.groq.com. Response: ' + JSON.stringify(response).slice(0, 400));\n}\n\n// Strip any markdown code fences Groq may add despite instructions\nlet digest;\ntry {\n  const cleaned = raw\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/,      '')\n    .replace(/\\s*```$/,      '')\n    .trim();\n  digest = JSON.parse(cleaned);\n} catch(e) {\n  console.log('JSON parse failed. Raw response (first 500):', raw.slice(0, 500));\n  // Fallback: build basic digest from raw video profiles\n  digest = {\n    digest_title: 'AI Tech Digest — ' + videoData.dateStr,\n    theme: videoData.label,\n    headline_summary: 'Today\\'s AI digest covers ' + videoData.count + ' fresh videos on: ' + videoData.label + '. AI summarization had an issue — video list below.',\n    top_pick: {\n      videoId:      videoData.profiles[0]?.videoId || '',\n      title:        videoData.profiles[0]?.title || '',\n      channel:      videoData.profiles[0]?.channel || '',\n      url:          videoData.profiles[0]?.url || '',\n      why_top_pick: 'Most relevant video for today\\'s AI theme.',\n    },\n    videos: videoData.profiles.map(p => ({\n      videoId:         p.videoId,\n      title:           p.title,\n      channel:         p.channel,\n      duration:        p.duration,\n      views:           p.views,\n      url:             p.url,\n      summary:         p.description.slice(0, 200) + '...',\n      key_takeaways:   ['Watch the full video for complete insights'],\n      relevance_score: 7,\n      category:        'Video',\n      tags:            ['AI', 'Tech'],\n    })),\n    todays_themes:   ['Artificial Intelligence', 'Machine Learning', 'Tech'],\n    tools_mentioned: [],\n    key_companies:   [],\n    telegram_summary: '\\uD83E\\uDD16 AI Tech Digest | ' + videoData.count + ' videos | ' + videoData.dateStr + '\\n\\nCheck your email for full summaries!',\n    one_liner: 'AI keeps moving — ' + videoData.count + ' key videos summarized for you today.',\n  };\n}\n\n// Guarantee all expected arrays exist\nif (!Array.isArray(digest.videos))          digest.videos = [];\nif (!Array.isArray(digest.todays_themes))   digest.todays_themes = [];\nif (!Array.isArray(digest.tools_mentioned)) digest.tools_mentioned = [];\nif (!Array.isArray(digest.key_companies))   digest.key_companies = [];\n\nconsole.log('Groq digest parsed. Videos:', digest.videos.length, '| Title:', digest.digest_title);\n\nreturn [{ json: {\n  digest,\n  profiles: videoData.profiles,\n  dateStr:  videoData.dateStr,\n  label:    videoData.label,\n} }];"
+      }
+    },
+
+    {
+      "id": "ytd-009",
+      "name": "Code: Format HTML Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, 300],
+      "parameters": {
+        "jsCode": "const { digest, profiles, dateStr, label } = $input.first().json;\n\n// Build profile lookup for thumbnails\nconst thumbMap = {};\nfor (const p of (profiles || [])) {\n  thumbMap[p.videoId] = p.thumbnail;\n}\n\n// Category color map\nconst catColors = {\n  Tutorial:  { bg: '#e3f2fd', color: '#1565c0' },\n  News:      { bg: '#fce4ec', color: '#c62828' },\n  Analysis:  { bg: '#e8f5e9', color: '#2e7d32' },\n  Demo:      { bg: '#fff3e0', color: '#e65100' },\n  Interview: { bg: '#f3e5f5', color: '#6a1b9a' },\n  Review:    { bg: '#e0f2f1', color: '#00695c' },\n};\nfunction catBadge(cat) {\n  const c = catColors[cat] || { bg: '#f5f5f5', color: '#555' };\n  return `<span style=\"background:${c.bg};color:${c.color};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:0.5px;\">${cat || 'Video'}</span>`;\n}\n\n// Star rating\nfunction stars(n) {\n  const s = Math.min(Math.max(Math.round(n || 7), 1), 10);\n  return '\\u2605'.repeat(s) + '\\u2606'.repeat(10 - s);\n}\n\n// Video cards HTML\nconst videoCards = (digest.videos || []).map((v, i) => {\n  const thumb = thumbMap[v.videoId] || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;\n  const takeaways = (v.key_takeaways || []).map(t => `<li style=\"margin:5px 0;color:#444;\">${t}</li>`).join('');\n  const vtags = (v.tags || []).slice(0, 4).map(t =>\n    `<span style=\"background:#f1f3f4;color:#5f6368;padding:2px 8px;border-radius:10px;font-size:11px;margin:2px;display:inline-block;\">${t}</span>`\n  ).join('');\n\n  return `\n  <div style=\"border:1px solid #e8eaed;border-radius:12px;margin-bottom:20px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);\">\n    <table cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">\n      <tr>\n        <td width=\"200\" valign=\"top\" style=\"padding:0;\">\n          <a href=\"${v.url}\" target=\"_blank\">\n            <img src=\"${thumb}\" width=\"200\" height=\"113\" alt=\"${v.title}\" style=\"display:block;object-fit:cover;\" />\n          </a>\n        </td>\n        <td valign=\"top\" style=\"padding:14px 16px;\">\n          <p style=\"margin:0 0 4px;font-size:11px;color:#888;\">#${i + 1} &nbsp;${catBadge(v.category)}</p>\n          <a href=\"${v.url}\" target=\"_blank\" style=\"text-decoration:none;\">\n            <h3 style=\"margin:0 0 6px;color:#1a1a1a;font-size:15px;line-height:1.4;\">${v.title}</h3>\n          </a>\n          <p style=\"margin:0 0 8px;color:#888;font-size:12px;\">\n            \\uD83D\\uDCFA ${v.channel} &nbsp;\\u2022&nbsp; \\u23F1 ${v.duration} &nbsp;\\u2022&nbsp; \\uD83D\\uDC41 ${v.views} views\n          </p>\n          <p style=\"margin:0 0 10px;color:#333;font-size:13px;line-height:1.65;\">${v.summary}</p>\n          <div style=\"margin-bottom:8px;\">${vtags}</div>\n          <p style=\"margin:0;font-size:11px;color:#aaa;\">Relevance: ${stars(v.relevance_score)}</p>\n        </td>\n      </tr>\n    </table>\n    <div style=\"background:#f8f9fa;padding:12px 16px;border-top:1px solid #e8eaed;\">\n      <p style=\"margin:0 0 6px;font-size:12px;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:0.5px;\">\\uD83D\\uDCA1 Key Takeaways</p>\n      <ul style=\"margin:0;padding-left:18px;\">${takeaways}</ul>\n    </div>\n    <div style=\"padding:10px 16px;\">\n      <a href=\"${v.url}\" target=\"_blank\" style=\"background:#ff0000;color:#fff;padding:7px 16px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;display:inline-block;\">\\u25B6 Watch on YouTube</a>\n    </div>\n  </div>`;\n}).join('');\n\n// Top Pick section\nconst tp = digest.top_pick;\nconst topPickHtml = tp ? `\n<div style=\"background:linear-gradient(135deg,#667eea,#764ba2);border-radius:14px;padding:24px;margin:24px 0;color:#fff;\">\n  <p style=\"margin:0 0 8px;font-size:11px;letter-spacing:2px;opacity:0.8;text-transform:uppercase;\">\\u2B50 Today's Top Pick</p>\n  <h2 style=\"margin:0 0 8px;font-size:18px;line-height:1.4;\">${tp.title}</h2>\n  <p style=\"margin:0 0 6px;opacity:0.85;font-size:13px;\">\\uD83D\\uDCFA ${tp.channel}</p>\n  <p style=\"margin:0 0 18px;font-size:14px;line-height:1.6;opacity:0.95;\">${tp.why_top_pick}</p>\n  <a href=\"${tp.url}\" target=\"_blank\" style=\"background:#fff;color:#764ba2;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;display:inline-block;\">\\u25B6 Watch Now</a>\n</div>` : '';\n\n// Pills for themes, tools, companies\nfunction pills(arr, bg, color) {\n  return (arr || []).map(t =>\n    `<span style=\"background:${bg};color:${color};padding:5px 12px;border-radius:20px;font-size:12px;margin:3px;display:inline-block;\">${t}</span>`\n  ).join('');\n}\n\nconst themePills   = pills(digest.todays_themes,  '#e8eaf6', '#3949ab');\nconst toolPills    = pills(digest.tools_mentioned, '#e8f5e9', '#2e7d32');\nconst companyPills = pills(digest.key_companies,   '#fff3e0', '#e65100');\n\n// Full HTML email\nconst html = `<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>${digest.digest_title}</title></head>\n<body style=\"font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;max-width:680px;margin:0 auto;background:#f1f3f4;padding:20px 0;\">\n\n<!-- HEADER -->\n<div style=\"background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);padding:40px 30px;text-align:center;border-radius:14px 14px 0 0;\">\n  <div style=\"font-size:52px;margin-bottom:10px;\">🤖</div>\n  <h1 style=\"color:#fff;margin:0 0 6px;font-size:26px;font-weight:800;letter-spacing:-0.5px;\">AI Tech Daily Digest</h1>\n  <p style=\"color:rgba(255,255,255,0.65);margin:0 0 8px;font-size:14px;\">${dateStr}</p>\n  <p style=\"color:#a78bfa;margin:0;font-size:13px;font-style:italic;\">\"${digest.one_liner || 'Staying sharp in the age of AI.'}\"</p>\n</div>\n\n<!-- BODY -->\n<div style=\"background:#fff;padding:28px 30px;\">\n\n  <!-- HEADLINE SUMMARY -->\n  <div style=\"background:#e8eaf6;border-left:4px solid #3949ab;padding:16px 18px;border-radius:0 10px 10px 0;margin-bottom:24px;\">\n    <p style=\"margin:0 0 4px;font-size:11px;font-weight:700;color:#3949ab;text-transform:uppercase;letter-spacing:1px;\">📋 Today's AI Briefing — ${label}</p>\n    <p style=\"margin:0;font-size:15px;line-height:1.7;color:#222;\">${digest.headline_summary}</p>\n  </div>\n\n  <!-- TOP PICK -->\n  ${topPickHtml}\n\n  <!-- THEMES & TOOLS -->\n  ${themePills ? `<div style=\"margin-bottom:18px;\"><p style=\"font-size:12px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;\">📌 Today's Themes</p>${themePills}</div>` : ''}\n  ${toolPills  ? `<div style=\"margin-bottom:18px;\"><p style=\"font-size:12px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;\">🛠 AI Tools Mentioned</p>${toolPills}</div>` : ''}\n  ${companyPills ? `<div style=\"margin-bottom:18px;\"><p style=\"font-size:12px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;\">🏢 Key Companies</p>${companyPills}</div>` : ''}\n\n  <!-- DIVIDER -->\n  <h2 style=\"color:#1a1a1a;font-size:18px;border-bottom:2px solid #f0f0f0;padding-bottom:10px;margin-top:28px;\">📺 All Videos Today (${(digest.videos || []).length})</h2>\n\n  <!-- VIDEO CARDS -->\n  ${videoCards}\n\n</div>\n\n<!-- FOOTER -->\n<div style=\"background:#1a1a2e;padding:20px 30px;text-align:center;border-radius:0 0 14px 14px;\">\n  <p style=\"color:rgba(255,255,255,0.4);font-size:11px;margin:0;\">🤖 AI Tech Digest &mdash; Powered by Claude AI + YouTube Data API &mdash; Auto-generated daily at 8AM ET</p>\n</div>\n\n</body></html>`;\n\n// Plain text fallback\nconst plainText = [\n  `AI TECH DIGEST — ${dateStr}`,\n  `Theme: ${label}`,\n  '',\n  digest.headline_summary,\n  '',\n  '--- TODAY\\'S VIDEOS ---',\n  ...(digest.videos || []).map((v, i) =>\n    `${i + 1}. ${v.title}\\n   ${v.channel} | ${v.duration} | ${v.views} views\\n   ${v.url}\\n   ${v.summary}\\n`\n  ),\n].join('\\n');\n\nreturn [{ json: {\n  html,\n  plainText,\n  subject: digest.digest_title || `AI Tech Digest — ${dateStr}`,\n  telegramMsg: digest.telegram_summary || `\\uD83E\\uDD16 AI Tech Digest | ${(digest.videos || []).length} videos summarized!\\n\\n${digest.headline_summary?.slice(0, 300) || ''}`,\n  videoCount: (digest.videos || []).length,\n} }];"
+      }
+    },
+
+    {
+      "id": "ytd-010",
+      "name": "HTTP: Send Telegram Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2160, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/botFILL_YOUR_TELEGRAM_BOT_TOKEN/sendMessage",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({\n  chat_id: 'FILL_YOUR_TELEGRAM_CHAT_ID',\n  text: $json.telegramMsg,\n  parse_mode: 'HTML',\n  disable_web_page_preview: false\n}) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "notes": "Create Telegram bot: message @BotFather → /newbot. Get chat_id: message your bot → https://api.telegram.org/botTOKEN/getUpdates"
+    },
+
+    {
+      "id": "ytd-011",
+      "name": "HTTP: Send Email via Gmail SMTP",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2160, 420],
+      "parameters": {
+        "fromEmail":  "FILL_YOUR_GMAIL@gmail.com",
+        "toEmail":    "FILL_YOUR_GMAIL@gmail.com",
+        "subject":    "={{ $('Code: Format HTML Email').first().json.subject }}",
+        "emailType":  "html",
+        "html":       "={{ $('Code: Format HTML Email').first().json.html }}",
+        "text":       "={{ $('Code: Format HTML Email').first().json.plainText }}"
+      },
+      "credentials": {
+        "smtp": {
+          "id":   "FILL_SMTP_CREDENTIAL_ID",
+          "name": "Gmail SMTP (App Password)"
+        }
+      },
+      "notes": "Gmail SMTP setup in n8n: Settings → Credentials → New → SMTP → Host: smtp.gmail.com, Port: 465, SSL: ON, User: your@gmail.com, Pass: Gmail App Password (not your real password). Get App Password: myaccount.google.com → Security → 2-Step Verification → App Passwords"
+    },
+
+    {
+      "id": "ytd-012",
+      "name": "Code: Final Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 300],
+      "parameters": {
+        "jsCode": "const telegramResult = $('HTTP: Send Telegram Digest').first().json;\nconst emailResult    = $('HTTP: Send Email via Gmail SMTP').first().json;\nconst htmlData       = $('Code: Format HTML Email').first().json;\nconst digestData     = $('Code: Parse Groq Digest').first().json;\n\nconsole.log('\\u2550'.repeat(50));\nconsole.log('\\u2705 WF-C AI TECH YOUTUBE DIGEST — COMPLETE');\nconsole.log('   Date:         ', digestData.dateStr);\nconsole.log('   Theme:        ', digestData.label);\nconsole.log('   Videos:       ', htmlData.videoCount);\nconsole.log('   Subject:      ', htmlData.subject);\nconsole.log('   Telegram:     ', telegramResult?.ok ? 'SENT \\u2705' : 'ERROR \\u274C — ' + JSON.stringify(telegramResult).slice(0, 100));\nconsole.log('   Email:        ', emailResult ? 'SENT \\u2705' : 'CHECK SMTP SETTINGS');\nconsole.log('\\u2550'.repeat(50));\n\nreturn [{ json: {\n  success:          true,\n  videosProcessed:  htmlData.videoCount,\n  subject:          htmlData.subject,\n  telegramStatus:   telegramResult?.ok ? 'sent' : 'error',\n  emailStatus:      emailResult ? 'sent' : 'check_smtp',\n  completedAt:      new Date().toISOString(),\n} }];"
+      }
+    }
+
+  ],
+
+  "connections": {
+    "Schedule: 8AM ET Daily": {
+      "main": [[{ "node": "Code: Build Search Query", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Search Query": {
+      "main": [[{ "node": "HTTP: YouTube Search API", "type": "main", "index": 0 }]]
+    },
+    "HTTP: YouTube Search API": {
+      "main": [[{ "node": "Code: Extract & Filter Video IDs", "type": "main", "index": 0 }]]
+    },
+    "Code: Extract & Filter Video IDs": {
+      "main": [[{ "node": "HTTP: YouTube Video Details", "type": "main", "index": 0 }]]
+    },
+    "HTTP: YouTube Video Details": {
+      "main": [[{ "node": "Code: Build Rich Video Profiles", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Rich Video Profiles": {
+      "main": [[{ "node": "HTTP: Groq AI — Generate Digest", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Groq AI — Generate Digest": {
+      "main": [[{ "node": "Code: Parse Groq Digest", "type": "main", "index": 0 }]]
+    },
+    "Code: Parse Groq Digest": {
+      "main": [[{ "node": "Code: Format HTML Email", "type": "main", "index": 0 }]]
+    },
+    "Code: Format HTML Email": {
+      "main": [[
+        { "node": "HTTP: Send Telegram Digest",     "type": "main", "index": 0 },
+        { "node": "HTTP: Send Email via Gmail SMTP", "type": "main", "index": 0 }
+      ]]
+    },
+    "HTTP: Send Telegram Digest": {
+      "main": [[{ "node": "Code: Final Log", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Send Email via Gmail SMTP": {
+      "main": [[{ "node": "Code: Final Log", "type": "main", "index": 0 }]]
+    }
+  },
+
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "timezone": "America/New_York"
+  },
+  "tags": ["ai-digest", "youtube", "daily", "tech-news", "claude-api", "telegram"],
+  "notes": "WF-C: AI Tech YouTube Daily Digest — 100% FREE. YouTube API (free) + Groq AI Llama 3.3 70B (free) + Telegram (free) + Gmail SMTP (free). Runs 8AM ET daily. SETUP: see WF-C-SETUP-GUIDE.md"
+}

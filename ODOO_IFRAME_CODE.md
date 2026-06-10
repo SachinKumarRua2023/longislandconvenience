@@ -8,7 +8,7 @@
 <!-- Long Island Convenience Store Showcase -->
 <div class="long-island-showcase">
     <iframe 
-        src="https://sachinkulmarrua2023.github.io/longislandconvenience/"
+        src="https://SachinKumarRua2023.github.io/longislandconvenience/"
         width="100%" 
         height="2800px" 
         frameborder="0"
@@ -27,7 +27,7 @@
 <!-- Long Island Convenience - Responsive Iframe -->
 <div class="li-showcase-wrapper" style="position: relative; width: 100%; padding-bottom: 150%; overflow: hidden;">
     <iframe 
-        src="https://sachinkulmarrua2023.github.io/longislandconvenience/"
+        src="https://SachinKumarRua2023.github.io/longislandconvenience/"
         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; margin: 0; padding: 0;"
         frameborder="0"
         allow="fullscreen">
@@ -53,7 +53,7 @@
 <!-- Long Island Convenience - Auto Height -->
 <iframe 
     id="li-showcase-iframe"
-    src="https://sachinkulmarrua2023.github.io/longislandconvenience/"
+    src="https://SachinKumarRua2023.github.io/longislandconvenience/"
     width="100%" 
     height="800px"
     frameborder="0"
@@ -277,7 +277,7 @@ After embedding in Odoo:
 
 **Solutions**:
 1. Check internet connection
-2. Verify GitHub page is live: https://sachinkulmarrua2023.github.io/longislandconvenience/
+2. Verify GitHub page is live: https://SachinKumarRua2023.github.io/longislandconvenience/
 3. Clear browser cache
 4. Try different browser
 5. Check Odoo console (F12)
@@ -344,7 +344,7 @@ Here's a complete page template for Odoo:
         <!-- Iframe Embed -->
         <div class="li-showcase-wrapper" style="position: relative; width: 100%; padding-bottom: 150%; overflow: hidden; margin: 20px 0; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
             <iframe 
-                src="https://sachinkulmarrua2023.github.io/longislandconvenience/"
+                src="https://SachinKumarRua2023.github.io/longislandconvenience/"
                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 15px;"
                 frameborder="0"
                 allow="fullscreen">
@@ -392,7 +392,7 @@ Here's a complete page template for Odoo:
 If iframe not working:
 - Email: kahpk1933@gmail.com
 - Phone: +1 (917) 338-7086
-- Check: https://sachinkulmarrua2023.github.io/longislandconvenience/ (direct access)
+- Check: https://SachinKumarRua2023.github.io/longislandconvenience/ (direct access)
 
 ---
 

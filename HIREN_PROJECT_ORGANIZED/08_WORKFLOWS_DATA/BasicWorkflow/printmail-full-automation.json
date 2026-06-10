@@ -1,0 +1,450 @@
+{
+  "name": "Long Island Print & Mail — Full Automation",
+  "nodes": [
+
+    {
+      "id": "webhook_quote",
+      "name": "Webhook: Quote Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "printmail-quote",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "https://www.longislandprintandmail.com" }
+      }
+    },
+
+    {
+      "id": "webhook_order",
+      "name": "Webhook: Odoo Order Confirmed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 500],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "odoo-order-confirmed",
+        "responseMode": "lastNode"
+      }
+    },
+
+    {
+      "id": "webhook_payment",
+      "name": "Webhook: Payment Received",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 700],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "printmail-payment",
+        "responseMode": "lastNode"
+      }
+    },
+
+    {
+      "id": "parse_quote",
+      "name": "Parse Quote Form",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 300],
+      "parameters": {
+        "jsCode": "const body = $input.item.json.body || $input.item.json;\nconst data = {\n  name:     body.name    || body.customer_name || 'Customer',\n  email:    body.email   || body.customer_email || '',\n  phone:    body.phone   || body.customer_phone || '',\n  service:  body.service || body.service_type   || 'General Inquiry',\n  quantity: body.quantity || body.qty || '',\n  notes:    body.notes   || body.message || '',\n  urgency:  body.urgency || 'standard',\n  timestamp: new Date().toISOString(),\n  ref: 'PM-' + Date.now().toString().slice(-6)\n};\nreturn [{ json: data }];"
+      }
+    },
+
+    {
+      "id": "odoo_create_lead",
+      "name": "Odoo: Create CRM Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [580, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{"name":"Content-Type","value":"application/json"}] },
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "jsonrpc": "2.0", "method": "call", "id": 1,
+          "params": {
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+              "country-cove-inc", 2, "M@nhattan1234",
+              "crm.lead", "create",
+              [{
+                "name": "={{$node['Parse Quote Form'].json.service}} — {{$node['Parse Quote Form'].json.name}}",
+                "contact_name": "={{$node['Parse Quote Form'].json.name}}",
+                "email_from":   "={{$node['Parse Quote Form'].json.email}}",
+                "phone":        "={{$node['Parse Quote Form'].json.phone}}",
+                "description":  "=Service: {{$node['Parse Quote Form'].json.service}}\nQty: {{$node['Parse Quote Form'].json.quantity}}\nNotes: {{$node['Parse Quote Form'].json.notes}}\nRef: {{$node['Parse Quote Form'].json.ref}}",
+                "team_id": 1,
+                "tag_ids": []
+              }]
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": "email_customer_quote",
+      "name": "Email: Customer Quote Confirmation",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [820, 200],
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "={{$node['Parse Quote Form'].json.email}}",
+        "subject": "Quote Request Received — Long Island Print & Mail #{{$node['Parse Quote Form'].json.ref}}",
+        "message": "=<html><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>\n<div style='background:#0d1f35;padding:24px;text-align:center;'>\n  <h1 style='color:#fff;font-size:22px;margin:0;'>Long Island<br/><span style='color:#1e90ff;'>Print &amp; Mail</span></h1>\n  <p style='color:#adb8cc;font-size:12px;margin:8px 0 0;'>605 Old Country Road, Plainview NY 11803</p>\n</div>\n<div style='padding:32px;background:#f0f4f8;'>\n  <h2 style='color:#0d1f35;'>Hi {{$node['Parse Quote Form'].json.name}},</h2>\n  <p style='color:#374151;line-height:1.7;'>Thank you for your quote request! We received your inquiry for <strong>{{$node['Parse Quote Form'].json.service}}</strong> and will get back to you within <strong>2 business hours</strong>.</p>\n  <div style='background:#fff;border-radius:12px;padding:20px;margin:20px 0;border-left:4px solid #1e90ff;'>\n    <p style='margin:0;color:#374151;font-size:14px;'><strong>Reference #:</strong> {{$node['Parse Quote Form'].json.ref}}<br/><strong>Service:</strong> {{$node['Parse Quote Form'].json.service}}<br/><strong>Quantity:</strong> {{$node['Parse Quote Form'].json.quantity}}</p>\n  </div>\n  <p style='color:#374151;'>Need it faster? Call us at <a href='tel:+19173387086' style='color:#1e90ff;font-weight:700;'>(917) 338-7086</a> or stop by our shop!</p>\n  <div style='text-align:center;margin-top:28px;'>\n    <a href='https://www.longislandprintandmail.com/shop' style='background:#1e90ff;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;'>Browse &amp; Order Online</a>\n  </div>\n</div>\n<div style='background:#0d1f35;padding:16px;text-align:center;'>\n  <p style='color:#7a8fa6;font-size:11px;margin:0;'>Long Island Print &amp; Mail | 605 Old Country Rd, Plainview NY | (917) 338-7086</p>\n</div>\n</body></html>",
+        "options": { "appendAttribution": false }
+      }
+    },
+
+    {
+      "id": "email_owner_quote",
+      "name": "Email: Owner Alert — New Quote",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [820, 380],
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "countrycoveinc@gmail.com",
+        "subject": "🖨️ NEW QUOTE REQUEST #{{$node['Parse Quote Form'].json.ref}} — {{$node['Parse Quote Form'].json.service}}",
+        "message": "=<b>New Quote Request</b><br/><br/>Ref: {{$node['Parse Quote Form'].json.ref}}<br/>Name: {{$node['Parse Quote Form'].json.name}}<br/>Email: {{$node['Parse Quote Form'].json.email}}<br/>Phone: {{$node['Parse Quote Form'].json.phone}}<br/>Service: {{$node['Parse Quote Form'].json.service}}<br/>Quantity: {{$node['Parse Quote Form'].json.quantity}}<br/>Notes: {{$node['Parse Quote Form'].json.notes}}<br/><br/><a href='https://country-cove-inc.odoo.com/odoo/crm'>View in CRM</a>"
+      }
+    },
+
+    {
+      "id": "webhook_response_quote",
+      "name": "Response: Quote Received",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1060, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true, \"ref\": \"{{$node['Parse Quote Form'].json.ref}}\", \"message\": \"Quote request received! We'll contact you within 2 hours.\" }"
+      }
+    },
+
+    {
+      "id": "parse_order",
+      "name": "Parse Odoo Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 500],
+      "parameters": {
+        "jsCode": "const body = $input.item.json;\nconst order = {\n  order_id:     body.id || body.sale_order_id || 0,\n  order_name:   body.name || body.order_reference || '',\n  customer_name: body.partner_name || body.customer_name || 'Customer',\n  customer_email: body.partner_email || body.email || '',\n  customer_phone: body.partner_phone || body.phone || '',\n  amount_total:  body.amount_total || 0,\n  order_lines:   body.order_line || [],\n  state:         body.state || 'sale',\n  is_urgent:     (body.commitment_date != null),\n  delivery_type: body.delivery_type || 'pickup',\n  timestamp:     new Date().toISOString()\n};\nreturn [{ json: order }];"
+      }
+    },
+
+    {
+      "id": "stripe_check_payment",
+      "name": "Stripe: Verify Payment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [580, 700],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.stripe.com/v1/payment_intents/{{$input.item.json.payment_intent_id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{$credentials.stripeApiKey}}" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "check_payment_status",
+      "name": "IF: Payment Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [820, 700],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "leftValue": "={{$node['Stripe: Verify Payment'].json.status}}",
+              "rightValue": "succeeded",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "odoo_confirm_invoice",
+      "name": "Odoo: Mark Order Paid",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1060, 640],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/jsonrpc",
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "jsonrpc": "2.0", "method": "call", "id": 2,
+          "params": {
+            "service": "object", "method": "execute_kw",
+            "args": [
+              "country-cove-inc", 2, "M@nhattan1234",
+              "sale.order", "write",
+              [["={{$node['Parse Odoo Order'].json.order_id}}"], { "payment_status": "paid" }]
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": "email_order_confirm",
+      "name": "Email: Order Confirmation",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [580, 500],
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "={{$node['Parse Odoo Order'].json.customer_email}}",
+        "subject": "Order Confirmed — Long Island Print & Mail {{$node['Parse Odoo Order'].json.order_name}}",
+        "message": "=<html><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>\n<div style='background:#0d1f35;padding:24px;text-align:center;'>\n  <h1 style='color:#fff;font-size:22px;'>Long Island <span style='color:#1e90ff;'>Print &amp; Mail</span></h1>\n</div>\n<div style='padding:32px;background:#f0f4f8;'>\n  <div style='text-align:center;margin-bottom:24px;'>\n    <div style='font-size:48px;'>&#10003;</div>\n    <h2 style='color:#0d1f35;margin:8px 0;'>Order Confirmed!</h2>\n    <p style='color:#6b7280;'>Order #{{$node['Parse Odoo Order'].json.order_name}}</p>\n  </div>\n  <p>Hi <strong>{{$node['Parse Odoo Order'].json.customer_name}}</strong>, your order has been received and is being processed.</p>\n  <div style='background:#fff;border-radius:12px;padding:20px;border-left:4px solid #2dc653;'>\n    <p><strong>Total:</strong> ${{$node['Parse Odoo Order'].json.amount_total}}<br/>\n    <strong>Pickup:</strong> {{$node['Parse Odoo Order'].json.is_urgent ? 'Same-Day Rush' : 'Standard (1-2 days)'}}</p>\n  </div>\n  <p style='margin-top:20px;'>Questions? Call <a href='tel:+19173387086' style='color:#1e90ff;font-weight:700;'>(917) 338-7086</a></p>\n</div>\n<div style='background:#0d1f35;padding:16px;text-align:center;'>\n  <p style='color:#7a8fa6;font-size:11px;'>605 Old Country Rd, Plainview NY | (917) 338-7086</p>\n</div></body></html>"
+      }
+    },
+
+    {
+      "id": "check_delivery_type",
+      "name": "IF: Delivery or Pickup?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [820, 500],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{$node['Parse Odoo Order'].json.delivery_type}}",
+              "rightValue": "delivery",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "assign_delivery",
+      "name": "Assign Delivery Person",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1060, 460],
+      "parameters": {
+        "jsCode": "// Delivery person assignment logic\nconst order = $input.item.json;\n\n// Available delivery persons (would come from DB in production)\nconst deliveryTeam = [\n  { name: 'Driver 1', phone: '+19173387086', zone: 'Nassau County', active: true },\n  { name: 'Driver 2', phone: '+19173387086', zone: 'Suffolk County', active: true },\n];\n\n// Simple round-robin assignment\nconst assignedDriver = deliveryTeam[order.order_id % deliveryTeam.length];\n\nreturn [{\n  json: {\n    ...order,\n    assigned_driver: assignedDriver.name,\n    driver_phone:    assignedDriver.phone,\n    estimated_delivery: new Date(Date.now() + 4*60*60*1000).toLocaleString('en-US', {timeZone:'America/New_York'}),\n    delivery_route: `605 Old Country Rd, Plainview → ${order.customer_name}`\n  }\n}];"
+      }
+    },
+
+    {
+      "id": "whatsapp_delivery_notify",
+      "name": "WhatsApp: Notify Delivery Person",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1300, 460],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{$credentials.twilioAccountSid}}/Messages.json",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "body": {
+          "From": "whatsapp:+14155238886",
+          "To": "=whatsapp:{{$node['Assign Delivery Person'].json.driver_phone}}",
+          "Body": "=🚚 NEW DELIVERY ORDER\nOrder: {{$node['Assign Delivery Person'].json.order_name}}\nCustomer: {{$node['Assign Delivery Person'].json.customer_name}}\nPhone: {{$node['Assign Delivery Person'].json.customer_phone}}\nETA: {{$node['Assign Delivery Person'].json.estimated_delivery}}\nRoute: {{$node['Assign Delivery Person'].json.delivery_route}}"
+        }
+      }
+    },
+
+    {
+      "id": "email_delivery_tracking",
+      "name": "Email: Delivery Tracking to Customer",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1300, 560],
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "={{$node['Assign Delivery Person'].json.customer_email}}",
+        "subject": "Your Order is On Its Way! — Long Island Print & Mail",
+        "message": "=<html><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>\n<div style='background:#0d1f35;padding:24px;text-align:center;'><h1 style='color:#fff;font-size:22px;'>Long Island <span style='color:#1e90ff;'>Print &amp; Mail</span></h1></div>\n<div style='padding:32px;background:#f0f4f8;'>\n  <div style='text-align:center;'><div style='font-size:48px;'>&#128666;</div><h2 style='color:#0d1f35;'>Your Order is On The Way!</h2></div>\n  <p>Hi <strong>{{$node['Assign Delivery Person'].json.customer_name}}</strong>, your print order is out for delivery.</p>\n  <div style='background:#fff;border-radius:12px;padding:20px;border-left:4px solid #1e90ff;'>\n    <p><strong>Order:</strong> {{$node['Assign Delivery Person'].json.order_name}}<br/>\n    <strong>Estimated Delivery:</strong> {{$node['Assign Delivery Person'].json.estimated_delivery}}</p>\n  </div>\n  <p>Questions? Call <a href='tel:+19173387086' style='color:#1e90ff;font-weight:700;'>(917) 338-7086</a></p>\n</div>\n<div style='background:#0d1f35;padding:16px;text-align:center;'><p style='color:#7a8fa6;font-size:11px;'>605 Old Country Rd, Plainview NY | (917) 338-7086</p></div>\n</body></html>"
+      }
+    },
+
+    {
+      "id": "email_ready_pickup",
+      "name": "Email: Ready for Pickup",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1060, 540],
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "={{$node['Parse Odoo Order'].json.customer_email}}",
+        "subject": "✅ Your Order is Ready for Pickup! — Long Island Print & Mail",
+        "message": "=<html><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>\n<div style='background:#0d1f35;padding:24px;text-align:center;'><h1 style='color:#fff;font-size:22px;'>Long Island <span style='color:#1e90ff;'>Print &amp; Mail</span></h1></div>\n<div style='padding:32px;background:#f0f4f8;'>\n  <div style='text-align:center;'><div style='font-size:48px;'>&#127960;&#65039;</div>\n  <h2 style='color:#0d1f35;'>Order Ready for Pickup!</h2></div>\n  <p>Hi <strong>{{$node['Parse Odoo Order'].json.customer_name}}</strong>, your print order <strong>{{$node['Parse Odoo Order'].json.order_name}}</strong> is ready!</p>\n  <div style='background:#fff;border-radius:12px;padding:20px;border-left:4px solid #2dc653;'>\n    <p><strong>Pickup Location:</strong><br/>Long Island Print &amp; Mail<br/>605 Old Country Road<br/>Plainview, NY 11803</p>\n    <p><strong>Hours:</strong> Mon–Fri 8AM–7PM | Sat 9AM–5PM</p>\n  </div>\n  <p>Questions? Call <a href='tel:+19173387086' style='color:#1e90ff;font-weight:700;'>(917) 338-7086</a></p>\n</div>\n<div style='background:#0d1f35;padding:16px;text-align:center;'><p style='color:#7a8fa6;font-size:11px;'>605 Old Country Rd, Plainview NY | (917) 338-7086</p></div>\n</body></html>"
+      }
+    },
+
+    {
+      "id": "odoo_update_status",
+      "name": "Odoo: Update Order Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1540, 500],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/jsonrpc",
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "jsonrpc": "2.0", "method": "call", "id": 3,
+          "params": {
+            "service": "object", "method": "execute_kw",
+            "args": [
+              "country-cove-inc", 2, "M@nhattan1234",
+              "sale.order", "write",
+              [["={{$node['Parse Odoo Order'].json.order_id}}"], { "state": "done" }]
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": "review_request",
+      "name": "Email: Review Request (48h later)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1780, 500],
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "={{$node['Parse Odoo Order'].json.customer_email}}",
+        "subject": "How was your experience? — Long Island Print & Mail",
+        "message": "=<html><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>\n<div style='background:#0d1f35;padding:24px;text-align:center;'><h1 style='color:#fff;font-size:22px;'>Long Island <span style='color:#1e90ff;'>Print &amp; Mail</span></h1></div>\n<div style='padding:32px;background:#f0f4f8;text-align:center;'>\n  <h2 style='color:#0d1f35;'>How was your experience?</h2>\n  <p>Hi {{$node['Parse Odoo Order'].json.customer_name}}, we hope you loved your print order! A quick review means the world to us.</p>\n  <div style='display:flex;gap:16px;justify-content:center;margin:28px 0;flex-wrap:wrap;'>\n    <a href='https://g.page/r/longislandprintmail/review' style='background:#1e90ff;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;'>⭐ Leave a Google Review</a>\n  </div>\n  <p>Order again at <a href='https://www.longislandprintandmail.com/shop' style='color:#1e90ff;'>longislandprintandmail.com</a></p>\n</div>\n<div style='background:#0d1f35;padding:16px;text-align:center;'><p style='color:#7a8fa6;font-size:11px;'>Long Island Print &amp; Mail | (917) 338-7086</p></div>\n</body></html>"
+      }
+    },
+
+    {
+      "id": "schedule_review",
+      "name": "Wait: 48 Hours Before Review Request",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1540, 400],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 48,
+        "unit": "hours"
+      }
+    }
+
+  ],
+
+  "connections": {
+    "Webhook: Quote Request": {
+      "main": [[{"node": "Parse Quote Form", "type": "main", "index": 0}]]
+    },
+    "Parse Quote Form": {
+      "main": [[
+        {"node": "Odoo: Create CRM Lead",            "type": "main", "index": 0},
+        {"node": "Email: Customer Quote Confirmation","type": "main", "index": 0},
+        {"node": "Email: Owner Alert — New Quote",    "type": "main", "index": 0}
+      ]]
+    },
+    "Email: Customer Quote Confirmation": {
+      "main": [[{"node": "Response: Quote Received", "type": "main", "index": 0}]]
+    },
+    "Webhook: Odoo Order Confirmed": {
+      "main": [[{"node": "Parse Odoo Order", "type": "main", "index": 0}]]
+    },
+    "Parse Odoo Order": {
+      "main": [[
+        {"node": "Email: Order Confirmation", "type": "main", "index": 0},
+        {"node": "IF: Delivery or Pickup?",   "type": "main", "index": 0}
+      ]]
+    },
+    "IF: Delivery or Pickup?": {
+      "main": [
+        [{"node": "Assign Delivery Person",   "type": "main", "index": 0}],
+        [{"node": "Email: Ready for Pickup",  "type": "main", "index": 0}]
+      ]
+    },
+    "Assign Delivery Person": {
+      "main": [[
+        {"node": "WhatsApp: Notify Delivery Person",         "type": "main", "index": 0},
+        {"node": "Email: Delivery Tracking to Customer",     "type": "main", "index": 0}
+      ]]
+    },
+    "Email: Ready for Pickup": {
+      "main": [[{"node": "Odoo: Update Order Status", "type": "main", "index": 0}]]
+    },
+    "Odoo: Update Order Status": {
+      "main": [[{"node": "Wait: 48 Hours Before Review Request", "type": "main", "index": 0}]]
+    },
+    "Wait: 48 Hours Before Review Request": {
+      "main": [[{"node": "Email: Review Request (48h later)", "type": "main", "index": 0}]]
+    },
+    "Webhook: Payment Received": {
+      "main": [[{"node": "Stripe: Verify Payment", "type": "main", "index": 0}]]
+    },
+    "Stripe: Verify Payment": {
+      "main": [[{"node": "IF: Payment Succeeded?", "type": "main", "index": 0}]]
+    },
+    "IF: Payment Succeeded?": {
+      "main": [
+        [{"node": "Odoo: Mark Order Paid", "type": "main", "index": 0}],
+        []
+      ]
+    }
+  },
+
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+
+  "meta": {
+    "instanceId": "long-island-printmail",
+    "templateCredsSetupCompleted": false
+  },
+
+  "notes": {
+    "setup": [
+      "1. Set SMTP credentials for emailSend nodes (Gmail: countrycoveinc@gmail.com)",
+      "2. Set Stripe API key credential (stripeApiKey) for payment verification",
+      "3. Set Twilio credentials for WhatsApp delivery notifications",
+      "4. Add this webhook URL to Odoo sale.order automation: /webhook/odoo-order-confirmed",
+      "5. Add quote webhook URL to Print & Mail contact form: /webhook/printmail-quote",
+      "6. Odoo Payment Provider: Install Stripe in Odoo → Settings → Payment Providers",
+      "7. Delivery: Configure driver WhatsApp numbers in Assign Delivery Person node"
+    ],
+    "webhook_endpoints": {
+      "quote_form":     "/webhook/printmail-quote",
+      "order_confirm":  "/webhook/odoo-order-confirmed",
+      "payment":        "/webhook/printmail-payment"
+    },
+    "payment_gateway": {
+      "recommended": "Stripe",
+      "odoo_module": "payment_stripe",
+      "setup": "Odoo → Settings → Payment → Providers → Add Stripe → Enter API keys"
+    },
+    "delivery_integration": {
+      "method": "WhatsApp (Twilio) + Email",
+      "driver_assignment": "Round-robin based on order ID",
+      "tracking": "Email customer with estimated delivery time"
+    }
+  }
+}

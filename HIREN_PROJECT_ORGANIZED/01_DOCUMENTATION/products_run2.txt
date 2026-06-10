@@ -1,0 +1,242 @@
+﻿
+============================================================
+  Country Cove Inc � Full 7-Store Setup
+  All correct Country Cove branding + domains
+============================================================
+
+Connected as UID 2
+
+
+[0] Skipping cleanup � websites already correct.
+
+[1] Setting up Hub website (countrycoveli.com)...
+  Hub found: 'Long Island Convenience' (ID 1)
+
+------------------------------------------------------------
+  STORE [SPORTS_AND_CARDS]: Country Cove Sports & Cards
+  Domain: countrycovesportscards.com
+------------------------------------------------------------
+  Created website 'Country Cove Sports & Cards' (ID 35)
+
+  [Category] Baseball Cards (14 products)
+      + 2011 Topps Update Mike Trout RC #US175
+      + 1952 Topps Mickey Mantle Reprint #311
+      + 2001 Topps Ichiro Suzuki Rookie Card
+      + 2018 Topps Chrome Derek Jeter Refractor
+      + 2020 Bowman Chrome Jasson Dominguez Auto
+      + 1989 Upper Deck Ken Griffey Jr. Rookie #1
+      + 2022 Topps Gold Label Aaron Judge Class 1
+      + 2023 Topps Heritage Ronald Acuna Jr.
+      + PSA 9 2016 Topps Corey Seager Rookie
+      + 1987 Topps Barry Bonds Rookie Card #320
+      + 2019 Topps Chrome Vladimir Guerrero Jr. RC
+      + 1993 SP Derek Jeter Foil Rookie Card
+      + 2021 Topps Finest Shohei Ohtani Refractor
+      + 1969 Topps Reggie Jackson Rookie #260
+
+  [Category] Basketball Cards (12 products)
+      + 2003-04 Topps Chrome LeBron James Rookie RC
+      + 2019-20 Panini Prizm Zion Williamson RC
+      + 1986-87 Fleer Michael Jordan Sticker #8
+      + 2009-10 Topps Gold Stephen Curry Rookie
+      + 2012-13 Panini Prizm Anthony Davis RC
+      + 2021-22 Panini Select Evan Mobley RC Concourse
+      + 2018-19 Panini Prizm Trae Young Silver RC
+      + 2020-21 Panini Mosaic LaMelo Ball RC
+      + 1992-93 Topps Shaquille O'Neal Rookie #362
+      + 1996-97 Topps Chrome Kobe Bryant Rookie
+      + 2013-14 Panini Prizm Giannis Antetokounmpo RC
+      + 2007-08 Topps Kevin Durant Rookie Card
+
+  [Category] Football Cards (10 products)
+      + 2000 Playoff Contenders Tom Brady Auto RC /100
+      + 2018 Panini Prizm Lamar Jackson Silver RC
+      + 2022 Panini Prizm Patrick Mahomes Silver
+      + 2021 Panini Prizm Trevor Lawrence RC Silver
+      + 1986 Topps Jerry Rice Rookie Card #161
+      + 2020 Panini Prizm Justin Herbert RC Silver
+      + 2017 Panini Prizm Patrick Mahomes II RC
+      + 2023 Panini Prizm CJ Stroud RC Silver
+      + 1984 Topps Dan Marino Rookie Card #123
+      + 1981 Topps Joe Montana Rookie Card #216
+
+  [Category] Hockey Cards (8 products)
+      + 2005-06 Upper Deck Sidney Crosby Young Guns RC
+      + 2015-16 Upper Deck Connor McDavid Young Guns
+      + 1979-80 O-Pee-Chee Wayne Gretzky Rookie #18
+      + 2016-17 Upper Deck Auston Matthews Young Guns
+      + 2023-24 Upper Deck Connor Bedard Young Guns
+      + 2020-21 Upper Deck Alexis Lafreniere YG RC
+      + 2018-19 Upper Deck Rasmus Dahlin Young Guns
+      + 1990-91 Score Jaromir Jagr Rookie #428
+
+  [Category] Soccer Cards (6 products)
+      + 2004 Panini Lionel Messi RC Card
+      + 2003 Panini Stickers Cristiano Ronaldo RC
+      + 2022 Topps Chrome Kylian Mbappe Refractor
+      + 2020 Panini Prizm Euro Erling Haaland RC
+      + 2022 Topps Chrome Jude Bellingham Refractor
+      + 2022 Panini World Cup Sticker Complete Set
+
+  [Category] Pok�mon Cards (12 products)
+      + Pok�mon Scarlet & Violet Base Booster Pack
+      + Pok�mon Paldea Evolved Booster Box (36 Packs)
+      + Charizard ex Double Rare SV3 #228
+      + Pikachu VMAX Rainbow Rare #044/185
+      + Mewtwo V Alt Art #030/189
+      + Pok�mon Elite Trainer Box � Scarlet & Violet
+      + PSA 10 Charizard Base Set Holo 1st Edition
+      + Umbreon VMAX Alternate Art #215/203
+      + Tera Charizard ex Special Illustration Rare
+      + Rayquaza VMAX Alternate Art Secret Rare
+      + Pok�mon 151 Booster Bundle (6 Packs)
+      + Lugia V Alt Art Alternate Full Art
+
+  [Category] Magic: The Gathering (10 products)
+      + MTG March of the Machine Draft Booster Pack
+      + MTG Wilds of Eldraine Draft Booster Box
+      + MTG The Lord of the Rings Collector Booster
+      + MTG Bloomburrow Draft Booster Box
+      + MTG Commander Precon Deck � Eldrazi Unbound
+      + Force of Will Alliances #60 (Near Mint)
+      + 1996-97 Topps Chrome Kobe Bryant Rookie Clone
+      + MTG Murders at Karlov Manor Bundle
+      + Sol Ring Commander Legends Foil
+      + MTG Arena Starter Kit 2024
+
+  [Category] Yu-Gi-Oh! (9 products)
+      + Yu-Gi-Oh! Phantom Nightmare Booster Pack
+      + Blue-Eyes White Dragon LOB 1st Edition
+      + Dark Magician MRD 1st Edition Holo
+      + Exodia the Forbidden One LOB 1st Edition
+      + Ash Blossom & Joyous Spring MACR Ultra Rare
+      + Yu-Gi-Oh! 25th Anniversary Duelist Pack Set
+      + Red-Eyes Black Dragon 1st Edition LOB
+      + Yu-Gi-Oh! Tin of the Ancient Battles 2023
+      + Yu-Gi-Oh! Structure Deck: Legend of Blue-Eyes
+
+  [Category] Dragon Ball & One Piece TCG (10 products)
+      + DBS Fusion World Booster Pack FB01
+      + Son Goku Ultra Instinct God Rare FB01-001
+      + DBS Fusion World Season 2 Booster Box
+      + Gohan Beast Awakening Secret Rare
+      + DBS Premium Anniversary Box 2024
+      + One Piece TCG Romance Dawn Booster Pack OP01
+      + Monkey D. Luffy Gear 5 Secret Rare OP06
+      + Shanks Special Parallel Super Rare
+      + Roronoa Zoro Secret Rare OP01-001
+      + One Piece TCG Pillars of Strength Booster Box
+
+  DONE: Country Cove Sports & Cards: 91 products created
+python : Traceback (most recent call last):
+At line:1 char:56
++ ... OneDrive\Desktop\HirenTask"; python setup_odoo_stores.py 2>&1 | Out-F ...
++                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+------------------------------------------------------------
+  STORE [GIFT_BASKETS]: Country Cove Gift Baskets
+  Domain: countrycovegiftbasket.com
+------------------------------------------------------------
+  Website 'Country Cove Gift Baskets' found by name (ID 14) � using it
+
+  [Category] Birthday Baskets (15 products)
+      + Birthday Celebration Deluxe Basket
+      + Sweet 16 Birthday Treat Basket
+      + Chocolate Lover's Birthday Basket
+      + Spa & Pampering Birthday Basket
+      + Wine & Cheese Birthday Gourmet Basket
+      + Milestone 30th Birthday Gift Basket
+      + Tropical Fruit & Snack Birthday Basket
+      + Birthday Brunch Basket with Pancake Mix & Syrup
+      + Kids Birthday Fun Basket with Candy & Toys
+      + Coffee & Tea Birthday Lover's Basket
+      + Party & Celebration Balloon Gift Basket
+      + Birthday Glow � Self Care & Skincare Basket
+      + Movie Night Birthday Basket with Snacks
+      + Baked Goods & Cookies Birthday Basket
+      + Premium 50th Birthday Luxury Gift Basket
+
+  [Category] Holiday Baskets (11 products)
+      + Christmas Classic Holiday Cookie Basket
+      + Holiday Gourmet Cheese & Charcuterie Basket
+      + New Year Celebration Champagne & Treats Basket
+      + Thanksgiving Harvest Gourmet Basket
+      Image fetch failed (thanksgiving gift basket): HTTPSConnectionPool(host='loremflickr.com', port=443): Max retries exceeded with url: /400/400/thanksgiving,gift,basket (Caused by NewConnectionError("HTTPSConnection(host='loremflickr.com', port=443): Failed to establish a new connection: [WinError 10051] A socket operation was attempted to an unreachable network"))
+      FAILED: Thanksgiving Harvest Gourmet Basket � [Errno 11001] getaddrinfo failed
+      + Hanukkah Traditional Gift Basket
+      Image fetch failed (hanukkah gift basket): HTTPSConnectionPool(host='loremflickr.com', port=443): Max retries exceeded with url: /400/400/hanukkah,gift,basket (Caused by NameResolutionError("HTTPSConnection(host='loremflickr.com', port=443): Failed to resolve 'loremflickr.com' ([Errno 11001] getaddrinfo failed)"))
+      FAILED: Hanukkah Traditional Gift Basket � [Errno 11001] getaddrinfo failed
+      + Christmas Morning Cozy Breakfast Basket
+      Image fetch failed (christmas morning basket): HTTPSConnectionPool(host='loremflickr.com', port=443): Max retries exceeded with url: /400/400/christmas,morning,basket (Caused by NameResolutionError("HTTPSConnection(host='loremflickr.com', port=443): Failed to resolve 'loremflickr.com' ([Errno 11001] getaddrinfo failed)"))
+      FAILED: Christmas Morning Cozy Breakfast Basket � [Errno 11001] getaddrinfo failed
+      + Valentine's Day Chocolate & Rose Basket
+      Image fetch failed (valentines day gift basket): HTTPSConnectionPool(host='loremflickr.com', port=443): Max retries exceeded with url: /400/400/valentines,day,gift,basket (Caused by NameResolutionError("HTTPSConnection(host='loremflickr.com', port=443): Failed to resolve 'loremflickr.com' ([Errno 11001] getaddrinfo failed)"))
+      FAILED: Valentine's Day Chocolate & Rose Basket � [Errno 11001] getaddrinfo failed
+      + Easter Spring Celebration Basket
+      Image fetch failed (easter gift basket): HTTPSConnectionPool(host='loremflickr.com', port=443): Max retries exceeded with url: /400/400/easter,gift,basket (Caused by NameResolutionError("HTTPSConnection(host='loremflickr.com', port=443): Failed to resolve 'loremflickr.com' ([Errno 11001] getaddrinfo failed)"))
+      FAILED: Easter Spring Celebration Basket � [Errno 11001] getaddrinfo failed
+      + Mother's Day Spa & Floral Luxury Basket
+      Image fetch failed (mothers day gift basket): HTTPSConnectionPool(host='loremflickr.com', port=443): Max retries exceeded with url: /400/400/mothers,day,gift,basket (Caused by NameResolutionError("HTTPSConnection(host='loremflickr.com', port=443): Failed to resolve 'loremflickr.com' ([Errno 11001] getaddrinfo failed)"))
+      FAILED: Mother's Day Spa & Floral Luxury Basket � [Errno 11001] getaddrinfo failed
+      + Father's Day Beer & Snacks Basket
+      Image fetch failed (fathers day gift basket): HTTPSConnectionPool(host='loremflickr.com', port=443): Max retries exceeded with url: /400/400/fathers,day,gift,basket (Caused by NameResolutionError("HTTPSConnection(host='loremflickr.com', port=443): Failed to resolve 'loremflickr.com' ([Errno 11001] getaddrinfo failed)"))
+      FAILED: Father's Day Beer & Snacks Basket � [Errno 11001] getaddrinfo failed
+      + St. Patrick's Day Irish Treats Basket
+      Image fetch failed (st patricks day basket): HTTPSConnectionPool(host='loremflickr.com', port=443): Max retries exceeded with url: /400/400/st,patricks,day,basket (Caused by NameResolutionError("HTTPSConnection(host='loremflickr.com', port=443): Failed to resolve 'loremflickr.com' ([Errno 11001] getaddrinfo failed)"))
+      FAILED: St. Patrick's Day Irish Treats Basket � [Errno 11001] getaddrinfo failed
+
+  [Category] Corporate Baskets (9 products)
+  File "C:\Users\Sachin Kumar\OneDrive\Desktop\HirenTask\setup_odoo_stores.py", line 796, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Sachin Kumar\OneDrive\Desktop\HirenTask\setup_odoo_stores.py", line 771, in main
+    categ_id = get_or_create_categ(models, uid, categ_name, root_categ_id)
+  File "C:\Users\Sachin Kumar\OneDrive\Desktop\HirenTask\setup_odoo_stores.py", line 647, in get_or_create_categ
+    existing = models.execute_kw(DB, uid, PASS, 'product.category', 'search', [domain])
+  File "C:\Python314\Lib\xmlrpc\client.py", line 1096, in __call__
+    return self.__send(self.__name, args)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\xmlrpc\client.py", line 1435, in __request
+    response = self.__transport.request(
+        self.__host,
+    ...<2 lines>...
+        verbose=self.__verbose
+        )
+  File "C:\Python314\Lib\xmlrpc\client.py", line 1140, in request
+    return self.single_request(host, handler, request_body, verbose)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\xmlrpc\client.py", line 1152, in single_request
+    http_conn = self.send_request(host, handler, request_body, verbose)
+  File "C:\Python314\Lib\xmlrpc\client.py", line 1265, in send_request
+    self.send_content(connection, request_body)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\xmlrpc\client.py", line 1295, in send_content
+    connection.endheaders(request_body)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\http\client.py", line 1353, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\http\client.py", line 1113, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "C:\Python314\Lib\http\client.py", line 1057, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\client.py", line 1492, in connect
+    super().connect()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Python314\Lib\http\client.py", line 1023, in connect
+    self.sock = self._create_connection(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        (self.host,self.port), self.timeout, self.source_address)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socket.py", line 846, in create_connection
+    for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socket.py", line 983, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 11001] getaddrinfo failed

@@ -1,0 +1,141 @@
+{
+  "name": "All 7 Stores — Celebration Auto-Greeting (Email + WhatsApp)",
+  "nodes": [
+
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 9 * * *" }] }
+      },
+      "id": "node-cron",
+      "name": "Daily 9AM EST",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [80, 300],
+      "typeVersion": 1.2
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// ── CELEBRATION ENGINE ──────────────────────────────────────────────────\n// Fires on: day-of, 1 day before, 3 days before, 7 days before\n// Returns one item per (celebration × store) that needs a message today.\n\nconst TODAY = new Date();\nTODAY.setHours(0,0,0,0);\nconst fmt = d => d.toISOString().split('T')[0];\nconst addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };\nconst FIRE_DAYS = [0,1,3,7]; // days-before to send on\n\n// ── STORES ───────────────────────────────────────────────────────────────────\nconst STORES = [\n  { key:'LongIslandConvenience', name:'Long Island Convenience',   domain:'longislandconvenience.com',    emoji:'🏪', offerNoun:'everyday essentials, snacks & drinks',        phone:'(516) 555-0100', addr:'Long Island, NY',               email:'countrycoveinc@gmail.com' },\n  { key:'LongIslandBalloons',    name:'Long Island Balloons Decor', domain:'longislandballoonsdecor.com',  emoji:'🎈', offerNoun:'balloon arrangements & party packages',        phone:'(516) 555-0200', addr:'Long Island, NY',               email:'countrycoveinc@gmail.com' },\n  { key:'LIGiftBasket',          name:'LI Gift Basket',             domain:'ligiftbasket.com',             emoji:'🎁', offerNoun:'curated gift baskets from $35',                phone:'(516) 555-0300', addr:'Plainview, Long Island, NY 11803', email:'countrycoveinc@gmail.com' },\n  { key:'LongIslandPrintMail',   name:'Long Island Print & Mail',   domain:'longislandprintandmail.org',   emoji:'🖨️',offerNoun:'custom cards, banners & invitations',          phone:'(516) 555-0400', addr:'Long Island, NY',               email:'countrycoveinc@gmail.com' },\n  { key:'LongIslandCards',       name:'Long Island Card',           domain:'longislandcard.com',           emoji:'🃏', offerNoun:'sports cards, collectibles & greeting cards',  phone:'(516) 555-0500', addr:'Long Island, NY',               email:'countrycoveinc@gmail.com' },\n  { key:'HirenKumar',            name:'Hiren Kumar Advisory',       domain:'hirenkumar.us',                emoji:'💼', offerNoun:'free financial consultation',                  phone:'(516) 555-0600', addr:'605 Old Country Rd, Plainview, NY', email:'countrycoveinc@gmail.com' },\n  { key:'ConsultCyber',          name:'Consult Cyber',              domain:'consultcyber.net',             emoji:'🔐', offerNoun:'IT security assessment & managed services',    phone:'212-564-8585',   addr:'605 Old Country Rd, Plainview, NY', email:'countrycoveinc@gmail.com' },\n];\n\n// ── CELEBRATIONS ─────────────────────────────────────────────────────────────\nconst CELEBRATIONS = [\n  {date:'2026-05-25',name:'Memorial Day',emoji:'🎖️',disc:15,code:'MEMORIAL26',theme:'holiday'},\n  {date:'2026-05-29',name:'Spring Graduation Ceremonies',emoji:'🎓',disc:25,code:'SPRGRAD26',theme:'graduation'},\n  {date:'2026-06-05',name:'June Graduation Ceremonies',emoji:'🎓',disc:25,code:'JUNGRAD26',theme:'graduation'},\n  {date:'2026-06-12',name:'Summer Graduation Parties',emoji:'🎓',disc:20,code:'SUMGRAD26',theme:'graduation'},\n  {date:'2026-06-19',name:'Juneteenth',emoji:'✊',disc:15,code:'JUNETEENTH26',theme:'cultural'},\n  {date:'2026-06-21',name:\"Father's Day\",emoji:'👔',disc:25,code:'DAD26',theme:'fathers_day'},\n  {date:'2026-07-04',name:'Independence Day',emoji:'🎆',disc:20,code:'JULY426',theme:'fourth_july'},\n  {date:'2026-07-30',name:'National Friendship Day',emoji:'👫',disc:15,code:'FRIEND26',theme:'friendship'},\n  {date:'2026-08-20',name:'First Day of School Gift',emoji:'🎒',disc:15,code:'SCHOOL26',theme:'seasonal'},\n  {date:'2026-09-07',name:'Labor Day',emoji:'👷',disc:20,code:'LABOR26',theme:'holiday'},\n  {date:'2026-09-13',name:'Grandparents Day',emoji:'👴👵',disc:20,code:'GRAND26',theme:'grandparents'},\n  {date:'2026-10-10',name:'World Mental Health Day',emoji:'🧠',disc:15,code:'MENTAL26',theme:'awareness'},\n  {date:'2026-10-31',name:'Halloween',emoji:'🎃',disc:20,code:'HALLOW26',theme:'halloween'},\n  {date:'2026-11-11',name:'Veterans Day',emoji:'🎖️',disc:20,code:'VET26',theme:'military'},\n  {date:'2026-11-26',name:'Thanksgiving',emoji:'🦃',disc:20,code:'THANKS26',theme:'thanksgiving'},\n  {date:'2026-11-27',name:'Black Friday',emoji:'🛍️',disc:30,code:'BLACK26',theme:'sale'},\n  {date:'2026-12-02',name:'Cyber Monday',emoji:'💻',disc:25,code:'CYBER26',theme:'sale'},\n  {date:'2026-12-18',name:'Hanukkah Begins',emoji:'🕎',disc:20,code:'HANUKKAH26',theme:'hanukkah'},\n  {date:'2026-12-25',name:'Christmas Day',emoji:'🎄',disc:25,code:'XMAS26',theme:'christmas'},\n  {date:'2026-12-31',name:\"New Year's Eve\",emoji:'🥂',disc:20,code:'NYE26',theme:'new_year'},\n  {date:'2027-01-01',name:\"New Year's Day\",emoji:'🎆',disc:15,code:'NEWYEAR27',theme:'new_year'},\n  {date:'2027-02-14',name:\"Valentine's Day\",emoji:'❤️',disc:20,code:'LOVE27',theme:'valentine'},\n  {date:'2027-05-09',name:\"Mother's Day\",emoji:'🌹',disc:25,code:'MOM27',theme:'mothers_day'},\n];\n\nconst toSend = [];\n\nfor (const cel of CELEBRATIONS) {\n  const celDate = new Date(cel.date);\n  celDate.setHours(0,0,0,0);\n  const daysDiff = Math.round((celDate - TODAY) / 86400000);\n  if (!FIRE_DAYS.includes(daysDiff)) continue;\n\n  const daysText = daysDiff === 0 ? 'TODAY' : `in ${daysDiff} day${daysDiff>1?'s':''}`;\n  const urgency  = daysDiff === 0 ? '🚨 TODAY: ' : daysDiff<=3 ? '⏰ Almost here: ' : '📅 Coming up: ';\n\n  for (const store of STORES) {\n    // Build branded email HTML\n    const emailHtml = `<!DOCTYPE html><html><body style=\"margin:0;padding:0;font-family:Arial,sans-serif\">\n<table width=\"100%\" bgcolor=\"#f4f4f4\"><tr><td align=\"center\" style=\"padding:20px\">\n<table width=\"600\" bgcolor=\"#ffffff\" style=\"border-radius:12px;overflow:hidden\">\n  <tr><td style=\"background:linear-gradient(135deg,#667eea,#764ba2);padding:35px;text-align:center\">\n    <div style=\"font-size:52px\">${cel.emoji}</div>\n    <h1 style=\"color:#fff;margin:10px 0;font-size:26px\">${cel.name}</h1>\n    <p style=\"color:rgba(255,255,255,.85);font-size:15px\">${urgency}${daysText}!</p>\n  </td></tr>\n  <tr><td style=\"padding:30px\">\n    <p style=\"font-size:15px;color:#333\">Dear Valued Customer,</p>\n    <p style=\"font-size:15px;color:#333\">${cel.name} is <strong>${daysText}</strong>! Celebrate by visiting <strong>${store.name}</strong> — ${store.addr}.</p>\n    <div style=\"background:#f8f0ff;border-radius:12px;padding:22px;text-align:center;margin:20px 0\">\n      <div style=\"font-size:38px;font-weight:700;color:#667eea\">${cel.disc}% OFF</div>\n      <div style=\"margin:8px 0;font-size:14px;color:#555\">Use promo code:</div>\n      <div style=\"background:#FFD700;border-radius:8px;padding:10px 20px;display:inline-block;font-size:22px;font-weight:800;letter-spacing:2px;color:#333\">${cel.code}</div>\n    </div>\n    <p style=\"font-size:14px;color:#555\">${store.emoji} ${store.offerNoun}</p>\n    <div style=\"text-align:center;margin:24px 0\">\n      <a href=\"https://${store.domain}/shop\" style=\"background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 36px;border-radius:50px;text-decoration:none;font-size:16px;font-weight:700\">Shop Now →</a>\n    </div>\n  </td></tr>\n  <tr><td style=\"background:#f4f4f4;padding:16px;text-align:center;font-size:12px;color:#888\">\n    ${store.name} | ${store.addr} | ${store.phone}<br>\n    <a href=\"https://${store.domain}\">www.${store.domain}</a> |\n    <a href=\"https://${store.domain}/unsubscribe\">Unsubscribe</a>\n  </td></tr>\n</table></td></tr></table></body></html>`;\n\n    // WhatsApp message\n    const wa = `${cel.emoji} *${urgency.replace(':','').trim()}* ${cel.name} is ${daysText}!\\n\\n${store.emoji} *${store.name}*\\n${store.addr}\\n\\n✨ *${cel.disc}% OFF* — use code *${cel.code}*\\n\\nGet ${store.offerNoun}!\\n\\n👉 https://${store.domain}\\n📞 ${store.phone}`;\n\n    toSend.push({\n      // celebration\n      celName:    cel.name,\n      celEmoji:   cel.emoji,\n      celDate:    cel.date,\n      celDisc:    cel.disc,\n      celCode:    cel.code,\n      daysUntil:  daysDiff,\n      daysText,\n      urgency,\n      // store\n      storeKey:   store.key,\n      storeName:  store.name,\n      storeDomain: store.domain,\n      storeEmail: store.email,\n      storePhone: store.phone,\n      storeAddr:  store.addr,\n      storeEmoji: store.emoji,\n      // messages\n      emailSubject: `${cel.emoji} ${urgency}${cel.name} — ${cel.disc}% OFF at ${store.name}!`,\n      emailHtml,\n      whatsApp: wa,\n    });\n  }\n}\n\nif (toSend.length === 0) {\n  return [{ json: { skip: true, todayStr: fmt(TODAY), message: 'No celebrations to notify today' } }];\n}\n\nconsole.log(`Firing ${toSend.length} messages (${toSend.length/7} celebrations × 7 stores)`);\nreturn toSend.map(x => ({ json: x }));"
+      },
+      "id": "node-engine",
+      "name": "Celebration Engine",
+      "type": "n8n-nodes-base.code",
+      "position": [280, 300],
+      "typeVersion": 2
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{ "value1": "={{ $json.skip }}", "value2": true }]
+        }
+      },
+      "id": "node-skip",
+      "name": "Skip if Nothing Today",
+      "type": "n8n-nodes-base.if",
+      "position": [480, 300],
+      "typeVersion": 1
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// Pull customer list from Odoo CRM (res.partner with email/phone)\n// In production connect to your Odoo credentials node instead of hardcoding.\n// For now we forward the celebration data with a placeholder recipient.\nconst item = $json;\nreturn [{ json: {\n  ...item,\n  recipients: [\n    { name: 'Valued Customer', email: item.storeEmail, phone: '' }\n    // In production: merge with Odoo partner list filtered by tag\n  ]\n}}];"
+      },
+      "id": "node-recipients",
+      "name": "Load Recipients",
+      "type": "n8n-nodes-base.code",
+      "position": [680, 200],
+      "typeVersion": 2
+    },
+
+    {
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail":   "={{ $json.storeEmail }}",
+        "subject":   "={{ $json.emailSubject }}",
+        "emailType": "html",
+        "message":   "={{ $json.emailHtml }}",
+        "options": { "replyTo": "countrycoveinc@gmail.com" }
+      },
+      "id": "node-gmail",
+      "name": "Send Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "position": [900, 140],
+      "typeVersion": 2.1,
+      "credentials": {
+        "gmailOAuth2": { "id": "gmail-cred-1", "name": "Gmail countrycoveinc" }
+      }
+    },
+
+    {
+      "parameters": {
+        "operation":  "sendMessage",
+        "from":       "whatsapp:+16315550100",
+        "to":         "={{ 'whatsapp:+1' + ($json.storePhone || '').replace(/\\D/g,'').slice(-10) }}",
+        "message":    "={{ $json.whatsApp }}"
+      },
+      "id": "node-whatsapp",
+      "name": "Send WhatsApp",
+      "type": "n8n-nodes-base.twilio",
+      "position": [900, 300],
+      "typeVersion": 1,
+      "credentials": {
+        "twilioApi": { "id": "twilio-cred-1", "name": "Twilio Long Island" }
+      }
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const d = $json;\nconsole.log(`✅ Sent: [${d.storeName}] ${d.celName} (${d.daysUntil}d) — ${d.celCode}`);\nreturn [{ json: { status:'sent', store: d.storeName, celebration: d.celName, daysUntil: d.daysUntil, code: d.celCode, ts: new Date().toISOString() } }];"
+      },
+      "id": "node-log",
+      "name": "Log Sent",
+      "type": "n8n-nodes-base.code",
+      "position": [1100, 220],
+      "typeVersion": 2
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const all = $input.all();\nconst byStore = {};\nfor (const i of all) {\n  const s = i.json.store || 'unknown';\n  byStore[s] = (byStore[s]||0)+1;\n}\nconsole.log('Daily summary:', JSON.stringify(byStore));\nreturn [{ json: { summary: byStore, total: all.length, ts: new Date().toISOString() } }];"
+      },
+      "id": "node-summary",
+      "name": "Daily Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [1300, 220],
+      "typeVersion": 2
+    }
+
+  ],
+
+  "connections": {
+    "Daily 9AM EST":            { "main": [[{ "node": "Celebration Engine",     "type": "main", "index": 0 }]] },
+    "Celebration Engine":       { "main": [[{ "node": "Skip if Nothing Today",  "type": "main", "index": 0 }]] },
+    "Skip if Nothing Today":    { "main": [
+      [{ "node": "Load Recipients", "type": "main", "index": 0 }],
+      []
+    ]},
+    "Load Recipients":          { "main": [[
+      { "node": "Send Gmail",    "type": "main", "index": 0 },
+      { "node": "Send WhatsApp", "type": "main", "index": 0 }
+    ]]},
+    "Send Gmail":               { "main": [[{ "node": "Log Sent",       "type": "main", "index": 0 }]] },
+    "Send WhatsApp":            { "main": [[{ "node": "Log Sent",       "type": "main", "index": 0 }]] },
+    "Log Sent":                 { "main": [[{ "node": "Daily Summary",  "type": "main", "index": 0 }]] }
+  },
+
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "America/New_York",
+    "errorWorkflow": ""
+  },
+
+  "meta": {
+    "description": "Sends celebration greetings for all 7 Hiren Kumar Long Island stores. Runs daily 9 AM EST. Fires at 7d, 3d, 1d before and day-of each event. Each store gets its own branded email + WhatsApp. Import into n8n, connect Gmail OAuth2 + Twilio credentials, activate.",
+    "stores": ["LongIslandConvenience","LongIslandBalloons","LIGiftBasket","LongIslandPrintMail","LongIslandCards","HirenKumar","ConsultCyber"],
+    "fire_days_before": [0,1,3,7],
+    "created": "2026-05-24",
+    "author": "SeekHowItHRua / Claude Code"
+  }
+}

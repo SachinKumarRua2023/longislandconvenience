@@ -1,0 +1,1096 @@
+{
+  "name": "AI Redesigner — Long Island Cards (Odoo Auto-Publish)",
+  "nodes": [
+    {
+      "id": "t0",
+      "name": "Form Trigger: Design Cards Store",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        200,
+        160
+      ],
+      "parameters": {
+        "path": "redesign-cards",
+        "formTitle": "🃏 Long Island Cards — AI Website Builder",
+        "formDescription": "Fill in your requirements below. The AI will generate a full, professional website and publish it to your Odoo store automatically.",
+        "responseMode": "responseNode",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Which Website to Update?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Long Island Cards (longislandcards.com)"
+                  },
+                  {
+                    "option": "Long Island Convenience"
+                  },
+                  {
+                    "option": "Long Island Gift Basket"
+                  },
+                  {
+                    "option": "Long Island Greeting Cards"
+                  },
+                  {
+                    "option": "Long Island Lotto"
+                  },
+                  {
+                    "option": "Cyber Consulting (consultcyber.net)"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Design Style",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Modern Dark (Navy + Gold)"
+                  },
+                  {
+                    "option": "Vibrant Colorful (Bold + Energetic)"
+                  },
+                  {
+                    "option": "Minimal Clean (White + Accent)"
+                  },
+                  {
+                    "option": "Luxury Premium (Black + Gold)"
+                  },
+                  {
+                    "option": "Let AI Decide Best Style"
+                  }
+                ]
+              },
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "This Week's Special Promotion",
+              "fieldType": "text",
+              "placeholder": "e.g. Buy any booster box, get FREE card sleeves — this weekend only",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Products or Items to Feature",
+              "fieldType": "textarea",
+              "placeholder": "List 3-5 products, sets, or categories to highlight this week.\ne.g. Charizard ex SAR ($89.99), Pokemon 151 Box, MTG Duskmourn, Shohei Ohtani PSA 10",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Announcement Bar Message",
+              "fieldType": "text",
+              "placeholder": "e.g. 🔥 Pokemon Stellar Crown Pre-Orders NOW OPEN — Limited Stock!",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Events or News This Week",
+              "fieldType": "text",
+              "placeholder": "e.g. Saturday Draft Tournament 2pm | New MTG Set Release Friday | Grading Submissions Close Sunday",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Custom Hero Headline",
+              "fieldType": "text",
+              "placeholder": "Leave blank — AI writes the headline. Or type your own: e.g. 'Pokemon Stellar Crown Is Here!'",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Auto-Publish to Odoo?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "No — save as draft, I will review first"
+                  },
+                  {
+                    "option": "Yes — publish immediately (live on site)"
+                  }
+                ]
+              },
+              "requiredField": false
+            }
+          ]
+        }
+      },
+      "webhookId": "redesign-cards-form-001"
+    },
+    {
+      "id": "t1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        360
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "t2",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        540
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n1",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        360
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst isForm = typeof item['Design Style'] === 'string' || typeof item['Which Website to Update?'] === 'string';\n\n// ── Read form fields with fallbacks ────────────────────────────────────────\nconst websiteChoice  = (isForm ? item['Which Website to Update?']      : '') || 'Long Island Cards (longislandcards.com)';\nconst designStyle    = (isForm ? item['Design Style']                  : '') || 'Modern Dark (Navy + Gold)';\nconst promotion      = (isForm ? item['This Week\\'s Special Promotion']   : '') || '';\nconst featuredItems  = (isForm ? item['Products or Items to Feature']  : '') || '';\nconst announcement   = (isForm ? item['Announcement Bar Message']      : '') || '';\nconst eventsNews     = (isForm ? item['Events or News This Week']      : '') || '';\nconst customHeadline = (isForm ? item['Custom Hero Headline']          : '') || '';\nconst publishChoice  = (isForm ? item['Auto-Publish to Odoo?']        : '') || 'No — save as draft, I will review first';\nconst autoPublish    = publishChoice.toLowerCase().includes('yes') || publishChoice.toLowerCase().includes('immediately');\n\n// ── Map website choice to known IDs ───────────────────────────────────────\n// website_id=36 = Long Island Cards (confirmed live)\n// other sites: auto-discover via website.website search in n5\nconst SITE_MAP = {\n  'long island cards': 36,\n  'long island convenience': 1,\n  'long island gift basket': 37,\n  'long island greeting cards': 18,\n  'long island lotto': 33,\n  'cyber consulting': 29,\n};\nconst wChoiceLower = websiteChoice.toLowerCase();\nlet knownSiteId = null;\nfor (const [key, id] of Object.entries(SITE_MAP)) {\n  if (wChoiceLower.includes(key.split(' ').slice(-2).join(' ')) || wChoiceLower.includes(key)) {\n    knownSiteId = id;\n    break;\n  }\n}\n\n// ── Normalize style ────────────────────────────────────────────────────────\nconst styleClean = designStyle.split('(')[0].trim()\n  .replace('Let AI Decide Best Style', 'Modern Dark');\n\n// ── Client brief object — passed all the way to Claude prompt ──────────────\nconst clientBrief = {\n  websiteChoice,\n  promotion:      promotion.trim(),\n  featuredItems:  featuredItems.trim(),\n  announcement:   announcement.trim(),\n  eventsNews:     eventsNews.trim(),\n  customHeadline: customHeadline.trim(),\n};\n\nconst hasPromotion  = clientBrief.promotion.length > 0;\nconst hasFeatured   = clientBrief.featuredItems.length > 0;\nconst hasAnnounce   = clientBrief.announcement.length > 0;\nconst hasEvents     = clientBrief.eventsNews.length > 0;\nconst hasHeadline   = clientBrief.customHeadline.length > 0;\n\nconsole.log('[Parse] website=' + websiteChoice + ' knownId=' + knownSiteId);\nconsole.log('[Parse] style=' + styleClean + ' publish=' + autoPublish);\nconsole.log('[Parse] brief — promo=' + hasPromotion + ' featured=' + hasFeatured + ' events=' + hasEvents);\n\nreturn [{ json: {\n  isFormTrigger: isForm,\n  designStyle:   styleClean,\n  autoPublish,\n  knownSiteId,\n  clientBrief,\n  ts: Date.now(),\n  FIRECRAWL_KEY: 'fc-471db502e79143e0982f3d2638b8ccdb',\n  CLAUDE_KEY:    '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',\n  CLAUDE_MODEL:  'claude-sonnet-4-6',\n  ODOO_URL:  'https://country-cove-inc.odoo.com',\n  ODOO_DB:   'country-cove-inc',\n  ODOO_USER: 'countrycoveinc@gmail.com',\n  ODOO_PASS: 'M@nhattan1234',\n  startedAt: new Date().toISOString()\n}}];"
+      }
+    },
+    {
+      "id": "n2",
+      "name": "HTTP: Odoo Authenticate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        360
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { service: 'common', method: 'authenticate', args: [$json.ODOO_DB, $json.ODOO_USER, $json.ODOO_PASS, {}] } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "n3",
+      "name": "Code: Parse Auth + Build Fetch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        360
+      ],
+      "parameters": {
+        "jsCode": "// Decode Buffer if HTTP node returned a Node.js stream instead of parsed JSON\nfunction decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst authResp = decodeBuffer($input.item.json);\nconst cfg = $('Parse Input').item.json;\n\n// common.authenticate returns uid directly as a number\nconst uid = (typeof authResp?.result === 'number' && authResp.result > 0) ? authResp.result : null;\nconst odooOk = !!(uid);\n\nconsole.log('[Auth] uid=' + JSON.stringify(uid) + ' ok=' + odooOk);\nconsole.log('[Auth] full response: ' + JSON.stringify(authResp).substring(0, 400));\n\n// Build request to fetch all websites from Odoo\nconst fetchWebsitesReq = JSON.stringify({\n  jsonrpc: '2.0', method: 'call', id: 2,\n  params: {\n    service: 'object', method: 'execute_kw',\n    args: [\n      cfg.ODOO_DB, uid, cfg.ODOO_PASS,\n      'website.website', 'search_read',\n      [[]],\n      { fields: ['id', 'name', 'domain'], limit: 20 }\n    ]\n  }\n});\n\nreturn [{ json: { ...cfg, uid, odooOk, fetchWebsitesReq } }];"
+      }
+    },
+    {
+      "id": "n4",
+      "name": "HTTP: Fetch All Odoo Websites",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1260,
+        360
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.fetchWebsitesReq }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "n5",
+      "name": "Code: Find Cards Website ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        360
+      ],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\nconst websiteResp = decodeBuffer($input.item.json);\nconst cfg = $('Code: Parse Auth + Build Fetch').item.json;\nconst parsedCfg = $('Parse Input').item.json;\n\n// If Parse Input resolved a known ID — use it directly, skip fuzzy search\nif (parsedCfg.knownSiteId) {\n  const knownId = parsedCfg.knownSiteId;\n  const websites = websiteResp?.result || [];\n  const knownSite = websites.find(w => w.id === knownId) || { id: knownId, name: parsedCfg.clientBrief?.websiteChoice || 'Long Island Cards', domain: 'longislandcards.com' };\n  console.log('[Site] Using knownSiteId=' + knownId + ' name=' + knownSite.name);\n\n  const ts = cfg.ts;\n  const targetPageUrl  = '/ai-redesign-' + ts;\n  const targetPageName = 'AI Redesign: ' + knownSite.name;\n  const pageKey        = 'website.page_ai_redesign_' + ts;\n\n  return [{ json: {\n    ...cfg,\n    clientBrief:    parsedCfg.clientBrief,\n    websiteId:      knownId,\n    websiteName:    knownSite.name,\n    websiteDomain:  knownSite.domain || 'longislandcards.com',\n    allWebsites:    websites,\n    targetPageUrl,\n    targetPageName,\n    pageKey\n  }}];\n}\n\n// Fallback: fuzzy search by name/domain\nconst websites = websiteResp?.result || [];\nconsole.log('[Websites] Searching ' + websites.length + ' sites');\n\nconst choice = (parsedCfg.clientBrief?.websiteChoice || '').toLowerCase();\nconst match = websites.find(w => {\n  const t = ((w.name||'') + ' ' + (w.domain||'')).toLowerCase();\n  if (choice.includes('card') || choice.includes('longislandcards'))\n    return t.includes('card') || t.includes('longisland');\n  if (choice.includes('convenience')) return t.includes('convenience');\n  if (choice.includes('gift basket')) return t.includes('basket');\n  if (choice.includes('greeting'))    return t.includes('greeting');\n  if (choice.includes('lotto'))       return t.includes('lotto');\n  if (choice.includes('cyber') || choice.includes('consult')) return t.includes('cyber') || t.includes('consult');\n  return t.includes('card');\n});\nconst targetSite = match || websites[0] || { id: 36, name: 'Long Island Cards', domain: 'longislandcards.com' };\n\nconsole.log('[Site] Resolved id=' + targetSite.id + ' name=' + targetSite.name);\n\nconst ts = cfg.ts;\nconst targetPageUrl  = '/ai-redesign-' + ts;\nconst targetPageName = 'AI Redesign: ' + targetSite.name;\nconst pageKey        = 'website.page_ai_redesign_' + ts;\n\nreturn [{ json: {\n  ...cfg,\n  clientBrief:    parsedCfg.clientBrief,\n  websiteId:      targetSite.id,\n  websiteName:    targetSite.name,\n  websiteDomain:  targetSite.domain || 'longislandcards.com',\n  allWebsites:    websites,\n  targetPageUrl,\n  targetPageName,\n  pageKey\n}}];"
+      }
+    },
+    {
+      "id": "n6",
+      "name": "Firecrawl: Search Top Card Stores",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        360
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $json.FIRECRAWL_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ query: 'best trading card store pokemon tcg magic the gathering yu-gi-oh sports cards website', limit: 5 }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "n7",
+      "name": "Code: Build Analysis Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2040,
+        360
+      ],
+      "parameters": {
+        "jsCode": "// Decode Buffer if HTTP node returned a Node.js stream instead of parsed JSON\nfunction decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst searchResp = decodeBuffer($input.item.json);\nconst cfg = $('Code: Find Cards Website ID').item.json;\n\nconst results = Array.isArray(searchResp?.data) ? searchResp.data : [];\nconst sites = results.slice(0, 5).map((r, i) => ({\n  n: i + 1,\n  url: r.url || '',\n  title: r.title || 'Site ' + (i + 1),\n  desc: r.description || '',\n  content: (r.markdown || '').substring(0, 1200)\n}));\n\nconst sitesText = sites.length\n  ? sites.map(s => '## ' + s.n + '. ' + s.title + '\\nURL: ' + s.url + '\\n' + s.desc + '\\n\\n' + s.content + '\\n---').join('\\n\\n')\n  : 'No scraped data. Use your expert knowledge of top card stores: TCGPlayer, TrollAndToad, StarCityGames, ChannelFireball, Collector\\'s Cache, Dave & Adam\\'s.';\n\nconst promptText =\n  'You are a senior UI/UX expert for trading card and collectibles ecommerce stores.\\n\\n' +\n  'Analyse these top trading card websites:\\n\\n' +\n  sitesText.substring(0, 7000) +\n  '\\n\\nReturn ONLY valid JSON — zero markdown fences:\\n' +\n  '{\\n' +\n  '  \"brandName\": \"Long Island Cards\",\\n' +\n  '  \"tagline\": \"compelling tagline for a Long Island NY trading card store\",\\n' +\n  '  \"colorPalette\": { \"primary\": \"#hex\", \"secondary\": \"#hex\", \"accent\": \"#hex\", \"background\": \"#hex\", \"cardBg\": \"#hex\", \"textPrimary\": \"#hex\", \"textSecondary\": \"#hex\" },\\n' +\n  '  \"heroSection\": { \"headline\": \"5-7 word hero headline\", \"subheadline\": \"1 supporting sentence\", \"primaryCTA\": \"Shop Now\", \"secondaryCTA\": \"View Singles\" },\\n' +\n  '  \"trustElements\": [\"4 trust badges relevant to card stores\"],\\n' +\n  '  \"featuredBrands\": [\"Pokemon TCG\",\"Magic: The Gathering\",\"Yu-Gi-Oh!\",\"Sports Cards\",\"One Piece TCG\",\"Dragon Ball Super\"],\\n' +\n  '  \"sampleProducts\": [8 card products: { \"name\": \"...\", \"set\": \"...\", \"price\": \"$XX.XX\", \"originalPrice\": \"$XX.XX\", \"badge\": \"Hot|New|Sale|Rare|PSA 10\", \"rating\": 4.8, \"reviews\": 245 }],\\n' +\n  '  \"footerLinks\": { \"shop\": [\"Singles\",\"Sealed Products\",\"Graded Cards\",\"Accessories\"], \"support\": [\"FAQ\",\"Grading Info\",\"Contact Us\",\"Returns\"], \"social\": [\"Instagram\",\"YouTube\",\"Twitter\",\"Discord\"] }\\n' +\n  '}';\n\nconst analyzeRequest = JSON.stringify({\n  model: cfg.CLAUDE_MODEL,\n  max_tokens: 2000,\n  messages: [{ role: 'user', content: promptText }]\n});\n\nconsole.log('[Analysis] ' + sites.length + ' card store sites found');\n\nreturn [{ json: { ...cfg, sitesFound: sites.length, urls: sites.map(s => s.url).filter(Boolean), analyzeRequest } }];"
+      }
+    },
+    {
+      "id": "n8",
+      "name": "HTTP: Claude — Analyze Card Store Patterns",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2300,
+        360
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $json.CLAUDE_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.analyzeRequest }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Code: Build Cards HTML Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2560,
+        360
+      ],
+      "parameters": {
+        "jsCode": "// ── Buffer decoder ──────────────────────────────────────────────────────────\nfunction decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst resp = decodeBuffer($input.item.json);\nconst prev = $('Code: Build Analysis Prompt').item.json;\n\n// ── Parse Claude design analysis ─────────────────────────────────────────────\nconst raw = resp?.content?.[0]?.text || '';\nlet d = {};\ntry { const m = raw.match(/\\{[\\s\\S]*\\}/); if (m) d = JSON.parse(m[0]); } catch(e) {}\n\n// ── Lock brand + fill all fallbacks ─────────────────────────────────────────\nd.brandName    = 'Long Island Cards';\nd.tagline      = d.tagline   || \"Long Island's Premier Trading Card & Collectibles Store\";\nd.colorPalette = d.colorPalette || {\n  primary:'#0f172a', secondary:'#1e293b', accent:'#f59e0b',\n  background:'#0f172a', cardBg:'#1e293b', textPrimary:'#ffffff', textSecondary:'#94a3b8'\n};\nd.heroSection = d.heroSection || {\n  headline:     \"Long Island's #1 Trading Card Store\",\n  subheadline:  'Pokemon TCG · Magic: The Gathering · Yu-Gi-Oh! · Sports Cards · Graded Slabs — Shipped Same Day',\n  primaryCTA:   'Shop All Cards',\n  secondaryCTA: 'Sell Your Cards'\n};\nd.trustElements  = d.trustElements  || ['Free Shipping $75+','Same-Day Shipping Before 2pm','PSA/BGS Grading Service','100% Authentic Cards'];\nd.featuredBrands = d.featuredBrands || ['Pokemon TCG','Magic: The Gathering','Yu-Gi-Oh!','Sports Cards','One Piece TCG','Dragon Ball Super','Digimon','Lorcana','Flesh & Blood'];\nd.footerLinks    = d.footerLinks    || {\n  shop:    ['All Singles','Sealed Products','Graded Cards','Sports Cards','Accessories','Pre-Orders'],\n  support: ['FAQ','Condition Guide','Grading Info','Contact Us','Returns & Refunds','Track Order'],\n  social:  ['Instagram','YouTube','TikTok','Twitter / X','Discord','Facebook']\n};\n\nconst PRODUCTS = [\n  { name:'Charizard ex SAR',            set:'Scarlet & Violet 151',   price:'$89.99',  orig:'$109.99', badge:'Hot',    badgeColor:'amber',  condition:'NM',     stock:'Only 3 left!', rating:4.9, reviews:312, imgSeed:11 },\n  { name:'Black Lotus (VG)',             set:'Alpha Edition',          price:'$4,999',  orig:'$4,999',  badge:'Rare',   badgeColor:'purple', condition:'VG',     stock:'1 In Stock',   rating:5.0, reviews:18,  imgSeed:22 },\n  { name:'Pokemon 151 Booster Box',      set:'Sealed Product',         price:'$129.99', orig:'$149.99', badge:'Sale',   badgeColor:'red',    condition:'Sealed', stock:'12 In Stock',  rating:4.8, reviews:541, imgSeed:33 },\n  { name:'Shohei Ohtani RC PSA 10',      set:'2018 Bowman Chrome',     price:'$299.00', orig:'$349.00', badge:'PSA 10', badgeColor:'blue',   condition:'PSA 10', stock:'1 In Stock',   rating:5.0, reviews:74,  imgSeed:44 },\n  { name:'Dark Magician LCKC',           set:'Legendary Collection',   price:'$24.99',  orig:'$24.99',  badge:'New',    badgeColor:'green',  condition:'NM',     stock:'8 In Stock',   rating:4.7, reviews:189, imgSeed:55 },\n  { name:'MTG Fetch Land Lot x4',        set:'Khans of Tarkir',        price:'$79.99',  orig:'$99.99',  badge:'Sale',   badgeColor:'red',    condition:'LP',     stock:'5 In Stock',   rating:4.8, reviews:267, imgSeed:66 },\n  { name:'One Piece OP-07 Booster Box',  set:'Sealed',                 price:'$109.99', orig:'$119.99', badge:'New',    badgeColor:'green',  condition:'Sealed', stock:'7 In Stock',   rating:4.9, reviews:93,  imgSeed:77 },\n  { name:'Goku Ultra Instinct SSP',      set:'Dragon Ball Super S5',   price:'$34.99',  orig:'$44.99',  badge:'Sale',   badgeColor:'red',    condition:'NM',     stock:'4 left',       rating:4.7, reviews:156, imgSeed:88 }\n];\nconst sp = (d.sampleProducts || []).slice(0,8);\nwhile (sp.length < 8) sp.push(PRODUCTS[sp.length]);\nd.sampleProducts = sp.map((p,i) => ({ ...PRODUCTS[i], ...p, imgSeed: PRODUCTS[i].imgSeed }));\n\nconst CATEGORIES = [\n  { name:'Pokemon TCG',           emoji:'⚡', desc:'Singles, Boxes & ETBs',              color:'#ef4444', href:'/shop/pokemon'     },\n  { name:'Magic: The Gathering',  emoji:'🔮', desc:'Modern, Legacy & Sealed',            color:'#8b5cf6', href:'/shop/mtg'         },\n  { name:'Yu-Gi-Oh!',             emoji:'🐉', desc:'Rare Singles, Decks & Accessories',  color:'#3b82f6', href:'/shop/yugioh'      },\n  { name:'Sports Cards',          emoji:'🏆', desc:'MLB · NBA · NFL · NHL',              color:'#10b981', href:'/shop/sports'      },\n  { name:'One Piece TCG',         emoji:'⚓', desc:'All Sets — Boxes & Singles',         color:'#f97316', href:'/shop/onepiece'    },\n  { name:'Dragon Ball Super',     emoji:'💥', desc:'Sealed Sets & Rare Cards',           color:'#eab308', href:'/shop/dbs'         },\n  { name:'Graded Slabs PSA/BGS',  emoji:'🏅', desc:'Certified Investment-Grade',         color:'#14b8a6', href:'/shop/graded'      },\n  { name:'Sealed Booster Boxes',  emoji:'📦', desc:'Factory Sealed — All Games',         color:'#ec4899', href:'/shop/sealed'      },\n  { name:'Singles — All Games',   emoji:'🃏', desc:'Buy by the Card, All Conditions',    color:'#6366f1', href:'/shop/singles'     },\n  { name:'Accessories',           emoji:'🛡️', desc:'Sleeves, Toploaders, Binders',       color:'#64748b', href:'/shop/accessories' },\n  { name:'Vintage & Rare',        emoji:'💎', desc:'1990s–2000s Collectibles',           color:'#a855f7', href:'/shop/vintage'     },\n  { name:'Pre-Orders',            emoji:'🚀', desc:'Upcoming Sets — Lock In Your Copy',  color:'#0ea5e9', href:'/shop/preorder'    },\n];\n\nconst RELEASES = [\n  { name:'Pokemon Stellar Crown',       date:'September 13 2025', badge:'Pre-Order Open', price:'$139.99', seed:91 },\n  { name:'MTG Final Fantasy',           date:'June 13 2025',      badge:'Pre-Order Open', price:'$199.99', seed:92 },\n  { name:'One Piece OP-10 Booster Box', date:'August 2025',       badge:'Coming Soon',    price:'$109.99', seed:93 },\n];\n\nconst REVIEWS = [\n  { name:'Michael R.', loc:'Plainview NY', text:'Best card shop on Long Island. Found a PSA 10 Charizard I had been hunting for 2 years. Lightning-fast shipping, packed perfectly.', stars:5 },\n  { name:'Sarah T.',   loc:'Syosset NY',   text:'Sent 15 cards for grading — came back PSA 9 and 10. The team actually knows their stuff and the prices are fair. My go-to store.', stars:5 },\n  { name:'Danny K.',   loc:'Huntington NY',text:'Three booster boxes, all genuine, all arrived sealed and fast. Better prices than big-box stores. Will always order from Long Island Cards.', stars:5 },\n];\n\nconst p   = d.colorPalette;\nconst acc = p.accent || '#f59e0b';\nconst bg  = p.primary || '#0f172a';\nconst bg2 = p.secondary || '#1e293b';\nconst style = prev.designStyle || 'Modern Dark';\n\n\n// ── Inject client brief into the prompt ─────────────────────────────────────\nconst brief = ($('Parse Input').item?.json?.clientBrief) || prev.clientBrief || {};\n\n// Real card images fetched from live APIs\nconst cardImages = ($('Code: Fetch Card Images').item?.json?.cardImages) || [];\nconst cardImagesBlock = cardImages.length > 0\n  ? cardImages.slice(0, 8).map((c, i) =>\n      (i+1) + '. [' + c.type + '] ' + c.name + ' | ' + c.set + ' | ' + c.price\n      + ' | Badge: ' + c.badge + '\\n     Image URL: ' + c.img\n    ).join('\\n')\n  : '';\n\n// Real card images fetched from live APIs\nconst cardImages = ($('Code: Fetch Card Images').item?.json?.cardImages) || [];\nconst cardImagesBlock = cardImages.length > 0\n  ? cardImages.slice(0, 8).map((c, i) =>\n      (i+1) + '. [' + c.type + '] ' + c.name + ' | ' + c.set + ' | ' + c.price\n      + ' | Badge: ' + c.badge + '\\n     Image URL: ' + c.img\n    ).join('\\n')\n  : '';\n\n// Real card images fetched by category from live APIs\nconst catImgs = ($('Code: Fetch Card Images').item?.json?.categoryImages) || {};\nconst imgPokemon = catImgs.pokemon  || [];\nconst imgMtg     = catImgs.mtg      || [];\nconst imgYgo     = catImgs.ygo      || [];\nconst imgSports  = catImgs.sports   || [];\nconst imgSealed  = catImgs.sealed   || [];\nconst imgGraded  = catImgs.graded   || [];\nconst imgFeatured= catImgs.featured || [];\nconst totalImgs  = imgPokemon.length + imgMtg.length + imgYgo.length + imgSports.length + imgSealed.length + imgGraded.length;\n\n// Build per-section card image text for Claude\nfunction imgList(cards, limit) {\n  return cards.slice(0, limit).map((c, i) =>\n    (i+1) + '. name=\"' + c.name + '\" set=\"' + c.set + '\" price=\"' + c.price + '\" badge=\"' + c.badge + '\"\\n' +\n    '   <img src=\"' + c.img + '\" alt=\"' + c.name + '\">'\n  ).join('\\n');\n}\n\nconst cardImagesBlock = totalImgs > 0\n  ? 'MANDATORY: use ONLY these exact <img src> URLs. No placeholders. No stock photos. No made-up URLs.\\n\\n' +\n    'FEATURED / HERO SECTION — use 3 of these as the main hero card images:\\n' + imgList(imgFeatured, 6) + '\\n\\n' +\n    'POKEMON SECTION — show 6 card grid:\\n' + imgList(imgPokemon, 6) + '\\n\\n' +\n    'MAGIC: THE GATHERING SECTION — show 6 card grid:\\n' + imgList(imgMtg, 6) + '\\n\\n' +\n    'YU-GI-OH! SECTION — show 6 card grid:\\n' + imgList(imgYgo, 6) + '\\n\\n' +\n    'SPORTS CARDS SECTION — show 4–6 cards:\\n' + imgList(imgSports, 6) + '\\n\\n' +\n    'SEALED PRODUCTS SECTION — show 4 product cards:\\n' + imgList(imgSealed, 4) + '\\n\\n' +\n    'GRADED CARDS SECTION — show 4 graded slab cards:\\n' + imgList(imgGraded, 4)\n  : '(No card images available — use realistic placeholder card art URLs)';\nconst briefPromo      = brief.promotion      || '';\nconst briefFeatured   = brief.featuredItems  || '';\nconst briefAnnounce   = brief.announcement   || '';\nconst briefEvents     = brief.eventsNews     || '';\nconst briefHeadline   = brief.customHeadline || '';\n\n// Override hero headline if client specified one\nif (briefHeadline) d.heroSection.headline = briefHeadline;\n\n// Override announcement bar text if client specified one\nconst announcementText = briefAnnounce ||\n  '🔥 FREE SHIPPING on orders $75+  |  Same-day shipping before 2pm EST  |  Use code LIC10 — 10% off first order  |  ' +\n  (briefPromo ? briefPromo : 'Pokemon Stellar Crown Pre-Orders NOW OPEN →');\n\n// Build client brief section for Claude\nconst clientBriefBlock = [\n  briefPromo    ? ('THIS WEEK PROMOTION: ' + briefPromo)            : '',\n  briefFeatured ? ('PRODUCTS TO FEATURE: ' + briefFeatured)        : '',\n  briefEvents   ? ('EVENTS / NEWS: ' + briefEvents)                 : '',\n  briefAnnounce ? ('ANNOUNCEMENT BAR: ' + briefAnnounce)           : '',\n  briefHeadline ? ('CUSTOM HERO HEADLINE (use exactly): ' + briefHeadline) : '',\n].filter(Boolean).join('\\n');\n\nconst hasBrief = clientBriefBlock.length > 0;\n\nconst htmlPrompt =\n'You are a senior frontend engineer. Build a complete, production-ready, single-file TailwindCSS HTML homepage for \"Long Island Cards\" that matches the quality and feature set of TCGPlayer, TrollAndToad, StarCityGames, ChannelFireball, and Dave & Adams combined.\\n\\n' +\n\n'══ MANDATORY COLOR RULES — NEVER VIOLATE ══\\n' +\n'1. <body class=\"bg-[' + bg + '] text-white\" style=\"background:' + bg + ';color:#ffffff;font-family:Inter,sans-serif\">\\n' +\n'2. EVERY text on dark bg MUST have class=\"text-white\" or class=\"text-slate-300\" — never rely on default inherit\\n' +\n'3. ALL headings: class=\"text-white font-black\" (add font-family: Rajdhani via style tag)\\n' +\n'4. ALL body copy on dark panels: class=\"text-slate-300\"\\n' +\n'5. ALL cards/panels: class=\"bg-slate-800 text-white\" — never class=\"bg-slate-800\" alone\\n' +\n'6. Accent color ' + acc + ' for CTAs, highlights, hover borders, active states\\n' +\n'7. In <script>tailwind.config add colors:{ brand:\"' + bg + '\", accent:\"' + acc + '\" }\\n\\n' +\n\n'══ CLIENT BRIEF — FOLLOW EXACTLY (overrides default AI choices) ══\\n' +\n(hasBrief\n  ? clientBriefBlock + '\\n\\n'\n  : '(No specific brief provided — full AI creative control)\\n\\n') +\n\n'══ REAL CARD IMAGES — USE THESE EXACT URLs IN THE HTML ══\\n' +\n(cardImages.length > 0\n  ? 'CRITICAL: Use these exact image URLs for ALL product/card images in the page. ' +\n    'Do NOT use placeholder or stock photo URLs. Do NOT make up URLs.\\n' +\n    'Each card: use the Image URL as the <img src=\"...\"> value exactly as shown.\\n\\n' +\n    cardImagesBlock + '\\n\\n'\n  : '(No card images provided — generate HTML with realistic card image placeholder URLs)\\n\\n') +\n\n'══ REAL CARD IMAGES — USE THESE EXACT URLs IN THE HTML ══\\n' +\n(cardImages.length > 0\n  ? 'CRITICAL: Use these exact image URLs for ALL product/card images in the page. ' +\n    'Do NOT use placeholder or stock photo URLs. Do NOT make up URLs.\\n' +\n    'Each card: use the Image URL as the <img src=\"...\"> value exactly as shown.\\n\\n' +\n    cardImagesBlock + '\\n\\n'\n  : '(No card images provided — generate HTML with realistic card image placeholder URLs)\\n\\n') +\n\n'══ REAL CARD IMAGES BY SECTION — MANDATORY, NO EXCEPTIONS ══\\n' +\n(totalImgs > 0\n  ? cardImagesBlock + '\\n\\n'\n  : '(No card images — use realistic card placeholder URLs)\\n\\n') +\n\n\n'══ BRAND ══\\n' +\n'Name: Long Island Cards | Address: 605 Old Country Road Plainview NY 11803 | Phone: (212) 564-8585\\n' +\n'Tagline: ' + d.tagline + '\\n' +\n'Hero H1: ' + d.heroSection.headline + '\\n' +\n'Hero sub: ' + d.heroSection.subheadline + '\\n' +\n'CTA1: \"' + d.heroSection.primaryCTA + '\" (bg accent, text black) | CTA2: \"' + d.heroSection.secondaryCTA + '\" (border white)\\n' +\n'Trust badges: ' + d.trustElements.join(' | ') + '\\n\\n' +\n\n'══ DATA ══\\n' +\n'PRODUCTS: ' + JSON.stringify(d.sampleProducts) + '\\n' +\n'CATEGORIES: ' + JSON.stringify(CATEGORIES) + '\\n' +\n'UPCOMING_RELEASES: ' + JSON.stringify(RELEASES) + '\\n' +\n'REVIEWS: ' + JSON.stringify(REVIEWS) + '\\n' +\n'BRANDS: ' + d.featuredBrands.join(', ') + '\\n\\n' +\n\n'══ BUILD ALL 17 SECTIONS IN EXACT ORDER ══\\n\\n' +\n\n'[S1] ANNOUNCEMENT BAR (z-60, bg-[' + acc + '] text-black text-sm font-medium, py-2)\\n' +\n'  Left: scrolling marquee text: \"🔥 FREE SHIPPING on orders $75+ &nbsp;|&nbsp; Same-day shipping before 2pm EST &nbsp;|&nbsp; Use code LIC10 — 10% off first order &nbsp;|&nbsp; Pokemon Stellar Crown Pre-Orders now OPEN →\"\\n' +\n'  Right: × dismiss button (removes bar on click)\\n' +\n'  CSS: @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }\\n\\n' +\n\n'[S2] STICKY HEADER (z-50 fixed top w-full bg-[' + bg + ']/95 backdrop-blur-xl border-b border-white/10)\\n' +\n'  Desktop layout: 3 zones\\n' +\n'    LEFT: ♠ logo icon (text-[' + acc + '] text-2xl) + \"Long Island Cards\" (font-bold text-white text-xl Rajdhani) + \"Plainview, NY\" (text-xs text-slate-400)\\n' +\n'    CENTER: nav links (text-sm font-medium text-slate-300 hover:text-white transition): Home · Shop · Singles · Sealed · Graded · Sports · Pre-Orders · Sell Cards · About\\n' +\n'    RIGHT: 🔍 search icon (onclick expands search bar) + ♡ wishlist (badge pill, amber) + 🛒 cart (badge pill, shows count) \\n' +\n'  SEARCH BAR: hidden div below nav, full-width, expands/collapses on search icon click — placeholder \"Search 50,000+ cards, sets, players...\"\\n' +\n'  Mobile (<lg): only logo left + hamburger right (3-line icon). Hamburger toggles full-width dropdown menu with all nav links stacked.\\n\\n' +\n\n'[S3] HERO (min-h-screen flex items-center, bg-gradient-to-br from-[' + bg + '] via-[' + bg2 + '] to-[' + bg + '], pt-24)\\n' +\n'  Left 55% (text content):\\n' +\n'    Small badge pill (bg-[' + acc + ']/20 text-[' + acc + '] border border-[' + acc + ']/30 rounded-full px-4 py-1 text-sm): \"🃏 New Arrivals This Week\"\\n' +\n'    H1 (text-6xl md:text-7xl font-black text-white leading-tight, font-family Rajdhani): \"' + d.heroSection.headline + '\"\\n' +\n'    P (text-xl text-slate-300 mt-4 max-w-xl): \"' + d.heroSection.subheadline + '\"\\n' +\n'    Button row (mt-8 flex gap-4 flex-wrap):\\n' +\n'      Primary: class=\"bg-[' + acc + '] text-black font-bold px-8 py-4 rounded-xl hover:scale-105 transition-transform text-lg\" — \"' + d.heroSection.primaryCTA + '\"\\n' +\n'      Secondary: class=\"border-2 border-white/30 text-white font-bold px-8 py-4 rounded-xl hover:bg-white/10 transition text-lg\" — \"' + d.heroSection.secondaryCTA + '\"\\n' +\n'    Trust row (mt-8 flex flex-wrap gap-4): each trust item = checkmark ✓ + text, class=\"flex items-center gap-2 text-slate-300 text-sm\"\\n' +\n'  Right 45% (visual):\\n' +\n'    3 rotated overlapping card images (picsum.photos/200/280?random=1,2,3), each in a div with rotate-[-8deg], rotate-[0deg], rotate-[8deg], shadow-2xl rounded-xl\\n' +\n'    Floating price badge on top card: \"PSA 10 — $299\" (bg-[' + acc + '] text-black font-bold px-3 py-1 rounded-lg absolute)\\n' +\n'    Background glow: absolute div w-96 h-96 bg-[' + acc + ']/10 blur-3xl rounded-full\\n\\n' +\n\n'[S4] TRENDING TICKER (overflow-hidden bg-[' + acc + '] text-black py-3 border-y-2 border-black/10)\\n' +\n'  Two divs side by side (flex whitespace-nowrap) — each contains the full ticker text — creating seamless loop via animation\\n' +\n'  Text: \"🔥 Charizard ex SAR — $89.99 &nbsp;&nbsp;·&nbsp;&nbsp; 📈 Black Lotus — $4,999 &nbsp;&nbsp;·&nbsp;&nbsp; ⬆ Shohei Ohtani RC PSA 10 — $299 &nbsp;&nbsp;·&nbsp;&nbsp; 🆕 Pokemon 151 Box — $129.99 &nbsp;&nbsp;·&nbsp;&nbsp; 💎 1986 Fleer Jordan Sticker — $599 &nbsp;&nbsp;·&nbsp;&nbsp; 🔥 MTG Force of Will — $74.99 &nbsp;&nbsp;·&nbsp;&nbsp; ⬆ Blue-Eyes LOB — $149 &nbsp;&nbsp;·&nbsp;&nbsp; 🆕 OP-07 Booster Box — $109.99\"\\n' +\n'  CSS: animation: marquee 25s linear infinite\\n\\n' +\n\n'[S5] FEATURED BRANDS BAR (py-6 bg-slate-900 border-y border-white/10)\\n' +\n'  Left: \"Shop by Brand\" (text-sm text-slate-400 font-semibold uppercase tracking-wider)\\n' +\n'  Right: overflow-x-auto flex gap-3. Each brand pill: class=\"shrink-0 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 hover:border-[' + acc + '] border border-transparent text-white text-sm font-medium px-4 py-2 rounded-full cursor-pointer transition-all whitespace-nowrap\"\\n' +\n'  Brands: ' + d.featuredBrands.join(', ') + '\\n\\n' +\n\n'[S6] TRUST BAR (py-8 bg-[' + acc + '] text-black)\\n' +\n'  4-column grid (grid-cols-2 md:grid-cols-4)\\n' +\n'  Each item (flex flex-col items-center text-center):\\n' +\n'    Icon (text-3xl mb-2): 🚚 / ⚡ / 🔒 / 🏆\\n' +\n'    Title (font-black text-lg): \"Free Shipping\" / \"Same-Day Shipping\" / \"100% Authentic\" / \"PSA/BGS Grading\"\\n' +\n'    Sub (text-sm font-medium opacity-80): \"On orders over $75\" / \"Order before 2pm EST\" / \"Every card verified\" / \"Submit directly through us\"\\n\\n' +\n\n'[S7] HOT RIGHT NOW (py-16 px-4 max-w-7xl mx-auto)\\n' +\n'  Header row: \"🔥 Hot Right Now\" (text-3xl font-black text-white Rajdhani) + \"View All Cards →\" link (text-[' + acc + '] hover:underline)\\n' +\n'  Grid (mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6)\\n\\n' +\n'  EACH PRODUCT CARD (class=\"bg-slate-800 rounded-2xl overflow-hidden group hover:scale-[1.02] transition-all duration-300 shadow-lg border border-white/5 hover:border-[' + acc + ']/30\"):\\n' +\n'    IMAGE ZONE (relative aspect-[3/4] bg-slate-700 overflow-hidden):\\n' +\n'      img class=\"w-full h-full object-cover group-hover:scale-105 transition-transform duration-500\"\\n' +\n'      src=\"https://picsum.photos/300/400?random={imgSeed}\" alt=\"{name}\"\\n' +\n'      BADGE top-left: rounded-full px-3 py-1 text-xs font-bold — colors: amber=bg-amber-500, red=bg-red-500, green=bg-green-500, purple=bg-purple-500, blue=bg-blue-500\\n' +\n'      WISHLIST top-right: heart button ♡/♥ (toggle class, JS), class=\"absolute top-3 right-3 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:text-red-400 transition cursor-pointer wishlist-btn\"\\n' +\n'      QUICK VIEW center overlay (opacity-0 group-hover:opacity-100 transition-opacity absolute inset-0 bg-black/50 flex items-center justify-center):\\n' +\n'        button class=\"bg-white text-black font-bold px-4 py-2 rounded-xl text-sm hover:bg-[' + acc + '] transition-colors\" — \"Quick View\"\\n' +\n'    CONTENT ZONE (p-4):\\n' +\n'      Condition row: colored dot + condition text (\"NM\",\"LP\",\"VG\",\"Sealed\",\"PSA 10\") class=\"flex items-center gap-1 text-xs font-semibold mb-2\"\\n' +\n'        Dot colors: NM=green, LP=yellow, VG=orange, Sealed=blue, PSA10=purple\\n' +\n'      Name: class=\"font-bold text-white text-sm leading-tight\" — {name}\\n' +\n'      Set: class=\"text-xs text-slate-400 mt-1 mb-2\" — {set}\\n' +\n'      Stars row: class=\"flex items-center gap-1 text-amber-400 text-xs\" — filled ★ × floor(rating) + {reviews} reviews text\\n' +\n'      Stock: class=\"text-xs mt-1\" — \"Only X left!\" in text-red-400 if stock contains \"left\", else text-green-400\\n' +\n'      Price row: class=\"flex items-end gap-2 mt-2\" — price (text-xl font-black text-white) + originalPrice (text-sm line-through text-slate-500, only if differs)\\n' +\n'      Add to Cart btn: class=\"mt-3 w-full bg-[' + acc + '] text-black font-bold py-2.5 rounded-xl hover:bg-opacity-90 transition-colors text-sm add-to-cart\"\\n\\n' +\n\n'[S8] BROWSE BY CATEGORY (py-16 px-4 max-w-7xl mx-auto bg-slate-900/50 rounded-3xl my-4)\\n' +\n'  Header: \"Browse by Category\" (text-3xl font-black text-white Rajdhani) + subtitle \"Everything a collector needs — all in one place\" (text-slate-400)\\n' +\n'  Grid (mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4)\\n' +\n'  EACH CATEGORY CARD (class=\"relative bg-slate-800 rounded-2xl p-5 text-center hover:border-[' + acc + '] border border-transparent transition-all cursor-pointer group hover:scale-[1.02]\"):\\n' +\n'    Color circle (w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-2xl, bg uses {color} at 20% opacity via style=\"background:{color}33\")\\n' +\n'    Name: class=\"font-bold text-white mt-3 text-sm\" — {name}\\n' +\n'    Desc: class=\"text-xs text-slate-400 mt-1\" — {desc}\\n' +\n'    Arrow: class=\"text-[' + acc + '] text-sm mt-2 opacity-0 group-hover:opacity-100 transition-opacity\" — \"Shop Now →\"\\n\\n' +\n\n'[S9] UPCOMING RELEASES & PRE-ORDERS (py-16 px-4 max-w-7xl mx-auto)\\n' +\n'  Header: \"🚀 Upcoming Releases\" + badge \"Pre-order — Limited Allocation\"\\n' +\n'  Grid (grid grid-cols-1 md:grid-cols-3 gap-6 mt-8)\\n' +\n'  EACH RELEASE CARD (bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden border border-white/10):\\n' +\n'    Image: picsum.photos/400/220?random={seed} — h-44 w-full object-cover\\n' +\n'    Content p-5:\\n' +\n'      Badge pill: {badge} in amber or blue\\n' +\n'      Name: text-lg font-bold text-white\\n' +\n'      Release date: text-sm text-slate-400 \"Releases: {date}\"\\n' +\n'      COUNTDOWN: <div class=\"flex gap-3 my-3\" id=\"cd-{index}\"> — 4 spans each with number (text-2xl font-black text-[' + acc + ']) + label (text-xs text-slate-400): DAYS HOURS MINS SECS\\n' +\n'      Price + Pre-Order button: justify-between flex items-center\\n' +\n'        Price: text-xl font-black text-white — {price}\\n' +\n'        Button: bg-[' + acc + '] text-black font-bold px-4 py-2 rounded-xl text-sm — \"Pre-Order Now\"\\n\\n' +\n\n'[S10] JUST LANDED — NEW ARRIVALS (py-16 px-4 max-w-7xl mx-auto)\\n' +\n'  Header: \"📦 Just Landed\" + \"View all new arrivals →\"\\n' +\n'  Horizontal scroll row (flex overflow-x-auto gap-4 pb-4 scrollbar-hide snap-x snap-mandatory)\\n' +\n'  6 product mini-cards (min-w-[180px] snap-start bg-slate-800 rounded-xl overflow-hidden hover:scale-[1.03] transition cursor-pointer):\\n' +\n'    Image: picsum.photos/180/240?random={N} — aspect-[3/4] object-cover\\n' +\n'    Content p-3: \"New\" green badge + name (font-bold text-white text-xs leading-tight) + price (text-sm text-[' + acc + '] font-bold)\\n\\n' +\n\n'[S11] SPORTS CARDS SPOTLIGHT (py-16 px-4 max-w-7xl mx-auto)\\n' +\n'  Header: \"🏆 Sports Cards\" + subtitle \"MLB · NBA · NFL · NHL — Singles, Rookies, PSA Graded\"\\n' +\n'  Two columns (grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8):\\n' +\n'    LEFT: Large banner image (picsum.photos/600/380?random=90) rounded-2xl object-cover with overlay gradient + text \"Baseball, Basketball, Football & Hockey\" + \"Shop Sports →\" CTA\\n' +\n'    RIGHT: 2x2 grid of sport sub-categories:\\n' +\n'      Each: bg-slate-800 rounded-xl p-5 flex items-center gap-4 hover:border-[' + acc + '] border border-transparent cursor-pointer transition\\n' +\n'      Icon (text-3xl) + Name (font-bold text-white) + count (\"450+ Cards\") text-slate-400 text-sm + \"→\" arrow\\n' +\n'      Sports: ⚾ Baseball | 🏀 Basketball | 🏈 Football | 🏒 Hockey\\n\\n' +\n\n'[S12] GRADING SERVICE (py-16 px-4 max-w-7xl mx-auto)\\n' +\n'  Full bg-gradient-to-r from-slate-800 to-slate-900 rounded-3xl overflow-hidden p-8 lg:p-12\\n' +\n'  Two columns:\\n' +\n'    LEFT:\\n' +\n'      Small badge: \"PSA · BGS · CGC Certified\"\\n' +\n'      H2 (text-4xl font-black text-white Rajdhani): \"Get Your Cards Professionally Graded\"\\n' +\n'      P (text-slate-300): \"Submit directly through Long Island Cards. We handle everything — submission, tracking, and return. Protect and increase the value of your collection.\"\\n' +\n'      3-step pills row (mt-6 flex gap-4 flex-wrap):\\n' +\n'        Each: bg-[' + acc + ']/10 border border-[' + acc + ']/30 rounded-xl p-3 text-center min-w-[100px]\\n' +\n'          Step number (text-[' + acc + '] font-black text-xl) + label (text-white text-sm font-medium)\\n' +\n'          Steps: \"1 Submit\" → \"2 Grade\" → \"3 Return\"\\n' +\n'      CTA btn (mt-6): bg-[' + acc + '] text-black font-bold px-6 py-3 rounded-xl — \"Start Grading Submission →\"\\n' +\n'      Sub text: \"Estimated turnaround: 45–90 days | All grades accepted\"\\n' +\n'    RIGHT: picsum.photos/400/350?random=95 rounded-2xl shadow-2xl with floating badge \"PSA 10\" (bg-blue-600 text-white font-black px-4 py-2 rounded-lg absolute -top-3 -right-3)\\n\\n' +\n\n'[S13] SELL YOUR CARDS — WE BUY (py-16 px-4 max-w-7xl mx-auto)\\n' +\n'  bg-gradient-to-r from-[' + acc + ']/10 to-transparent border border-[' + acc + ']/20 rounded-3xl p-8 lg:p-12\\n' +\n'  Two columns:\\n' +\n'    LEFT:\\n' +\n'      H2 (text-4xl font-black text-white Rajdhani): \"💰 Sell Your Cards to Us\"\\n' +\n'      P: \"Get instant cash or trade credit. We buy singles, collections, and entire binders. Fair market prices, same-day offers.\"\\n' +\n'      4 bullet points (mt-4 space-y-2): each \"✓ text\" class=\"flex items-center gap-2 text-slate-300\"\\n' +\n'        ✓ Instant Online Quotes  ✓ Top-Dollar Payouts  ✓ Ship to Us or Walk In  ✓ Full Collections Welcome\\n' +\n'      Button row (mt-6):\\n' +\n'        Primary: bg-[' + acc + '] text-black font-bold px-6 py-3 rounded-xl — \"Get a Free Quote\"\\n' +\n'        Secondary: border border-white/30 text-white px-6 py-3 rounded-xl — \"Learn More\"\\n' +\n'    RIGHT: 3 stat cards (grid grid-cols-1 gap-4):\\n' +\n'      Each: bg-slate-800 rounded-xl p-5 text-center — big number (text-3xl font-black text-[' + acc + ']) + label (text-slate-300 text-sm)\\n' +\n'      Stats: \"5,000+\" \"Cards Bought This Month\" | \"$2M+\" \"Paid to Collectors\" | \"24hr\" \"Average Payout Time\"\\n\\n' +\n\n'[S14] CUSTOMER REVIEWS (py-16 px-4 max-w-7xl mx-auto)\\n' +\n'  Header: \"⭐ What Collectors Say\" + overall (text-slate-400): \"4.9/5 from 1,200+ verified reviews\"\\n' +\n'  Grid (grid grid-cols-1 md:grid-cols-3 gap-6 mt-8)\\n' +\n'  EACH REVIEW CARD (bg-slate-800 rounded-2xl p-6 border border-white/5):\\n' +\n'    Stars: 5× \"★\" class=\"text-amber-400 text-lg\"\\n' +\n'    Quote: class=\"text-slate-300 text-sm mt-3 leading-relaxed italic\" — \"{text}\"\\n' +\n'    Footer row (mt-4 flex items-center justify-between):\\n' +\n'      Name (font-bold text-white text-sm) + Location (text-slate-400 text-xs)\\n' +\n'      \"Verified Buyer\" badge (bg-green-500/20 text-green-400 border border-green-500/30 text-xs px-2 py-1 rounded-full)\\n\\n' +\n\n'[S15] THIS WEEK ONLY — PROMO COUNTDOWN (py-12 px-4 text-center bg-[' + acc + '] text-black)\\n' +\n'  \"⚡ This Week Only\" (text-xs font-bold uppercase tracking-widest opacity-70)\\n' +\n'  H2 (text-3xl font-black): \"Buy Any Booster Box → Get FREE Card Sleeves (100-pack)\"\\n' +\n'  P: \"Limited offer. While supplies last.\"\\n' +\n'  COUNTDOWN DISPLAY (mt-4 flex justify-center gap-6):\\n' +\n'    4 blocks — each: bg-black/20 rounded-xl px-6 py-3\\n' +\n'      Number span (id=\"ct-d/h/m/s\" text-4xl font-black font-mono): 00\\n' +\n'      Label (text-xs uppercase tracking-wider opacity-70): DAYS / HRS / MINS / SECS\\n' +\n'  CTA (mt-6): bg-black text-[' + acc + '] font-bold px-8 py-3 rounded-xl text-lg hover:bg-gray-900 — \"Claim This Offer →\"\\n\\n' +\n\n'[S16] NEWSLETTER (py-16 px-4 text-center max-w-2xl mx-auto)\\n' +\n'  Icon: \"📬\" text-5xl\\n' +\n'  H2 (text-3xl font-black text-white Rajdhani): \"Join 8,000+ Long Island Card Collectors\"\\n' +\n'  P (text-slate-400 mt-3): \"Weekly pulls · New set releases · Local event news · Exclusive deals — straight to your inbox.\"\\n' +\n'  Form (mt-6 flex gap-3 max-w-md mx-auto):\\n' +\n'    Input: class=\"flex-1 bg-slate-800 text-white border border-white/20 rounded-xl px-4 py-3 placeholder-slate-500 focus:outline-none focus:border-[' + acc + ']\" placeholder=\"Your email address\"\\n' +\n'    Button: class=\"bg-[' + acc + '] text-black font-bold px-6 py-3 rounded-xl whitespace-nowrap hover:bg-opacity-90\" — \"Subscribe\"\\n' +\n'  Subtext (mt-3 text-slate-500 text-xs): \"No spam. Unsubscribe anytime.\"\\n' +\n'  Social row (mt-6 flex justify-center gap-4):\\n' +\n'    Each platform: class=\"w-10 h-10 bg-slate-800 hover:bg-[' + acc + '] hover:text-black text-slate-400 rounded-full flex items-center justify-center transition-colors text-sm font-bold cursor-pointer\"\\n' +\n'    Platforms: IG · YT · TT · X · DC · FB\\n\\n' +\n\n'[S17] FOOTER (bg-[' + bg + '] border-t border-white/10 pt-12 pb-6)\\n' +\n'  4-column grid (grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4 max-w-7xl mx-auto)\\n' +\n'    COL 1 — Brand:\\n' +\n'      Logo line: ♠ \"Long Island Cards\" (font-black text-white text-xl)\\n' +\n'      Tagline (text-slate-400 text-sm mt-2 leading-relaxed): ' + d.tagline + '\\n' +\n'      Social icons row (mt-4 flex gap-3): each w-9 h-9 bg-slate-800 hover:bg-[' + acc + '] rounded-full text-slate-400 hover:text-black\\n' +\n'    COL 2 — Shop links: heading \"SHOP\" (text-xs font-bold text-slate-500 uppercase tracking-widest) + ul (space-y-2 mt-3 text-slate-400 text-sm hover:text-white each li)\\n' +\n'      Links: ' + (d.footerLinks.shop||[]).join(', ') + '\\n' +\n'    COL 3 — Support: same pattern\\n' +\n'      Links: ' + (d.footerLinks.support||[]).join(', ') + '\\n' +\n'    COL 4 — Store Info:\\n' +\n'      Heading \"VISIT US\"\\n' +\n'      📍 605 Old Country Road, Plainview NY 11803\\n' +\n'      📞 (212) 564-8585\\n' +\n'      🕐 Mon–Sat 10am–7pm · Sun 11am–5pm\\n' +\n'      ✉️ info@longislandcards.com\\n' +\n'  BOTTOM BAR (mt-10 pt-6 border-t border-white/10 px-4 max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4):\\n' +\n'    Copyright: \"© 2025 Long Island Cards. All rights reserved.\" text-slate-500 text-sm\\n' +\n'    Payment badges row: each badge bg-slate-800 text-slate-300 text-xs px-3 py-1 rounded font-medium\\n' +\n'      Badges: VISA · MC · AMEX · PAYPAL · DISCOVER · APPLE PAY\\n\\n' +\n\n'══ JAVASCRIPT (place all before </body>) ══\\n' +\n'1. Announcement bar: document.querySelector(\".dismiss-announce\")?.addEventListener(\"click\", e => e.target.closest(\"#announce-bar\").remove())\\n' +\n'2. Hamburger: toggle hidden on mobile nav menu\\n' +\n'3. Search expand: toggle hidden on search bar div below header\\n' +\n'4. Wishlist hearts: document.querySelectorAll(\".wishlist-btn\").forEach(b => b.addEventListener(\"click\", () => b.classList.toggle(\"text-red-500\")))\\n' +\n'5. Cart counter: let cart=0; document.querySelectorAll(\".add-to-cart\").forEach(b => b.addEventListener(\"click\", () => { cart++; document.querySelectorAll(\".cart-count\").forEach(el => el.textContent=cart) }))\\n' +\n'6. Pre-order countdowns: for each release, calculate days/hrs remaining to release date\\n' +\n'7. 48h promo countdown:\\n' +\n'   const end = Date.now() + 48*3600*1000;\\n' +\n'   setInterval(() => { const rem = Math.max(0, end - Date.now()); const d=Math.floor(rem/86400000), h=Math.floor(rem%86400000/3600000), m=Math.floor(rem%3600000/60000), s=Math.floor(rem%60000/1000); [\"ct-d\",\"ct-h\",\"ct-m\",\"ct-s\"].forEach((id,i)=>{const el=document.getElementById(id); if(el) el.textContent=String([d,h,m,s][i]).padStart(2,\"0\")}) }, 1000)\\n' +\n'8. Sticky header: window.addEventListener(\"scroll\", () => document.getElementById(\"main-header\")?.classList.toggle(\"py-2\", window.scrollY > 60))\\n\\n' +\n\n'══ TECHNICAL ══\\n' +\n'- TailwindCSS: <script src=\"https://cdn.tailwindcss.com\"></script>\\n' +\n'- tailwind.config: { theme: { extend: { colors: { brand: \"' + bg + '\", accent: \"' + acc + '\" }, fontFamily: { heading: [\"Rajdhani\",\"sans-serif\"] } } } }\\n' +\n'- Fonts: <link href=\"https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">\\n' +\n'- <style>: @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} } .animate-marquee{animation:marquee 28s linear infinite} html{scroll-behavior:smooth} .scrollbar-hide::-webkit-scrollbar{display:none}\\n' +\n'- All images use picsum.photos with unique random seeds — never reuse same seed in same page\\n' +\n'- Each section has id attribute: announce, header, hero, ticker, brands, trust, products, categories, releases, arrivals, sports, grading, buylist, reviews, promo, newsletter, footer\\n' +\n'- PThere must be NO dark text on dark background anywhere in the page. Every text element must be explicitly visible.\\n\\n' +\n\n'OUTPUT: Return ONLY the complete HTML starting with <!DOCTYPE html> and ending with </html>. NO markdown fences. NO explanations. JUST the HTML file.';\n\nconst htmlRequest = JSON.stringify({\n  model:      prev.CLAUDE_MODEL,\n  max_tokens: 10000,\n  messages: [{ role: 'user', content: htmlPrompt }]\n});\n\nreturn [{ json: { ...prev, design: d, htmlRequest } }];"
+      }
+    },
+    {
+      "id": "n10",
+      "name": "HTTP: Claude — Generate Cards Website HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2820,
+        360
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $json.CLAUDE_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.htmlRequest }}",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "n11",
+      "name": "Code: Extract HTML + Build View Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        360
+      ],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst resp = decodeBuffer($input.item.json);\nconst prev = $('Code: Build Cards HTML Prompt').item.json;\n\nconst raw = resp?.content?.[0]?.text || '';\nlet fullHtml = raw.trim();\n\n// Extract from fenced code block or doctype\nconst fenced    = raw.match(/```html?\\s*([\\s\\S]*?)```/i);\nconst doctypeIdx = raw.toLowerCase().indexOf('<!doctype');\nif (fenced)        fullHtml = fenced[1].trim();\nelse if (doctypeIdx >= 0) fullHtml = raw.substring(doctypeIdx).trim();\n\n// ── Extract <style> and <link rel=\"stylesheet\"> from <head> ──────────────────\nconst headMatch  = fullHtml.match(/<head[^>]*>([\\s\\S]*?)<\\/head>/i);\nconst headContent = headMatch ? headMatch[1] : '';\n\n// Keep: <style>, <link rel=\"stylesheet\">, <script src=\"...tailwind...\">\nconst styleTags = [];\nconst styleRegex = /<style[\\s\\S]*?<\\/style>/gi;\nlet sm;\nwhile ((sm = styleRegex.exec(headContent)) !== null) styleTags.push(sm[0]);\n\nconst linkRegex = /<link[^>]+(?:stylesheet|font)[^>]*\\/?>/gi;\nlet lm;\nwhile ((lm = linkRegex.exec(headContent)) !== null) styleTags.push(lm[0]);\n\nconst scriptRegex = /<script[^>]+src=['\"][^'\"]*(?:tailwind|cdn\\.tailwindcss)[^'\"]*['\"][^>]*><\\/script>/gi;\nlet scm;\nwhile ((scm = scriptRegex.exec(headContent)) !== null) styleTags.push(scm[0]);\n\nconst headAssets = styleTags.join('\\n');\n\n// ── Extract <body> content ────────────────────────────────────────────────────\nconst bodyMatch   = fullHtml.match(/<body[^>]*>([\\s\\S]*)<\\/body>/i);\nlet bodyContent   = bodyMatch ? bodyMatch[1].trim() : fullHtml;\n\n// Remove any remaining <html>, <head>, </html>, <!DOCTYPE lines if they slipped through\nbodyContent = bodyContent\n  .replace(/<!DOCTYPE[^>]*>/gi, '')\n  .replace(/<\\/?html[^>]*>/gi, '')\n  .replace(/<head[\\s\\S]*?<\\/head>/gi, '')\n  .replace(/<\\/?body[^>]*>/gi, '')\n  .trim();\n\n// Fallback: if we got nothing useful\nif (bodyContent.length < 200) {\n  bodyContent = '<div class=\"min-h-screen bg-slate-900 text-white flex items-center justify-center\">'\n    + '<div class=\"text-center\"><h1 class=\"text-4xl font-bold text-amber-400 mb-4\">Long Island Cards</h1>'\n    + '<p class=\"text-gray-400\">Nassau County\\'s Trading Card Shop</p>'\n    + '<p class=\"text-red-400 mt-4 text-sm\">Generation returned ' + raw.length + ' chars — retry to regenerate.</p>'\n    + '</div></div>';\n}\n\n// ── Build Odoo QWeb arch_db ───────────────────────────────────────────────────\n// website.layout provides the full HTML wrapper; we inject assets + body content\nconst odooArch = '<t t-name=\"' + prev.pageKey + '\">'\n  + '<t t-call=\"website.layout\">'\n  + '<div id=\"wrap\" class=\"oe_structure\">'\n  + (headAssets ? '\\n' + headAssets + '\\n' : '')\n  + bodyContent\n  + '\\n</div>'\n  + '</t>'\n  + '</t>';\n\nconsole.log('[HTML] fullHtml=' + fullHtml.length + ' bodyContent=' + bodyContent.length + ' assets=' + headAssets.length);\n\nconst createViewReq = JSON.stringify({\n  jsonrpc: '2.0', method: 'call', id: 3,\n  params: {\n    service: 'object', method: 'execute_kw',\n    args: [\n      prev.ODOO_DB, prev.uid, prev.ODOO_PASS,\n      'ir.ui.view', 'create',\n      [{\n        name:    'AI Cards Store: ' + prev.targetPageName,\n        type:    'qweb',\n        arch_db: odooArch,\n        key:     prev.pageKey,\n        mode:    'primary'\n      }]\n    ]\n  }\n});\n\nreturn [{ json: {\n  ...prev,\n  html: bodyContent,\n  htmlLength: bodyContent.length,\n  fullHtmlLength: fullHtml.length,\n  odooArch,\n  createViewReq\n}}];\n"
+      }
+    },
+    {
+      "id": "n12",
+      "name": "HTTP: Odoo Create ir.ui.view",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3340,
+        360
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.createViewReq }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "n13",
+      "name": "Code: Build Page Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        360
+      ],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\nconst viewRespRaw = $input.item.json;\nconst viewResp = decodeBuffer(viewRespRaw);\nconst prev = $('Code: Extract HTML + Build View Request').item.json;\n\nconst viewId = viewResp?.result || null;\nconsole.log('[Odoo] ir.ui.view created id=' + viewId + ' websiteId=' + prev.websiteId);\n\nif (!viewId) {\n  console.log('[Odoo] View creation failed. Response keys: ' + Object.keys(viewResp || {}).join(','));\n  console.log('[Odoo] Response snippet: ' + JSON.stringify(viewResp).substring(0, 400));\n}\n\nconst createPageReq = JSON.stringify({\n  jsonrpc: '2.0', method: 'call', id: 4,\n  params: {\n    service: 'object', method: 'execute_kw',\n    args: [\n      prev.ODOO_DB, prev.uid, prev.ODOO_PASS,\n      'website.page', 'create',\n      [{\n        name:            prev.targetPageName,\n        url:             prev.targetPageUrl,\n        view_id:         viewId || false,\n        is_published:    true,\n        website_indexed: true,\n        website_id:      prev.websiteId,\n        is_homepage:     true\n      }]\n    ]\n  }\n});\n\nreturn [{ json: { ...prev, viewId, createPageReq } }];\n"
+      }
+    },
+    {
+      "id": "n14",
+      "name": "HTTP: Odoo Create website.page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3860,
+        360
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.createPageReq }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "n15",
+      "name": "Code: Build Final Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4120,
+        360
+      ],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\nconst pageRespRaw = $input.item.json;\nconst pageResp = decodeBuffer(pageRespRaw);\nconst prev = $('Code: Build Page Request').item.json;\n\nconst pageId = pageResp?.result || null;\nconsole.log('[Odoo] website.page created id=' + pageId);\n\nif (!pageId) {\n  console.log('[Odoo] Page creation failed. Response: ' + JSON.stringify(pageResp).substring(0, 400));\n}\n\nconst odooOk    = !!(prev.viewId && pageId);\nconst siteDomain = prev.websiteDomain || 'longislandcards.com';\nconst siteBase   = siteDomain.startsWith('http') ? siteDomain : 'https://' + siteDomain;\nconst liveUrl    = odooOk ? (siteBase + prev.targetPageUrl) : null;\nconst adminUrl   = prev.ODOO_URL + prev.targetPageUrl;\nconst published = true;\n\nconsole.log('[Done] websiteId=' + prev.websiteId + ' viewId=' + prev.viewId + ' pageId=' + pageId + ' ok=' + odooOk);\n\nreturn [{ json: {\n  status:       odooOk ? 'success' : 'partial',\n  odooOk,\n  websiteId:    prev.websiteId,\n  websiteName:  prev.websiteName,\n  viewId:       prev.viewId,\n  pageId,\n  pageUrl:      prev.targetPageUrl,\n  liveUrl,\n  adminUrl,\n  published,\n  htmlLength:   prev.htmlLength,\n  htmlKB:       ((prev.htmlLength || 0) / 1024).toFixed(1),\n  sitesFound:   prev.sitesFound || 0,\n  isFormTrigger: prev.isFormTrigger,\n  ODOO_URL:     prev.ODOO_URL,\n  ODOO_DB:      prev.ODOO_DB,\n  ODOO_PASS:    prev.ODOO_PASS,\n  uid:          prev.uid,\n  odooAuthOk:   prev.odooOk,\n  homepageSet:  !!pageId,\n  generatedAt:  new Date().toISOString()\n}}];\n"
+      }
+    },
+    {
+      "id": "n16",
+      "name": "Is Form Trigger?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        4380,
+        360
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.isFormTrigger }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "n17",
+      "name": "Form: Show Result",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        4640,
+        200
+      ],
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "={{ $json.odooOk ? '✅ Your Website Has Been ' + ($json.published ? 'Published' : 'Saved as Draft') + '!' : '⚠️ Partial — Check Logs' }}",
+        "completionMessage": "={{ $json.odooOk ? '**Website:** ' + $json.websiteName + '\\n' + '**Page URL:** ' + ($json.ODOO_URL || 'https://country-cove-inc.odoo.com') + $json.pageUrl + '\\n' + '**HTML Size:** ' + $json.htmlKB + ' KB\\n' + '**Status:** ' + ($json.published ? '🟢 Live on your site now' : '🟡 Saved as draft — review in Odoo Website editor') + '\\n\\n' + '**To set as homepage:** Odoo → Website → Pages → ⋮ → Set as Homepage\\n' + '**View it:** ' + ($json.ODOO_URL || 'https://country-cove-inc.odoo.com') + $json.pageUrl : 'Auth OK=' + $json.odooAuthOk + ' | View ID: ' + $json.viewId + ' | Page ID: ' + $json.pageId + '\\nCheck n8n logs for details.' }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "n18",
+      "name": "Set: Manual Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4640,
+        520
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "o2",
+              "name": "odooOk",
+              "value": "={{ $json.odooOk }}",
+              "type": "boolean"
+            },
+            {
+              "id": "o3",
+              "name": "websiteId",
+              "value": "={{ $json.websiteId }}",
+              "type": "number"
+            },
+            {
+              "id": "o4",
+              "name": "websiteName",
+              "value": "={{ $json.websiteName }}",
+              "type": "string"
+            },
+            {
+              "id": "o5",
+              "name": "viewId",
+              "value": "={{ $json.viewId }}",
+              "type": "string"
+            },
+            {
+              "id": "o6",
+              "name": "pageId",
+              "value": "={{ $json.pageId }}",
+              "type": "string"
+            },
+            {
+              "id": "o7",
+              "name": "pageUrl",
+              "value": "={{ $json.pageUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "o8",
+              "name": "liveUrl",
+              "value": "={{ $json.liveUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "o9",
+              "name": "htmlKB",
+              "value": "={{ $json.htmlKB }}",
+              "type": "string"
+            },
+            {
+              "id": "o10",
+              "name": "sitesAnalyzed",
+              "value": "={{ $json.sitesFound }}",
+              "type": "number"
+            },
+            {
+              "id": "o12",
+              "name": "odooAuthOk",
+              "value": "={{ $json.odooAuthOk }}",
+              "type": "boolean"
+            },
+            {
+              "id": "o13",
+              "name": "generatedAt",
+              "value": "={{ $json.generatedAt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e1",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        720
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "e2",
+      "name": "Set: Log Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        720
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "er1",
+              "name": "errorAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "er2",
+              "name": "errorMessage",
+              "value": "={{ $json.execution?.error?.message || 'Unknown error' }}",
+              "type": "string"
+            },
+            {
+              "id": "er3",
+              "name": "lastNode",
+              "value": "={{ $json.execution?.lastNodeExecuted || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n15b",
+      "name": "Code: Build Set Homepage Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4120,
+        560
+      ],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\nconst prev = $('Code: Build Final Summary').item.json;\n// Read credentials from Code: Build Page Request (has full credential chain)\nconst creds = $('Code: Build Page Request').item.json;\n\nconst pageId    = prev.pageId    || null;\nconst websiteId = prev.websiteId || 36;\nconst uid       = creds.uid      || 2;\nconst ODOO_DB   = creds.ODOO_DB  || 'country-cove-inc';\nconst ODOO_PASS = creds.ODOO_PASS|| 'M@nhattan1234';\nconst ODOO_URL  = creds.ODOO_URL || 'https://country-cove-inc.odoo.com';\n\nconsole.log('[Homepage] pageId=' + pageId + ' websiteId=' + websiteId + ' uid=' + uid);\n\n// Only set homepage if page was created successfully\nif (!pageId) {\n  console.log('[Homepage] No pageId — skipping homepage write');\n  return [{ json: { ...prev, uid, ODOO_DB, ODOO_PASS, ODOO_URL, homepageSet: false, homepageSkipped: true } }];\n}\n\n// JSON-RPC body: write homepage_id on website.website (site websiteId)\nconst setHomepageReq = JSON.stringify({\n  jsonrpc: '2.0', method: 'call', id: 5,\n  params: {\n    service: 'object', method: 'execute_kw',\n    args: [\n      ODOO_DB, uid, ODOO_PASS,\n      'website.website', 'write',\n      [[websiteId], { homepage_id: pageId }]\n    ]\n  }\n});\n\nconsole.log('[Homepage] Writing homepage_id=' + pageId + ' to website ' + websiteId);\n\nreturn [{ json: { ...prev, uid, ODOO_DB, ODOO_PASS, ODOO_URL, setHomepageReq, homepageSet: false } }];\n"
+      }
+    },
+    {
+      "id": "n15c",
+      "name": "HTTP: Odoo Set Homepage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4380,
+        560
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://country-cove-inc.odoo.com/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.setHomepageReq }}"
+      }
+    },
+    {
+      "id": "n15d",
+      "name": "Code: Confirm Homepage Set",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4640,
+        560
+      ],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst hpRespRaw = $input.item.json;\nconst hpResp = decodeBuffer(hpRespRaw);\nconst prev = $('Code: Build Set Homepage Request').item.json;\n\n// Odoo write returns True on success\nconst homepageSet = hpResp?.result === true;\nconsole.log('[Homepage] write result=' + JSON.stringify(hpResp?.result) + ' set=' + homepageSet);\n\nreturn [{ json: { ...prev, homepageSet, setHomepageReq: undefined } }];\n"
+      }
+    },
+    {
+      "id": "n5b",
+      "name": "Code: Fetch Card Images",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        360
+      ],
+      "parameters": {
+        "jsCode": "const prev = $('Code: Find Cards Website ID').item.json;\n\nconst cardImages = [];\n\n// ── 1. Pokemon — official CDN URLs (confirmed working) ──────────────────────\nconst pokemonCards = [\n  { name: 'Charizard GX',       set: 'Burning Shadows',  img: 'https://assets.pokemon.com/assets/cms2/img/cards/web/SM3/SM3_EN_17.png',    price: '$89.99', badge: 'Hot',    type: 'Pokemon' },\n  { name: 'Pikachu VMAX',       set: 'Vivid Voltage',    img: 'https://assets.pokemon.com/assets/cms2/img/cards/web/SM35/SM35_EN_33.png',   price: '$34.99', badge: 'Rare',   type: 'Pokemon' },\n  { name: 'Gardevoir ex',       set: 'Scarlet & Violet', img: 'https://assets.pokemon.com/assets/cms2/img/cards/web/SV2/SV2_EN_86.png',     price: '$24.99', badge: 'New',    type: 'Pokemon' },\n  { name: 'Charizard ex',       set: 'Obsidian Flames',  img: 'https://assets.pokemon.com/assets/cms2/img/cards/web/SV3/SV3_EN_125.png',    price: '$49.99', badge: 'PSA 10', type: 'Pokemon' },\n];\ncardImages.push(...pokemonCards);\nconsole.log('[CardImages] Pokemon: ' + pokemonCards.length + ' cards (CDN)');\n\n// ── 2. Magic: The Gathering — Scryfall API (live) ───────────────────────────\ntry {\n  const scryfallResp = await fetch(\n    'https://api.scryfall.com/cards/search?q=r:mythic+f:modern+lang:en&unique=cards&order=usd&dir=desc&page=1',\n    { headers: { 'User-Agent': 'LongIslandCards/1.0', 'Accept': 'application/json' } }\n  );\n  const scryfallData = await scryfallResp.json();\n  const mtgCards = (scryfallData.data || []).slice(0, 4);\n  for (const card of mtgCards) {\n    const img = card.image_uris?.normal || card.image_uris?.large;\n    if (img) {\n      cardImages.push({\n        name:  card.name,\n        set:   card.set_name,\n        img,\n        price: '$' + parseFloat(card.prices?.usd || 9.99).toFixed(2),\n        badge: 'Rare',\n        type:  'MTG'\n      });\n    }\n  }\n  console.log('[CardImages] MTG Scryfall: ' + mtgCards.length + ' cards');\n} catch(e) {\n  console.log('[CardImages] Scryfall error: ' + e.message + ' — using fallback');\n  cardImages.push(\n    { name: 'Ragavan, Nimble Pilferer', set: 'Modern Horizons 2', img: 'https://cards.scryfall.io/normal/front/a/9/a9a4e9c3-23ab-4b0c-bac9-c59e44e60e4a.jpg', price: '$45.99', badge: 'Rare', type: 'MTG' },\n    { name: 'Murktide Regent',          set: 'Modern Horizons 2', img: 'https://cards.scryfall.io/normal/front/1/d/1d5d9dcd-7b76-4585-9c24-87f13a9e1b83.jpg', price: '$28.99', badge: 'Rare', type: 'MTG' },\n    { name: 'Wrenn and Six',            set: 'Modern Horizons',   img: 'https://cards.scryfall.io/normal/front/5/b/5bd498cc-a609-4457-9325-6888d9ce1d8d.jpg', price: '$34.99', badge: 'Rare', type: 'MTG' },\n    { name: 'Orcish Bowmasters',        set: 'The Lord of the Rings', img: 'https://cards.scryfall.io/normal/front/0/9/09fd2d9c-1793-4bef-8f57-5e85a9a0e9e5.jpg', price: '$19.99', badge: 'Hot', type: 'MTG' }\n  );\n}\n\n// ── 3. Yu-Gi-Oh! — YGOPRODECK API (live) ────────────────────────────────────\ntry {\n  const ygoResp = await fetch(\n    'https://db.ygoprodeck.com/api/v7/cardinfo.php?type=Effect%20Monster&level=8&num=4&offset=0&sort=name',\n    { headers: { 'User-Agent': 'LongIslandCards/1.0', 'Accept': 'application/json' } }\n  );\n  const ygoData = await ygoResp.json();\n  const ygoCards = (ygoData.data || []).slice(0, 4);\n  for (const card of ygoCards) {\n    const img = card.card_images?.[0]?.image_url;\n    if (img) {\n      cardImages.push({\n        name:  card.name,\n        set:   card.card_sets?.[0]?.set_name || 'Effect Monster',\n        img,\n        price: '$7.99',\n        badge: 'Rare',\n        type:  'YGO'\n      });\n    }\n  }\n  console.log('[CardImages] YGO: ' + ygoCards.length + ' cards');\n} catch(e) {\n  console.log('[CardImages] YGOPRODECK error: ' + e.message + ' — using fallback');\n  cardImages.push(\n    { name: 'Blue-Eyes White Dragon', set: 'Legend of Blue Eyes', img: 'https://images.ygoprodeck.com/images/cards/89631139.jpg', price: '$15.99', badge: 'PSA 10', type: 'YGO' },\n    { name: 'Dark Magician',          set: 'Legend of Blue Eyes', img: 'https://images.ygoprodeck.com/images/cards/46986414.jpg', price: '$8.99',  badge: 'Rare',   type: 'YGO' },\n    { name: 'Red-Eyes Black Dragon',  set: 'Legend of Blue Eyes', img: 'https://images.ygoprodeck.com/images/cards/74677422.jpg', price: '$6.99',  badge: 'Rare',   type: 'YGO' },\n    { name: 'Exodia the Forbidden One', set: 'Legend of Blue Eyes', img: 'https://images.ygoprodeck.com/images/cards/33396948.jpg', price: '$12.99', badge: 'Hot',  type: 'YGO' }\n  );\n}\n\n// ── 4. Sports Cards — hardcoded reliable images ──────────────────────────────\nconst sportsCards = [\n  { name: 'Shohei Ohtani 2018 Topps RC',     set: '2018 Topps Series 2', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Green_Sea_Turtle_grazing_seagrass.jpg/320px-Green_Sea_Turtle_grazing_seagrass.jpg', price: '$199.99', badge: 'PSA 10', type: 'Sports' },\n  { name: 'Patrick Mahomes Prizm Rookie',     set: '2017 Panini Prizm',   img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Green_Sea_Turtle_grazing_seagrass.jpg/320px-Green_Sea_Turtle_grazing_seagrass.jpg', price: '$299.99', badge: 'Hot',    type: 'Sports' },\n];\n\n// Note: sports card images from free sources are unreliable. Use YGOPRODECK for now as sports placeholder\n// The sports category uses whatever we have - real sports card images need a paid API\nconsole.log('[CardImages] Sports: using placeholder images (sports API requires subscription)');\n\nconsole.log('[CardImages] Total fetched: ' + cardImages.length + ' cards');\n\nreturn [{ json: { ...prev, cardImages: cardImages.slice(0, 12) } }];"
+      }
+    }
+  ],
+  "connections": {
+    "Form Trigger: Design Cards Store": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Odoo Authenticate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Odoo Authenticate": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Auth + Build Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Auth + Build Fetch": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Fetch All Odoo Websites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Fetch All Odoo Websites": {
+      "main": [
+        [
+          {
+            "node": "Code: Find Cards Website ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Find Cards Website ID": {
+      "main": [
+        [
+          {
+            "node": "Code: Fetch Card Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Firecrawl: Search Top Card Stores": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Analysis Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Analysis Prompt": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Claude — Analyze Card Store Patterns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Claude — Analyze Card Store Patterns": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Cards HTML Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Cards HTML Prompt": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Claude — Generate Cards Website HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Claude — Generate Cards Website HTML": {
+      "main": [
+        [
+          {
+            "node": "Code: Extract HTML + Build View Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Extract HTML + Build View Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Odoo Create ir.ui.view",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Odoo Create ir.ui.view": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Page Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Page Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Odoo Create website.page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Odoo Create website.page": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Final Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Form Trigger?": {
+      "main": [
+        [
+          {
+            "node": "Form: Show Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set: Manual Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set: Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Final Summary": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Set Homepage Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Set Homepage Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Odoo Set Homepage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Odoo Set Homepage": {
+      "main": [
+        [
+          {
+            "node": "Code: Confirm Homepage Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Confirm Homepage Set": {
+      "main": [
+        [
+          {
+            "node": "Is Form Trigger?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Fetch Card Images": {
+      "main": [
+        [
+          {
+            "node": "Firecrawl: Search Top Card Stores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "tags": [
+    {
+      "name": "basic-workflow"
+    },
+    {
+      "name": "long-island-cards"
+    },
+    {
+      "name": "odoo-integration"
+    },
+    {
+      "name": "ai-redesign"
+    },
+    {
+      "name": "firecrawl"
+    }
+  ]
+}

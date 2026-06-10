@@ -1,0 +1,220 @@
+{
+  "name": "Daily SEO Blog — LongIslandConvenience.com (10AM ET)",
+  "nodes": [
+
+    {
+      "id": "blog-001",
+      "name": "Schedule: 10AM ET Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 10 * * *" }]
+        }
+      },
+      "notes": "10:00 AM America/New_York every day. n8n workflow timezone is set to America/New_York (handles DST). Best time for Long Island local search traffic: 9-11 AM ET per Google Search Console data."
+    },
+
+    {
+      "id": "blog-002",
+      "name": "Code: Pick Today's Topic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "jsCode": "// ─────────────────────────────────────────────────────────────\n// 30-TOPIC ROTATION — graduation, balloons, gift baskets, cards\n// Covers all target categories for Long Island / Plainview NY\n// blog_id: 3=Balloons, 5=GiftBaskets, 7=Convenience/Cards\n// ─────────────────────────────────────────────────────────────\nconst TOPICS = [\n  // ── GRADUATION (high intent June/May/July) ──\n  {\n    focus: 'Graduation Balloon Decorations Long Island',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['graduation balloons Long Island NY', 'graduation balloon arch Nassau County', 'balloon decoration graduation Plainview NY', 'class of 2026 balloons Long Island'],\n    angle: 'Help parents and students find perfect graduation balloon setups for their Nassau County celebration'\n  },\n  {\n    focus: 'Graduation Gift Baskets Long Island NY',\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: ['graduation gift basket Long Island', 'graduation gifts Nassau County', 'gift basket for graduate Plainview NY', 'class of 2026 gift Long Island'],\n    angle: 'Curated graduation gift basket ideas available for same-day pickup in Plainview'\n  },\n  {\n    focus: 'Graduation Greeting Cards Near Plainview NY',\n    category: 'greeting_cards',\n    blog_id: 7,\n    keywords: ['graduation cards Long Island', 'congratulations cards Plainview NY', 'where to buy graduation cards Nassau County', 'greeting cards near me Long Island'],\n    angle: 'Where to find the perfect heartfelt graduation card in Plainview, Long Island'\n  },\n  {\n    focus: 'Balloon Arch Setup Graduation Party Nassau County',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['balloon arch graduation Long Island', 'graduation party balloons Nassau County', 'balloon setup near Plainview NY', 'affordable balloon arch Long Island'],\n    angle: 'How to create a stunning balloon arch for your Long Island graduation party'\n  },\n  {\n    focus: 'Personalized Graduation Gifts Plainview NY',\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: ['personalized graduation gift Long Island', 'custom gift basket Nassau County', 'unique graduation gifts Plainview', 'graduation gift ideas Long Island NY'],\n    angle: 'Unique personalized graduation gift ideas you can pick up same-day in Plainview'\n  },\n\n  // ── BALLOONS & PARTY DECOR ──\n  {\n    focus: 'Birthday Balloon Delivery Long Island Same Day',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['birthday balloons Long Island', 'same day balloon delivery Nassau County', 'balloon bouquet delivery Plainview NY', 'birthday balloon pickup Long Island'],\n    angle: 'Same-day birthday balloon delivery and pickup options in Nassau County'\n  },\n  {\n    focus: 'Baby Shower Balloon Garland Nassau County',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['baby shower balloons Long Island', 'balloon garland Nassau County', 'gender reveal balloons Plainview NY', 'pastel balloon decor Long Island'],\n    angle: 'Beautiful baby shower balloon garlands and gender reveal ideas in Long Island'\n  },\n  {\n    focus: 'Helium Balloons Plainview NY Same Day Pickup',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['helium balloons Plainview NY', 'balloon shop Long Island', 'helium balloons Nassau County', 'balloon store near me Long Island'],\n    angle: 'Where to get same-day helium balloons in Plainview, Long Island NY'\n  },\n  {\n    focus: 'Corporate Event Balloons Long Island NY',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['corporate event balloons Long Island', 'business event decor Nassau County', 'office party balloons Plainview NY', 'branded balloon displays Long Island'],\n    angle: 'Professional balloon decor for corporate events and business milestones in Long Island'\n  },\n  {\n    focus: 'Wedding Balloon Decorations Nassau County Plainview',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['wedding balloons Long Island', 'balloon arch wedding Nassau County', 'elegant balloon decor Plainview NY', 'wedding decor Long Island balloon'],\n    angle: 'Elegant wedding balloon arches and backdrops available in Nassau County'\n  },\n\n  // ── GIFT BASKETS ──\n  {\n    focus: \"Father's Day Gift Baskets Long Island NY\",\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: [\"father's day gift basket Long Island\", \"dad gift basket Nassau County\", \"father's day gifts Plainview NY\", \"best gift for dad Long Island 2026\"],\n    angle: \"The best Father's Day gift baskets available for same-day pickup in Plainview NY\"\n  },\n  {\n    focus: 'Birthday Gift Baskets Nassau County Plainview',\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: ['birthday gift basket Long Island', 'same day gift basket Nassau County', 'birthday gift pickup Plainview NY', 'gift basket delivery Long Island'],\n    angle: 'Beautiful birthday gift baskets available same-day in Nassau County'\n  },\n  {\n    focus: 'Corporate Gift Baskets Long Island Bulk Orders',\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: ['corporate gift baskets Long Island', 'bulk gift baskets Nassau County', 'business gifts Plainview NY', 'employee appreciation gifts Long Island'],\n    angle: 'Corporate gift basket solutions for Long Island and Nassau County businesses'\n  },\n  {\n    focus: 'Thank You Gift Baskets Nassau County NY',\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: ['thank you gift basket Long Island', 'appreciation gifts Nassau County', 'thank you gifts Plainview NY', 'gift baskets near me Long Island'],\n    angle: 'Say thank you with a curated gift basket from your local Plainview NY shop'\n  },\n  {\n    focus: 'Baby Shower Gift Baskets Long Island NY',\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: ['baby shower gift basket Long Island', 'newborn gift basket Nassau County', 'baby gift Plainview NY', 'gender reveal gift basket Long Island'],\n    angle: 'Perfect baby shower gift baskets for Long Island families in Nassau County'\n  },\n\n  // ── GREETING CARDS & CONVENIENCE ──\n  {\n    focus: 'Greeting Cards for Every Occasion Plainview NY',\n    category: 'greeting_cards',\n    blog_id: 7,\n    keywords: ['greeting cards Plainview NY', 'birthday cards Long Island', 'cards store Nassau County', 'greeting card shop near me Long Island'],\n    angle: 'Your local Plainview NY destination for greeting cards for every occasion'\n  },\n  {\n    focus: \"Father's Day Cards Long Island NY 2026\",\n    category: 'greeting_cards',\n    blog_id: 7,\n    keywords: [\"father's day cards Long Island\", \"dad cards Nassau County\", \"funny dad cards Plainview NY\", \"greeting cards father's day near me\"],\n    angle: \"Best Father's Day card ideas available at your Long Island convenience hub\"\n  },\n  {\n    focus: 'Birthday Cards and Gifts Long Island Same Day',\n    category: 'greeting_cards',\n    blog_id: 7,\n    keywords: ['birthday cards Long Island', 'last minute birthday gift Nassau County', 'birthday card and gift Plainview NY', 'birthday surprise Long Island'],\n    angle: 'One-stop shop for birthday cards AND gifts — same day in Plainview Long Island'\n  },\n  {\n    focus: 'Sympathy Cards and Condolence Gifts Nassau County',\n    category: 'greeting_cards',\n    blog_id: 7,\n    keywords: ['sympathy cards Long Island', 'condolence gift Nassau County', 'sympathy basket Plainview NY', 'bereavement gift Long Island NY'],\n    angle: 'Finding thoughtful sympathy cards and gifts in Nassau County, Long Island'\n  },\n  {\n    focus: 'Holiday Cards and Gift Wrap Long Island NY',\n    category: 'greeting_cards',\n    blog_id: 7,\n    keywords: ['holiday cards Long Island', 'Christmas cards Nassau County', 'Hanukkah cards Plainview NY', 'holiday gift wrap Long Island convenience'],\n    angle: 'One-stop holiday card and gift wrap shopping in Plainview, Nassau County'\n  },\n\n  // ── SEASONAL / EVENTS ──\n  {\n    focus: 'July 4th Patriotic Balloons and Decorations Long Island',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['July 4th balloons Long Island', 'patriotic decorations Nassau County', 'fourth of july party Plainview NY', 'red white blue balloons Long Island'],\n    angle: 'Patriotic balloon decorations for your Long Island July 4th celebration'\n  },\n  {\n    focus: 'Halloween Balloon Decorations Long Island Nassau County',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['Halloween balloons Long Island', 'spooky party decor Nassau County', 'Halloween decoration Plainview NY', 'fall party balloons Long Island'],\n    angle: 'Spooky and fun Halloween balloon decorations in Nassau County'\n  },\n  {\n    focus: \"Valentine's Day Balloon Bouquet Long Island NY\",\n    category: 'balloons',\n    blog_id: 3,\n    keywords: [\"valentine's day balloons Long Island\", \"heart balloon bouquet Nassau County\", \"romantic balloon delivery Plainview NY\", \"valentine's gifts Long Island\"],\n    angle: \"Romantic Valentine's Day balloon bouquets and gifts in Long Island\"\n  },\n  {\n    focus: 'Holiday Gift Baskets Long Island Christmas Hanukkah',\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: ['holiday gift basket Long Island', 'Christmas gift basket Nassau County', 'Hanukkah gift Plainview NY', 'holiday gifts Long Island NY'],\n    angle: 'Perfect holiday gift baskets for Christmas and Hanukkah in Nassau County'\n  },\n  {\n    focus: \"Mother's Day Gift Basket and Balloons Long Island\",\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: [\"mother's day gift Long Island\", \"mom gift basket Nassau County\", \"mother's day balloons Plainview NY\", \"best mother's day gifts Long Island 2026\"],\n    angle: \"Celebrate Mom with gift baskets and balloon bouquets from Plainview NY\"\n  },\n\n  // ── LOCAL COMMUNITY / EVERGREEN ──\n  {\n    focus: 'Same Day Gift Ideas Plainview NY — Last Minute Gifts',\n    category: 'gift_baskets',\n    blog_id: 5,\n    keywords: ['same day gifts Plainview NY', 'last minute gift Nassau County', 'gift ideas near me Long Island', 'quick gift pickup Long Island'],\n    angle: 'Last-minute gift solutions available for same-day pickup in Plainview, Long Island'\n  },\n  {\n    focus: 'Best Party Supplies Store Long Island Nassau County',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['party supplies Long Island', 'party store Nassau County', 'party supplies near me Plainview', 'balloon and party store Long Island NY'],\n    angle: 'Your complete party supplies destination in Plainview — balloons, decor and more'\n  },\n  {\n    focus: 'Long Island Convenience Store Plainview NY — What We Offer',\n    category: 'general',\n    blog_id: 7,\n    keywords: ['Long Island convenience store', 'Plainview NY shop', 'Nassau County one stop shop', 'convenience hub Long Island', '605 Old Country Road Plainview'],\n    angle: 'Everything you need under one roof — your Plainview NY community convenience hub'\n  },\n  {\n    focus: 'Balloon and Gift Bundle Deals Nassau County NY',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['balloon gift bundle Long Island', 'balloon and gift basket Nassau County', 'combo gift Plainview NY', 'balloon plus gift Long Island'],\n    angle: 'Combine balloons and gift baskets for the ultimate Nassau County celebration gift'\n  },\n  {\n    focus: 'Graduation 2026 Party Planning Guide Long Island NY',\n    category: 'balloons',\n    blog_id: 3,\n    keywords: ['graduation 2026 Long Island', 'class of 2026 party Nassau County', 'graduation party guide Plainview NY', 'graduation celebration ideas Long Island'],\n    angle: 'Complete graduation 2026 party planning guide for Long Island families'\n  },\n];\n\n// ── Pick today's topic by day-of-year ──\nconst now = new Date();\nconst start = new Date(now.getFullYear(), 0, 0);\nconst dayOfYear = Math.floor((now - start) / 86400000);\nconst topic = TOPICS[dayOfYear % TOPICS.length];\n\n// ── Seasonal context for Claude ──\nconst month = now.getMonth(); // 0-11\nconst seasonMap = {\n  0: 'New Year, Winter events, Valentine Day prep',\n  1: 'Valentine Day, Presidents Day, Winter sales',\n  2: \"St Patrick's Day, Spring starts, early graduation season\",\n  3: 'Easter, Passover, Spring celebrations, prom season',\n  4: \"Mother's Day, Graduations, Memorial Day, prom season\",\n  5: \"Father's Day, Graduation season peak, early summer\",\n  6: 'Fourth of July, Summer BBQs, beach season Nassau County',\n  7: 'Back to school, Late summer, end of vacation season',\n  8: 'Labor Day, Fall begins, Rosh Hashanah / Yom Kippur',\n  9: 'Halloween, Nassau County fall events, Breast Cancer Awareness',\n  10: 'Thanksgiving, Veterans Day, Holiday shopping starts Long Island',\n  11: 'Christmas, Hanukkah, New Year prep, holiday gifts Long Island',\n};\n\nconst dateStr = now.toLocaleDateString('en-US', {\n  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',\n  timeZone: 'America/New_York'\n});\n\nreturn [{ json: {\n  topic,\n  dateStr,\n  month,\n  seasonContext: seasonMap[month],\n  dayOfYear,\n  topicIndex: dayOfYear % TOPICS.length,\n} }];"
+      }
+    },
+
+    {
+      "id": "blog-003",
+      "name": "HTTP: Claude — Generate Blog Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",         "value": "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" },
+            { "name": "anthropic-version",  "value": "2023-06-01" },
+            { "name": "content-type",       "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"model\": \"claude-opus-4-7\",\n  \"max_tokens\": 3000,\n  \"system\": \"You are an expert local SEO content writer for Long Island, New York. You write blog posts for LongIslandConvenience.com — a one-stop convenience hub at 605 Old Country Road, Plainview NY 11803 (Nassau County). They sell: gift baskets, balloons & decor, greeting cards, sports trading cards, printing/shipping services, and convenience essentials. You write SEO-rich, locally-targeted blog posts that rank on Google for Long Island and Nassau County searches. Always sound friendly, community-focused, and helpful. Your HTML uses clean h2/h3/p/ul/li/strong tags only — no inline CSS, no scripts.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Write a 750-900 word SEO blog post for LongIslandConvenience.com.\\n\\nTODAY: {{ $json.dateStr }}\\nSEASON / OCCASION: {{ $json.seasonContext }}\\nBLOG FOCUS: {{ $json.topic.focus }}\\nCATEGORY: {{ $json.topic.category }}\\n\\nPRIMARY KEYWORDS (use naturally 2-4x each):\\n{{ $json.topic.keywords.join('\\\\n') }}\\n\\nANGLE / INTENT: {{ $json.topic.angle }}\\n\\nSEO RULES:\\n- Title: 50-60 chars, must include a primary keyword + Long Island OR Plainview NY OR Nassau County\\n- Meta description: exactly 150-160 chars, end with a CTA (\\\"Visit us\\\", \\\"Shop now\\\", \\\"Call today\\\")\\n- Subtitle (shown under title on blog): 1 sentence, 80-100 chars, includes geo keyword\\n- First paragraph: hook the reader, include primary keyword naturally\\n- Use 3-4 H2 headings, each targeting a keyword variation\\n- Mention \\\"605 Old Country Road, Plainview NY\\\" once\\n- Mention \\\"Nassau County\\\" at least 3 times\\n- Mention \\\"Long Island\\\" at least 4 times\\n- Closing CTA paragraph: invite to visit the store or call +1 (917) 338-7086\\n- Include 1 bulleted or numbered list\\n- Tone: warm, local, helpful — NOT corporate or salesy\\n- NO inline CSS. Use only: h2, h3, p, ul, li, ol, strong, em, br\\n\\nReturn ONLY valid JSON (no markdown wrapper, no explanation) in exactly this format:\\n{\\n  \\\"title\\\": \\\"Blog title (50-60 chars)\\\",\\n  \\\"subtitle\\\": \\\"One sentence subtitle 80-100 chars with geo keyword\\\",\\n  \\\"meta_title\\\": \\\"Same as title OR slightly different for meta (50-60 chars)\\\",\\n  \\\"meta_description\\\": \\\"155-char meta description ending with CTA\\\",\\n  \\\"meta_keywords\\\": \\\"keyword1, keyword2, keyword3, keyword4, keyword5\\\",\\n  \\\"tags\\\": [\\\"Long Island\\\", \\\"Plainview NY\\\", \\\"Nassau County\\\", \\\"tag4\\\"],\\n  \\\"html_body\\\": \\\"<h2>...</h2><p>...</p>\\\"\\n}\"\n    }\n  ]\n}",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 60000
+        }
+      }
+    },
+
+    {
+      "id": "blog-004",
+      "name": "Code: Parse Claude Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst topicData = $('Code: Pick Today\\'s Topic').first().json;\n\n// ── Extract Claude text ──\nlet raw = '';\ntry {\n  raw = response.content[0].text;\n} catch(e) {\n  raw = '';\n  console.log('Claude response error:', JSON.stringify(response));\n}\n\n// ── Parse JSON from Claude ──\nlet blog = null;\ntry {\n  const cleaned = raw.replace(/```json\\s*/g, '').replace(/```\\s*/g, '').trim();\n  blog = JSON.parse(cleaned);\n} catch(e) {\n  console.log('JSON parse error, using fallback. Raw:', raw.slice(0, 200));\n  blog = null;\n}\n\n// ── Validate required fields ──\nif (!blog || !blog.title || !blog.html_body) {\n  const focus = topicData.topic.focus;\n  const kw = topicData.topic.keywords[0];\n  blog = {\n    title: focus.slice(0, 60),\n    subtitle: 'Your trusted source in Plainview NY for ' + focus.toLowerCase().slice(0, 60),\n    meta_title: focus.slice(0, 60),\n    meta_description: 'Visit Long Island Convenience at 605 Old Country Road, Plainview NY for ' + focus.toLowerCase().slice(0,80) + '. Call +1 (917) 338-7086.',\n    meta_keywords: topicData.topic.keywords.join(', '),\n    tags: ['Long Island', 'Plainview NY', 'Nassau County', topicData.topic.category],\n    html_body: '<h2>' + focus + '</h2><p>Looking for ' + kw + '? Visit Long Island Convenience at 605 Old Country Road, Plainview NY 11803. We serve all of Nassau County with same-day pickup available. Call us at +1 (917) 338-7086.</p>',\n  };\n  console.log('Using fallback blog content.');\n}\n\n// ── Ensure tags is an array ──\nif (typeof blog.tags === 'string') {\n  blog.tags = blog.tags.split(',').map(t => t.trim()).filter(Boolean);\n}\nif (!Array.isArray(blog.tags)) blog.tags = ['Long Island', 'Plainview NY', 'Nassau County'];\n\n// ── Add Unsplash image to HTML if blog mentions balloons or graduation ──\nconst cat = topicData.topic.category;\nconst IMAGES = {\n  balloons:      'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=900&h=500&fit=crop&auto=format&q=80',\n  gift_baskets:  'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=900&h=500&fit=crop&auto=format&q=80',\n  greeting_cards:'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=900&h=500&fit=crop&auto=format&q=80',\n  general:       'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=900&h=500&fit=crop&auto=format&q=80',\n};\nconst imgUrl = IMAGES[cat] || IMAGES.general;\nconst imgAlt = topicData.topic.focus + ' — Long Island Convenience Plainview NY';\nconst imgBlock = `<p><img src=\"${imgUrl}\" alt=\"${imgAlt}\" style=\"max-width:100%;border-radius:8px;margin:16px 0;\" /></p>`;\n\nblog.html_body = imgBlock + blog.html_body;\n\nreturn [{\n  json: {\n    blog,\n    topic: topicData.topic,\n    dateStr: topicData.dateStr,\n  }\n}];"
+      }
+    },
+
+    {
+      "id": "blog-005",
+      "name": "HTTP: Odoo Authenticate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1020, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/session/authenticate",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"id\": 1,\n  \"params\": {\n    \"db\": \"country-cove-inc\",\n    \"login\": \"countrycoveinc@gmail.com\",\n    \"password\": \"M@nhattan1234\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "redirect": { "redirect": { "followRedirects": true } }
+        }
+      }
+    },
+
+    {
+      "id": "blog-006",
+      "name": "Code: Validate Auth + Build Post Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1280, 300],
+      "parameters": {
+        "jsCode": "const authResp = $('HTTP: Odoo Authenticate').first().json;\nconst blogData = $('Code: Parse Claude Response').first().json;\n\n// ── Extract uid from body ──\nconst uid = authResp?.body?.result?.uid;\n\n// ── Extract session_id from Set-Cookie header ──\n// n8n returns headers as an object; set-cookie may be a string or array\nlet rawCookie = authResp?.headers?.['set-cookie'] || '';\nif (Array.isArray(rawCookie)) rawCookie = rawCookie.join('; ');\n\nlet sessionId = '';\nfor (const part of rawCookie.split(';')) {\n  const p = part.trim();\n  if (p.startsWith('session_id=')) {\n    sessionId = p.split('=', 2)[1];\n    break;\n  }\n}\n\nif (!uid || !sessionId) {\n  const dump = JSON.stringify(authResp).slice(0, 400);\n  throw new Error('Odoo authentication failed. uid=' + uid + ' session=' + sessionId.slice(0,8) + ' Response: ' + dump);\n}\n\nconsole.log('Odoo auth OK. UID:', uid, 'Session:', sessionId.slice(0, 12) + '...');\n\nconst b = blogData.blog;\nconst topic = blogData.topic;\n\n// ── Truncate fields to Odoo limits ──\nconst title = (b.title || topic.focus).slice(0, 255);\nconst subtitle = (b.subtitle || '').slice(0, 255);\nconst metaTitle = (b.meta_title || title).slice(0, 255);\nconst metaDesc = (b.meta_description || '').slice(0, 400);\nconst metaKw = (b.meta_keywords || topic.keywords.join(', ')).slice(0, 255);\n\nreturn [{\n  json: {\n    sessionId,\n    uid,\n    odooPayload: {\n      \"jsonrpc\": \"2.0\",\n      \"method\": \"call\",\n      \"id\": 2,\n      \"params\": {\n        \"model\": \"blog.post\",\n        \"method\": \"create\",\n        \"args\": [{\n          \"name\":                       title,\n          \"subtitle\":                   subtitle,\n          \"content\":                    b.html_body,\n          \"blog_id\":                    topic.blog_id,\n          \"website_id\":                 1,\n          \"website_published\":          true,\n          \"is_published\":               true,\n          \"website_meta_title\":         metaTitle,\n          \"website_meta_description\":   metaDesc,\n          \"website_meta_keywords\":      metaKw,\n        }],\n        \"kwargs\": {}\n      }\n    },\n    blogTitle: title,\n    blogCategory: topic.category,\n    blogBlogId: topic.blog_id,\n  }\n}];"
+      }
+    },
+
+    {
+      "id": "blog-007",
+      "name": "HTTP: Odoo Create Blog Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Cookie", "value": "={{ 'session_id=' + $json.sessionId }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.odooPayload) }}",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 30000
+        }
+      }
+    },
+
+    {
+      "id": "blog-007b",
+      "name": "HTTP: Odoo Read Post URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1800, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://country-cove-inc.odoo.com/web/dataset/call_kw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Cookie", "value": "={{ 'session_id=' + $('Code: Validate Auth + Build Post Payload').first().json.sessionId }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ jsonrpc: '2.0', method: 'call', id: 3, params: { model: 'blog.post', method: 'read', args: [[ $('HTTP: Odoo Create Blog Post').first().json.result ], ['id', 'name', 'website_absolute_url']], kwargs: {} } }) }}",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 15000
+        }
+      }
+    },
+
+    {
+      "id": "blog-008",
+      "name": "Code: Verify + Build Live URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2060, 300],
+      "parameters": {
+        "jsCode": "const createResp  = $('HTTP: Odoo Create Blog Post').first().json;\nconst readResp    = $('HTTP: Odoo Read Post URL').first().json;\nconst buildData   = $('Code: Validate Auth + Build Post Payload').first().json;\nconst blogData    = $('Code: Parse Claude Response').first().json;\n\n// ── Extract post ID from create response ──\nconst postId = createResp?.result;\nif (!postId || typeof postId !== 'number') {\n  throw new Error('Blog post creation failed. Odoo response: ' + JSON.stringify(createResp).slice(0, 400));\n}\nconsole.log('Blog post created! Odoo ID:', postId);\n\n// ── Get real URL from read response ──\nlet liveUrl = '';\ntry {\n  const postData = readResp?.result?.[0];\n  liveUrl = postData?.website_absolute_url || '';\n} catch(e) { liveUrl = ''; }\n\n// Fallback: construct URL from known pattern if read failed\nif (!liveUrl) {\n  const blogSlugMap = { 3: 'balloons-party-decor-3', 5: 'gift-baskets-gifts-5', 7: 'convenience-grocery-7' };\n  const blogSlug   = blogSlugMap[buildData.blogBlogId] || 'our-blog-1';\n  const titleSlug  = (buildData.blogTitle || '').toLowerCase()\n    .replace(/[^a-z0-9\\s-]/g, '').replace(/\\s+/g, '-').replace(/-+/g, '-').slice(0, 80);\n  liveUrl = `https://www.longislandconvenience.com/blog/${blogSlug}/${titleSlug}-${postId}`;\n  console.log('Used fallback URL construction (read failed)');\n}\n\nconst gscInspect = `https://search.google.com/search-console/inspect?resource_id=https%3A%2F%2Fwww.longislandconvenience.com%2F&id=${encodeURIComponent(liveUrl)}`;\nconst gscRequest = 'https://search.google.com/search-console/';\n\nreturn [{\n  json: {\n    success:         true,\n    postId,\n    liveUrl,\n    gscInspectUrl:   gscInspect,\n    gscDashboard:    gscRequest,\n    blogTitle:       buildData.blogTitle,\n    blogCategory:    buildData.blogCategory,\n    blogBlogId:      buildData.blogBlogId,\n    publishedAt:     new Date().toISOString(),\n    metaDescription: blogData.blog.meta_description || '',\n  }\n}];"
+      }
+    },
+
+    {
+      "id": "blog-009",
+      "name": "Code: Final Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2320, 300],
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\n\nconsole.log('═══════════════════════════════════════════');\nconsole.log('✅ DAILY BLOG PUBLISHED — LongIslandConvenience.com');\nconsole.log('   Title:    ', result.blogTitle);\nconsole.log('   Category: ', result.blogCategory);\nconsole.log('   Blog ID:  ', result.blogBlogId);\nconsole.log('   Post ID:  ', result.postId);\nconsole.log('   Live URL: ', result.liveUrl);\nconsole.log('   GSC URL:  ', result.gscUrl);\nconsole.log('   Published:', result.publishedAt);\nconsole.log('═══════════════════════════════════════════');\n\nreturn [{ json: result }];"
+      }
+    }
+
+  ],
+
+  "connections": {
+    "Schedule: 10AM ET Daily": {
+      "main": [[{ "node": "Code: Pick Today's Topic", "type": "main", "index": 0 }]]
+    },
+    "Code: Pick Today's Topic": {
+      "main": [[{ "node": "HTTP: Claude — Generate Blog Post", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Claude — Generate Blog Post": {
+      "main": [[{ "node": "Code: Parse Claude Response", "type": "main", "index": 0 }]]
+    },
+    "Code: Parse Claude Response": {
+      "main": [[{ "node": "HTTP: Odoo Authenticate", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Authenticate": {
+      "main": [[{ "node": "Code: Validate Auth + Build Post Payload", "type": "main", "index": 0 }]]
+    },
+    "Code: Validate Auth + Build Post Payload": {
+      "main": [[{ "node": "HTTP: Odoo Create Blog Post", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Create Blog Post": {
+      "main": [[{ "node": "HTTP: Odoo Read Post URL", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Read Post URL": {
+      "main": [[{ "node": "Code: Verify + Build Live URL", "type": "main", "index": 0 }]]
+    },
+    "Code: Verify + Build Live URL": {
+      "main": [[{ "node": "Code: Final Log", "type": "main", "index": 0 }]]
+    }
+  },
+
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "errorWorkflow": "",
+    "timezone": "America/New_York"
+  },
+  "tags": ["blog", "seo", "geo", "daily", "long-island", "claude-api", "odoo"],
+  "notes": "SETUP: 1) Create HTTP Header Auth credential named 'Anthropic Claude API Key' with Header=x-api-key, Value=your-sk-ant-api-key. 2) Import this JSON into n8n. 3) Activate. Runs 10AM ET daily. No other credentials needed — Odoo auth is handled inline."
+}

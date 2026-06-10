@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build My Website — JHD Advisor AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:   #0f0a1e;
+    --surf: #1a1035;
+    --pri:  #7c3aed;
+    --acc:  #a78bfa;
+    --brd:  rgba(124,58,237,0.3);
+    --txt:  #ffffff;
+    --sub:  #a5b4fc;
+    --inp:  #120d2a;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--txt);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: rgba(15,10,30,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--brd);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  header .logo { font-family: 'Poppins', sans-serif; font-weight: 900; font-size: 1.2rem; color: #fff; }
+  header .logo span { color: var(--acc); }
+  header .badge { margin-left: auto; background: var(--brd); border: 1px solid var(--acc); color: var(--acc); font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 999px; }
+
+  /* ── HERO ── */
+  .hero {
+    text-align: center;
+    padding: 60px 24px 40px;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 70%);
+  }
+  .hero .eyebrow { display: inline-block; background: rgba(124,58,237,0.15); border: 1px solid var(--brd); color: var(--acc); font-size: 13px; font-weight: 600; padding: 6px 18px; border-radius: 999px; margin-bottom: 20px; }
+  .hero h1 { font-family: 'Poppins', sans-serif; font-weight: 900; font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.1; margin-bottom: 16px; }
+  .hero h1 span { color: var(--acc); }
+  .hero p { color: var(--sub); font-size: 1.1rem; max-width: 580px; margin: 0 auto; line-height: 1.7; }
+  .steps { display: flex; justify-content: center; gap: 32px; margin-top: 32px; flex-wrap: wrap; }
+  .step { display: flex; align-items: center; gap: 8px; color: var(--sub); font-size: 13px; font-weight: 500; }
+  .step .num { width: 24px; height: 24px; border-radius: 50%; background: var(--pri); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+  /* ── FORM CONTAINER ── */
+  .container { max-width: 760px; margin: 0 auto; padding: 0 24px 80px; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--acc);
+    margin: 40px 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--brd); }
+
+  .form-group { margin-bottom: 20px; }
+  label { display: block; font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+  label .req { color: #f87171; margin-left: 3px; }
+  label .hint { font-weight: 400; color: var(--sub); font-size: 12px; margin-left: 6px; }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    width: 100%;
+    background: var(--inp);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+  input::placeholder, textarea::placeholder { color: #4b5563; }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--pri);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+  }
+  select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a78bfa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+  select option { background: #1a1035; color: #fff; }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+  textarea.tall { min-height: 180px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 580px) { .two-col { grid-template-columns: 1fr; } }
+
+  .toggle-group { display: flex; gap: 12px; flex-wrap: wrap; }
+  .toggle-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 14px 20px;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    background: var(--inp);
+    color: var(--sub);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .toggle-btn:hover { border-color: var(--pri); color: #fff; }
+  .toggle-btn.active { border-color: var(--pri); background: rgba(124,58,237,0.2); color: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+
+  .char-counter { text-align: right; font-size: 11px; color: var(--sub); margin-top: 4px; }
+
+  /* ── SUBMIT ── */
+  .submit-section { margin-top: 40px; text-align: center; }
+  .submit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--pri);
+    color: #fff;
+    border: none;
+    padding: 18px 48px;
+    border-radius: 16px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 8px 30px rgba(124,58,237,0.3);
+  }
+  .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(124,58,237,0.4); }
+  .submit-btn:active { transform: translateY(0); }
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .submit-note { margin-top: 12px; color: var(--sub); font-size: 13px; }
+
+  /* ── LOADING STATE ── */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SUCCESS / ERROR STATES ── */
+  #success-panel, #error-panel {
+    display: none;
+    text-align: center;
+    padding: 60px 24px;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  #success-panel .icon { font-size: 64px; margin-bottom: 20px; }
+  #success-panel h2 { font-family: 'Poppins', sans-serif; font-size: 2rem; font-weight: 900; color: var(--acc); }
+  #success-panel p { color: var(--sub); margin-top: 12px; line-height: 1.7; font-size: 1rem; }
+  #success-panel .detail-box { background: var(--surf); border: 1px solid var(--brd); border-radius: 16px; padding: 24px; margin-top: 28px; text-align: left; }
+  #success-panel .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+  #success-panel .detail-row:last-child { border-bottom: none; }
+  #success-panel .detail-label { color: var(--sub); }
+  #success-panel .detail-val { color: #fff; font-weight: 600; }
+  .back-btn { display: inline-block; margin-top: 28px; background: var(--surf); border: 1.5px solid var(--brd); color: var(--acc); padding: 12px 28px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+  .back-btn:hover { border-color: var(--acc); }
+  #error-panel h2 { font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 900; color: #f87171; margin-bottom: 12px; }
+  #error-panel p { color: var(--sub); line-height: 1.6; }
+  #error-panel pre { background: var(--surf); border-radius: 8px; padding: 16px; margin-top: 12px; font-size: 12px; color: #f87171; white-space: pre-wrap; text-align: left; }
+
+  /* ── PROGRESS BAR ── */
+  #progress-bar { height: 3px; background: var(--brd); border-radius: 2px; margin-top: 16px; display: none; }
+  #progress-fill { height: 100%; background: linear-gradient(90deg, var(--pri), var(--acc)); border-radius: 2px; width: 0%; transition: width 0.4s ease; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="width:32px;height:32px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;">◆</div>
+  <div class="logo">JHD <span>Advisor</span></div>
+  <div class="badge">🤖 AI Website Builder</div>
+</header>
+
+<div class="hero">
+  <div class="eyebrow">🌐 Powered by Firecrawl + Claude AI + Odoo</div>
+  <h1>Build Your <span>Dream Website</span><br>in Under 5 Minutes</h1>
+  <p>Tell us about your business. Our AI researches the top 10 websites in your industry, analyzes every feature, and builds you a world-class website — automatically published and ready to use.</p>
+  <div class="steps">
+    <div class="step"><div class="num">1</div> Fill the form (3 min)</div>
+    <div class="step"><div class="num">2</div> AI builds your site (2–4 min)</div>
+    <div class="step"><div class="num">3</div> Get URL by email</div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="form-panel">
+    <form id="websiteForm" novalidate>
+
+      <!-- SECTION 1: WEBSITE TYPE -->
+      <div class="section-label">Step 1 — Choose Your Website Type</div>
+
+      <div class="form-group">
+        <label>What type of website do you need? <span class="req">*</span></label>
+        <div class="toggle-group" id="categoryGroup">
+          <div class="toggle-btn" data-value="Business Portfolio / Agency">🏢 Business Portfolio</div>
+          <div class="toggle-btn" data-value="AI Agency / Automation Provider">🤖 AI Agency</div>
+          <div class="toggle-btn" data-value="E-commerce / Online Store">🛍️ E-commerce Store</div>
+          <div class="toggle-btn" data-value="Medical / Clinic / Healthcare">🏥 Medical / Clinic</div>
+          <div class="toggle-btn" data-value="Restaurant / Cafe / Food">🍽️ Restaurant / Food</div>
+          <div class="toggle-btn" data-value="Real Estate / Property">🏠 Real Estate</div>
+          <div class="toggle-btn" data-value="Law Firm / Legal Services">⚖️ Law Firm</div>
+        </div>
+        <input type="hidden" id="category" name="category" value="">
+        <div id="category-error" style="color:#f87171;font-size:12px;margin-top:6px;display:none;">Please select a category.</div>
+      </div>
+
+      <!-- SECTION 2: BUSINESS INFO -->
+      <div class="section-label">Step 2 — Your Business Details</div>
+
+      <div class="form-group">
+        <label for="bizName">Business Name <span class="req">*</span></label>
+        <input type="text" id="bizName" name="bizName" placeholder="e.g. Bright Smiles Dental Care" required>
+      </div>
+
+      <div class="form-group">
+        <label for="bizServices">What do you sell or offer? <span class="req">*</span> <span class="hint">Be specific — this goes into your website content</span></label>
+        <textarea id="bizServices" name="bizServices" class="tall" placeholder="Describe your products or services in detail. e.g. We offer general dentistry, orthodontics, cosmetic veneers, teeth whitening, and Invisalign. We serve families in Plainview NY. Our practice has been open since 2005..." required></textarea>
+        <div class="char-counter"><span id="servicesCount">0</span> characters</div>
+      </div>
+
+      <div class="two-col">
+        <div class="form-group">
+          <label for="bizPhone">Phone Number</label>
+          <input type="tel" id="bizPhone" name="bizPhone" placeholder="(516) 555-0100">
+        </div>
+        <div class="form-group">
+          <label for="bizEmail">Business Email <span class="hint">Results sent here</span></label>
+          <input type="email" id="bizEmail" name="bizEmail" placeholder="hello@mybusiness.com">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bizAddress">Business Address</label>
+        <input type="text" id="bizAddress" name="bizAddress" placeholder="123 Main Street, Plainview NY 11803">
+      </div>
+
+      <div class="two-col">
+        <div class="form-group">
+          <label for="contactName">Your Name (contact person)</label>
+          <input type="text" id="contactName" name="contactName" placeholder="Your full name">
+        </div>
+        <div class="form-group">
+          <label for="targetCust">Who is your target customer?</label>
+          <input type="text" id="targetCust" name="targetCust" placeholder="e.g. Families in Long Island, NY">
+        </div>
+      </div>
+
+      <!-- SECTION 3: DIFFERENTIATION -->
+      <div class="section-label">Step 3 — What Makes You Unique</div>
+
+      <div class="form-group">
+        <label for="usp">What makes you different from competitors?</label>
+        <textarea id="usp" name="usp" placeholder="e.g. We are the only clinic in Plainview offering same-day crowns, Saturday appointments, and 0% financing with no credit check. We have 5-star reviews from 300+ patients..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="competitorUrl">Competitor or Inspiration Website URL <span class="hint">optional — we'll scrape it for ideas</span></label>
+        <input type="url" id="competitorUrl" name="competitorUrl" placeholder="https://www.acompetitor.com">
+      </div>
+
+      <div class="form-group">
+        <label for="mustFeatures">Must-have features on your website <span class="hint">list everything you need</span></label>
+        <textarea id="mustFeatures" name="mustFeatures" placeholder="e.g. Online appointment booking form, before/after photo gallery, insurance accepted list, live chat, patient testimonials, Google Maps embed, services pricing table..."></textarea>
+      </div>
+
+      <!-- SECTION 4: DESIGN -->
+      <div class="section-label">Step 4 — Design Preference</div>
+
+      <div class="form-group">
+        <label>Color / Design Style</label>
+        <div class="toggle-group" id="colorGroup">
+          <div class="toggle-btn active" data-value="Let AI Choose Best for My Industry">🎨 Let AI Decide</div>
+          <div class="toggle-btn" data-value="Dark & Bold (Dark bg, vibrant accent)">🌑 Dark & Bold</div>
+          <div class="toggle-btn" data-value="Clean & Professional (White bg, blue or navy)">⬜ Clean & Pro</div>
+          <div class="toggle-btn" data-value="Warm & Inviting (Cream or warm tones)">☀️ Warm & Cozy</div>
+          <div class="toggle-btn" data-value="Luxury (Black bg, gold accents)">✨ Luxury Gold</div>
+          <div class="toggle-btn" data-value="Fresh & Modern (White bg, green or teal)">🌿 Fresh & Green</div>
+        </div>
+        <input type="hidden" id="colorPref" name="colorPref" value="Let AI Choose Best for My Industry">
+      </div>
+
+      <!-- SECTION 5: VISION -->
+      <div class="section-label">Step 5 — Your Full Vision</div>
+
+      <div class="form-group">
+        <label for="vision">Tell us your COMPLETE VISION for this website <span class="req">*</span></label>
+        <textarea id="vision" name="vision" class="tall" style="min-height:220px;" placeholder="Write EVERYTHING here — the AI reads every word and builds your site around it:&#10;&#10;• How do you want visitors to feel when they land on your site?&#10;• What's the story behind your business?&#10;• What specific sections or pages do you want?&#10;• What problem do you solve for customers?&#10;• What sections have you seen on other websites you love?&#10;• What is your 5-year vision for this business?&#10;• Any specific words, taglines, or copy you want used?&#10;• Anything else you want the AI to know?&#10;&#10;The more you write, the better your website will be." required></textarea>
+        <div class="char-counter"><span id="visionCount">0</span> characters — aim for 200+</div>
+      </div>
+
+      <!-- SECTION 6: PUBLISH -->
+      <div class="section-label">Step 6 — Final Settings</div>
+
+      <div class="form-group">
+        <label>Auto-publish to Odoo when complete?</label>
+        <div class="toggle-group" id="publishGroup">
+          <div class="toggle-btn active" data-value="no">📋 Save as Draft — I'll review first</div>
+          <div class="toggle-btn" data-value="yes">🚀 Publish Immediately (live on Odoo)</div>
+        </div>
+        <input type="hidden" id="autoPublish" name="autoPublish" value="no">
+      </div>
+
+      <!-- SUBMIT -->
+      <div class="submit-section">
+        <button type="submit" class="submit-btn" id="submitBtn">
+          <span id="btnText">🚀 Build My Website</span>
+          <div class="spinner" id="spinner"></div>
+        </button>
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+        <p class="submit-note">⏱ Takes 2–4 minutes · You'll receive the URL by email · No payment required</p>
+      </div>
+
+    </form>
+  </div><!-- /form-panel -->
+
+  <!-- SUCCESS -->
+  <div id="success-panel">
+    <div class="icon">🌐</div>
+    <h2>Your Website Is Being Built!</h2>
+    <p>Our AI is now researching the top 10 websites in your industry, analyzing every design pattern and feature, and building your custom website. Results will be sent to your email in 2–4 minutes.</p>
+    <div class="detail-box">
+      <div class="detail-row"><span class="detail-label">Business</span><span class="detail-val" id="r-bizName">—</span></div>
+      <div class="detail-row"><span class="detail-label">Category</span><span class="detail-val" id="r-category">—</span></div>
+      <div class="detail-row"><span class="detail-label">Sites being researched</span><span class="detail-val">10 top websites in your industry</span></div>
+      <div class="detail-row"><span class="detail-label">Email results to</span><span class="detail-val" id="r-email">—</span></div>
+      <div class="detail-row"><span class="detail-label">Estimated time</span><span class="detail-val">2–4 minutes</span></div>
+    </div>
+    <button class="back-btn" onclick="resetForm()">← Build Another Website</button>
+    <p style="color:#4b5563;font-size:12px;margin-top:20px;">Powered by JHD Advisor AI · jhdadvisor.com</p>
+  </div>
+
+  <!-- ERROR -->
+  <div id="error-panel">
+    <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+    <h2>Submission Failed</h2>
+    <p>There was a problem sending your request. Please check the webhook URL and try again.</p>
+    <pre id="error-detail"></pre>
+    <button class="back-btn" onclick="resetForm()">← Try Again</button>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CONFIGURE THIS URL
+  // Test mode (workflow must be listening):  use webhook-test URL
+  // Production mode (workflow activated):    use webhook URL
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ⬇ TEST MODE — "Listen for test event" must be clicked in n8n BEFORE submitting
+  const WEBHOOK_URL = 'https://newworksatnight.app.n8n.cloud/webhook-test/build-my-website';
+  // ⬇ PRODUCTION — uncomment + comment above once workflow is Activated in n8n
+  // const WEBHOOK_URL = 'https://newworksatnight.app.n8n.cloud/webhook/build-my-website';
+
+  // ── Toggle buttons ────────────────────────────────────────────────────────────
+  function setupToggleGroup(groupId, hiddenInputId) {
+    const group = document.getElementById(groupId);
+    const input = document.getElementById(hiddenInputId);
+    group.querySelectorAll('.toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        input.value = btn.dataset.value;
+      });
+    });
+  }
+  setupToggleGroup('categoryGroup', 'category');
+  setupToggleGroup('colorGroup', 'colorPref');
+  setupToggleGroup('publishGroup', 'autoPublish');
+
+  // ── Character counters ────────────────────────────────────────────────────────
+  document.getElementById('bizServices').addEventListener('input', function() {
+    document.getElementById('servicesCount').textContent = this.value.length;
+  });
+  document.getElementById('vision').addEventListener('input', function() {
+    const count = this.value.length;
+    const el = document.getElementById('visionCount');
+    el.textContent = count;
+    el.style.color = count >= 200 ? '#4ade80' : count >= 100 ? '#fbbf24' : '#a5b4fc';
+  });
+
+  // ── Progress simulation ───────────────────────────────────────────────────────
+  let progressInterval;
+  function startProgress() {
+    const bar = document.getElementById('progress-bar');
+    const fill = document.getElementById('progress-fill');
+    bar.style.display = 'block';
+    let pct = 0;
+    progressInterval = setInterval(() => {
+      // Simulate realistic progress: fast start, slow middle, stop at 95%
+      if (pct < 30) pct += 3;
+      else if (pct < 60) pct += 1.5;
+      else if (pct < 85) pct += 0.5;
+      else if (pct < 95) pct += 0.1;
+      fill.style.width = Math.min(pct, 95) + '%';
+    }, 300);
+  }
+  function stopProgress() {
+    clearInterval(progressInterval);
+    document.getElementById('progress-fill').style.width = '100%';
+  }
+
+  // ── Form submit ───────────────────────────────────────────────────────────────
+  document.getElementById('websiteForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    // Validate required fields
+    const category = document.getElementById('category').value;
+    const bizName  = document.getElementById('bizName').value.trim();
+    const services = document.getElementById('bizServices').value.trim();
+    const vision   = document.getElementById('vision').value.trim();
+
+    if (!category) {
+      document.getElementById('category-error').style.display = 'block';
+      document.getElementById('categoryGroup').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    document.getElementById('category-error').style.display = 'none';
+
+    if (!bizName || !services || !vision) {
+      alert('Please fill in all required fields (marked with *).');
+      return;
+    }
+
+    // Build payload
+    const payload = {
+      category:      category,
+      bizName:       bizName,
+      bizServices:   services,
+      bizAddress:    document.getElementById('bizAddress').value.trim(),
+      bizPhone:      document.getElementById('bizPhone').value.trim(),
+      bizEmail:      document.getElementById('bizEmail').value.trim(),
+      contactName:   document.getElementById('contactName').value.trim(),
+      targetCust:    document.getElementById('targetCust').value.trim(),
+      usp:           document.getElementById('usp').value.trim(),
+      competitorUrl: document.getElementById('competitorUrl').value.trim(),
+      mustFeatures:  document.getElementById('mustFeatures').value.trim(),
+      colorPref:     document.getElementById('colorPref').value,
+      vision:        vision,
+      autoPublish:   document.getElementById('autoPublish').value
+    };
+
+    // UI: loading state
+    const btn     = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const spinner = document.getElementById('spinner');
+    btn.disabled = true;
+    btnText.textContent = 'Submitting...';
+    spinner.style.display = 'block';
+    startProgress();
+
+    // ── CORS-safe submission ──────────────────────────────────────────────────
+    // When the HTML is opened from file://, the browser origin is "null"
+    // which triggers CORS preflight on application/json requests.
+    // Fix: send as text/plain (simple request = no preflight) + mode no-cors.
+    // The data still reaches n8n — we just can't read the opaque response.
+    // Results come to the user's email instead.
+    try {
+      await fetch(WEBHOOK_URL, {
+        method:  'POST',
+        mode:    'no-cors',          // bypasses CORS block from file://
+        headers: { 'Content-Type': 'text/plain' },  // simple request, no preflight
+        body:    JSON.stringify(payload)
+      });
+      // With no-cors the response is opaque — we can't read status.
+      // fetch() resolving (not throwing) means the request was sent.
+      stopProgress();
+      showSuccess(bizName, category, payload.bizEmail);
+    } catch (netErr) {
+      // Only reaches here on true network failure (offline, wrong URL, etc.)
+      stopProgress();
+      btn.disabled = false;
+      btnText.textContent = '🚀 Build My Website';
+      spinner.style.display = 'none';
+      document.getElementById('progress-bar').style.display = 'none';
+      document.getElementById('error-detail').textContent =
+        'Network error: ' + netErr.message +
+        '\n\nCheck that:\n1. The workflow is active in n8n (or "Listen for test event" is clicked)\n2. WEBHOOK_URL at top of this file is correct\n3. You are connected to the internet';
+      document.getElementById('form-panel').style.display = 'none';
+      document.getElementById('error-panel').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showSuccess(name, cat, email) {
+      document.getElementById('form-panel').style.display = 'none';
+      document.getElementById('r-bizName').textContent  = name;
+      document.getElementById('r-category').textContent = cat;
+      document.getElementById('r-email').textContent    = email || 'kahpk1933@gmail.com';
+      document.getElementById('success-panel').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+
+  function resetForm() {
+    document.getElementById('form-panel').style.display = 'block';
+    document.getElementById('success-panel').style.display = 'none';
+    document.getElementById('error-panel').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('btnText').textContent = '🚀 Build My Website';
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('progress-bar').style.display = 'none';
+    document.getElementById('progress-fill').style.width = '0%';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+{
+  "name": "BasicWorkflow — Website Cloner + AI Designer",
+  "nodes": [
+    {
+      "id": "t0",
+      "name": "Form Trigger: Build My Website",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [180, 200],
+      "parameters": {
+        "path": "build-website",
+        "formTitle": "🚀 AI Website Builder",
+        "formDescription": "Tell us what kind of website you want. We'll find the top real websites in that niche, extract their best design patterns, and build you a live site in minutes.",
+        "responseMode": "responseNode",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Website Niche",
+              "fieldType": "text",
+              "placeholder": "e.g., pokemon card store, luxury sneaker shop, gaming gear, organic food delivery...",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Website Type",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "E-Commerce Store" },
+                  { "option": "Service Business" },
+                  { "option": "Restaurant / Food" },
+                  { "option": "Portfolio / Agency" },
+                  { "option": "Blog / News" }
+                ]
+              },
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Design Style",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "Modern Dark" },
+                  { "option": "Minimal Clean" },
+                  { "option": "Vibrant Colorful" },
+                  { "option": "Luxury Premium" },
+                  { "option": "Playful Fun" }
+                ]
+              },
+              "requiredField": false
+            }
+          ]
+        }
+      },
+      "webhookId": "build-website-form-001"
+    },
+    {
+      "id": "t1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [180, 420],
+      "parameters": {}
+    },
+    {
+      "id": "t2",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [180, 620],
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "weeks", "weeksInterval": 1, "triggerAtDay": [1], "triggerAtHour": 9, "triggerAtMinute": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n1",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 420],
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst body = item.body || item;\n\n// Detect if this came from the Form Trigger (form fields are top-level keys)\nconst isFormTrigger = (typeof item['Website Niche'] === 'string');\n\n// Form Trigger fields\nconst formNiche = isFormTrigger ? (item['Website Niche'] || '') : '';\nconst formType  = isFormTrigger ? (item['Website Type']  || '') : '';\nconst formStyle = isFormTrigger ? (item['Design Style']  || '') : '';\n\n// Webhook / Manual fields\nconst webhookNiche = body.searchNiche || body.niche || body.query || '';\n\n// Default used for Manual + Schedule triggers\nconst DEFAULT_NICHE = 'premium pokemon card ecommerce store';\n\nconst searchNiche = formNiche  || webhookNiche || DEFAULT_NICHE;\nconst websiteType = formType   || body.type    || 'E-Commerce Store';\nconst designStyle = formStyle  || body.style   || 'Modern Dark';\nconst searchQuery = 'best ' + searchNiche + ' website design top rated ecommerce';\n\nconst nicheSlug = searchNiche\n  .replace(/[^a-z0-9]/gi, '-')\n  .toLowerCase()\n  .replace(/-+/g, '-')\n  .replace(/^-|-$/g, '')\n  .substring(0, 35);\n\nconsole.log('[Parse] isForm=' + isFormTrigger + ' niche=\"' + searchNiche + '\"');\n\nreturn [{ json: {\n  searchNiche,\n  websiteType,\n  designStyle,\n  searchQuery,\n  nicheSlug,\n  isFormTrigger,\n  FIRECRAWL_KEY: 'fc-471db502e79143e0982f3d2638b8ccdb',\n  CLAUDE_KEY: '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',\n  CLAUDE_MODEL: 'claude-sonnet-4-6',\n  VERCEL_TOKEN: 'vcp_81CNUWp76sVnicfxBK2vhYY5ynoMbYx6ZOhh7iRVdI3tp3jPzl3hjPJM',\n  startedAt: new Date().toISOString()\n}}];"
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Firecrawl: Search Top Sites",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 420],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $json.FIRECRAWL_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ query: $json.searchQuery, limit: 5 }) }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n3",
+      "name": "Build Analysis Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 420],
+      "parameters": {
+        "jsCode": "let searchResp = $input.item.json;\nconst cfg = $('Parse Input').item.json;\n\n// Decode Buffer/stream if Firecrawl response came back as a Node.js Readable stream\nif (!searchResp?.data && searchResp?._readableState) {\n  try {\n    const chunks = Array.isArray(searchResp._readableState.buffer) ? searchResp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) {\n      searchResp = JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n      console.log('[n3] Decoded Firecrawl stream buffer: ' + allBytes.length + ' bytes');\n    }\n  } catch(bufErr) {\n    console.log('[n3] Buffer decode error: ' + bufErr.message);\n  }\n}\n\nconst results = Array.isArray(searchResp?.data) ? searchResp.data : [];\n\nconst sites = results.slice(0, 5).map((r, i) => ({\n  n: i + 1,\n  url: r.url || '',\n  title: r.title || r.metadata?.title || 'Site ' + (i + 1),\n  desc: r.description || r.metadata?.description || '',\n  content: (r.markdown || '').substring(0, 1500)\n}));\n\nconst sitesText = sites.length\n  ? sites.map(s =>\n      '## Site ' + s.n + ': ' + s.title + '\\nURL: ' + s.url + '\\n' + s.desc + '\\n\\n' + s.content + '\\n---'\n    ).join('\\n\\n')\n  : '(No live scrape data — use your expertise for best-practice ' + cfg.searchNiche + ' design patterns.)';\n\nconst promptText =\n  'You are a senior UI/UX strategist. Analyse these top ' + cfg.searchNiche + ' websites.\\n\\n' +\n  sitesText.substring(0, 7500) +\n  '\\n\\nReturn ONLY valid JSON with no markdown fences:\\n' +\n  '{\\n' +\n  '  \"brandName\": \"creative name for a ' + cfg.searchNiche + ' store\",\\n' +\n  '  \"tagline\": \"short brand tagline\",\\n' +\n  '  \"colorPalette\": { \"primary\": \"#hex\", \"secondary\": \"#hex\", \"accent\": \"#hex\", \"background\": \"#hex\", \"cardBg\": \"#hex\", \"textPrimary\": \"#hex\", \"textSecondary\": \"#hex\" },\\n' +\n  '  \"navigation\": { \"items\": [\"Home\",\"Shop\",\"...up to 6\"], \"hasSearch\": true, \"hasCart\": true },\\n' +\n  '  \"heroSection\": { \"headline\": \"compelling 5-7 word headline\", \"subheadline\": \"1 supporting sentence\", \"primaryCTA\": \"Shop Now\", \"secondaryCTA\": \"View Sale\" },\\n' +\n  '  \"trustElements\": [\"4 short trust badges\"],\\n' +\n  '  \"productCategories\": [\"6 category names\"],\\n' +\n  '  \"sampleProducts\": [{ \"name\": \"...\", \"price\": \"$XX.XX\", \"originalPrice\": \"$XX.XX\", \"badge\": \"New|Sale|Hot|Rare\", \"rating\": 4.8, \"reviews\": 245 }],\\n' +\n  '  \"footerLinks\": { \"company\": [\"About\",\"Blog\",\"Press\"], \"support\": [\"FAQ\",\"Contact\",\"Returns\"], \"social\": [\"Instagram\",\"Twitter\",\"YouTube\"] }\\n' +\n  '}';\n\nconst analyzeRequest = JSON.stringify({\n  model: cfg.CLAUDE_MODEL,\n  max_tokens: 1800,\n  messages: [{ role: 'user', content: promptText }]\n});\n\nconsole.log('[Analysis] ' + sites.length + ' sites found for \"' + cfg.searchNiche + '\"');\n\nreturn [{ json: {\n  searchNiche: cfg.searchNiche,\n  websiteType: cfg.websiteType,\n  designStyle: cfg.designStyle,\n  nicheSlug: cfg.nicheSlug,\n  isFormTrigger: cfg.isFormTrigger,\n  sitesFound: sites.length,\n  urls: sites.map(s => s.url).filter(Boolean),\n  FIRECRAWL_KEY: cfg.FIRECRAWL_KEY,\n  CLAUDE_KEY: cfg.CLAUDE_KEY,\n  CLAUDE_MODEL: cfg.CLAUDE_MODEL,\n  VERCEL_TOKEN: cfg.VERCEL_TOKEN,\n  analyzeRequest\n}}];"
+      }
+    },
+    {
+      "id": "n4",
+      "name": "Claude: Analyze Design Patterns",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1240, 420],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",         "value": "={{ $json.CLAUDE_KEY }}" },
+            { "name": "anthropic-version",  "value": "2023-06-01" },
+            { "name": "Content-Type",       "value": "application/json" },
+            { "name": "Accept-Encoding",    "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.analyzeRequest }}",
+        "options": { "timeout": 60000, "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n5",
+      "name": "Build HTML Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 420],
+      "parameters": {
+        "jsCode": "let resp = $input.item.json;\nconst prev = $('Build Analysis Prompt').item.json;\n\n// Claude sometimes returns a Node.js Readable stream Buffer instead of parsed JSON.\n// Decode it by reading the raw bytes from _readableState.buffer.\nif (!resp?.content && resp?._readableState) {\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) {\n      resp = JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n      console.log('[n5] Decoded stream buffer: ' + allBytes.length + ' bytes → model: ' + (resp.model || '?'));\n    }\n  } catch(bufErr) {\n    console.log('[n5] Buffer decode error: ' + bufErr.message);\n  }\n}\n\nconst raw = resp?.content?.[0]?.text || '';\nlet d = {};\ntry {\n  const m = raw.match(/\\{[\\s\\S]*\\}/);\n  if (m) d = JSON.parse(m[0]);\n} catch (e) {}\n\nconst n = prev.searchNiche;\n\n// Fill defaults so generation never lacks context\nd.brandName    = d.brandName    || n.split(' ').map(w => w[0].toUpperCase() + w.slice(1)).join('') + 'Store';\nd.tagline      = d.tagline      || 'Premium ' + n + ' — Authentic & Affordable';\nd.colorPalette = d.colorPalette || { primary: '#0f172a', secondary: '#1e293b', accent: '#f59e0b', background: '#f8fafc', cardBg: '#ffffff', textPrimary: '#0f172a', textSecondary: '#64748b' };\nd.navigation   = d.navigation   || { items: ['Home','Shop','New Arrivals','Sale','About','Contact'], hasSearch: true, hasCart: true };\nd.heroSection  = d.heroSection  || { headline: 'Shop Premium ' + n, subheadline: 'Discover the finest selection at unbeatable prices', primaryCTA: 'Shop Now', secondaryCTA: 'View Collection' };\nd.trustElements    = d.trustElements    || ['Free Shipping $50+','100% Authentic','30-Day Returns','SSL Secure'];\nd.productCategories = d.productCategories || ['New Arrivals','Best Sellers','Rare Finds','Bundles','Sale','Collections'];\n\nconst fallbackProducts = [\n  { name: n + ' Booster Box',    price: '$129.99', originalPrice: '$149.99', badge: 'Sale', rating: 4.9, reviews: 412 },\n  { name: 'Rare Holo Collection', price: '$89.99',  originalPrice: '$89.99',  badge: 'Hot',  rating: 4.8, reviews: 287 },\n  { name: 'Starter Bundle',       price: '$29.99',  originalPrice: '$39.99',  badge: 'Sale', rating: 4.7, reviews: 523 },\n  { name: 'Elite Trainer Box',    price: '$54.99',  originalPrice: '$54.99',  badge: 'New',  rating: 4.8, reviews: 189 },\n  { name: 'Premium Grade PSA',    price: '$199.99', originalPrice: '$219.99', badge: 'Rare', rating: 5.0, reviews: 94  },\n  { name: 'Mega Collection',      price: '$179.99', originalPrice: '$199.99', badge: 'Hot',  rating: 4.9, reviews: 156 },\n  { name: 'Vintage Pack',         price: '$44.99',  originalPrice: '$44.99',  badge: 'New',  rating: 4.6, reviews: 321 },\n  { name: 'Championship Set',     price: '$74.99',  originalPrice: '$89.99',  badge: 'Sale', rating: 4.8, reviews: 208 }\n];\n\nconst sp = (d.sampleProducts || []).slice(0, 8);\nwhile (sp.length < 8) sp.push(fallbackProducts[sp.length]);\nd.sampleProducts = sp;\nd.footerLinks = d.footerLinks || { company: ['About Us','Blog','Press'], support: ['FAQ','Contact','Returns'], social: ['Instagram','Twitter','YouTube'] };\n\nconst p = d.colorPalette;\nconst styleOverride = prev.designStyle || 'Modern Dark';\n\nconst htmlPrompt =\n  'Build a complete, stunning e-commerce landing page HTML file. Output ONLY raw HTML starting with <!DOCTYPE html> — NO explanations, NO markdown, NO code fences.\\n\\n' +\n  '=== STORE INFO ===\\n' +\n  'Name: ' + d.brandName + ' | Niche: ' + n + ' | Tagline: ' + d.tagline + '\\n' +\n  'Hero: \"' + d.heroSection.headline + '\" / \"' + d.heroSection.subheadline + '\"\\n' +\n  'CTAs: [' + d.heroSection.primaryCTA + '] [' + d.heroSection.secondaryCTA + ']\\n' +\n  'Nav links: ' + d.navigation.items.join(' | ') + '\\n' +\n  'Trust: ' + d.trustElements.join(' | ') + '\\n\\n' +\n  '=== REQUIRED TAILWIND CLASSES (copy exactly) ===\\n' +\n  'body: class=\"bg-slate-900 text-slate-100\"\\n' +\n  'navbar: class=\"fixed top-0 w-full z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-700/50 px-6 py-4\"\\n' +\n  'hero: class=\"pt-24 min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex flex-col items-center justify-center text-center px-4\"\\n' +\n  'hero h1: class=\"text-5xl md:text-7xl font-black text-white mb-6 leading-tight\"\\n' +\n  'hero p: class=\"text-xl text-slate-300 max-w-2xl mb-10\"\\n' +\n  'primary btn: class=\"bg-amber-500 hover:bg-amber-400 text-slate-900 font-black px-10 py-4 rounded-2xl text-lg transition-all\"\\n' +\n  'secondary btn: class=\"border-2 border-amber-500 text-amber-400 hover:bg-amber-500/10 font-bold px-10 py-4 rounded-2xl text-lg transition-all\"\\n' +\n  'products section: class=\"py-24 bg-slate-800\"\\n' +\n  'section h2: class=\"text-4xl font-black text-white text-center mb-16\"\\n' +\n  'product card: class=\"bg-slate-900 rounded-2xl overflow-hidden border border-slate-700/50 hover:border-amber-500/50 transition-all duration-300 group\"\\n' +\n  'product name: class=\"text-white font-bold text-sm mb-2\"\\n' +\n  'product price: class=\"text-amber-400 font-black text-xl\"\\n' +\n  'add to cart btn: class=\"bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm font-black px-4 py-2 rounded-xl transition\"\\n' +\n  'category card: class=\"relative rounded-2xl overflow-hidden h-56 cursor-pointer group\"\\n' +\n  'category overlay: class=\"absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent\"\\n' +\n  'category label: class=\"absolute bottom-6 left-6 text-white text-xl font-black\"\\n' +\n  'footer: class=\"bg-slate-950 border-t border-slate-800 py-16 px-6\"\\n' +\n  'footer text: class=\"text-slate-400\"\\n' +\n  'footer heading: class=\"text-white font-bold mb-4\"\\n' +\n  'footer link: class=\"text-slate-400 hover:text-amber-400 text-sm transition\"\\n\\n' +\n  '=== PRODUCTS (use picsum.photos seeds 10-17 for images) ===\\n' +\n  JSON.stringify(d.sampleProducts) + '\\n\\n' +\n  '=== CATEGORIES (use picsum.photos seeds 30-35) ===\\n' +\n  d.productCategories.join(', ') + '\\n\\n' +\n  '=== FOOTER LINKS ===\\n' +\n  'Company: ' + (d.footerLinks.company||[]).join(', ') + ' | Support: ' + (d.footerLinks.support||[]).join(', ') + ' | Social: ' + (d.footerLinks.social||[]).join(', ') + '\\n\\n' +\n  '=== JAVASCRIPT (before </body>) ===\\n' +\n  'let c=0; function addToCart(){ c++; const el=document.getElementById(\"cc\"); if(el) el.textContent=c; }\\n' +\n  'Smooth scroll for #products and #categories anchor links.\\n\\n' +\n  '=== BUILD ORDER ===\\n' +\n  '1. <head>: charset, viewport, title=\"' + d.brandName + '\", TailwindCSS CDN script\\n' +\n  '2. NAVBAR: logo text-amber-400 font-black left | nav links center (hidden on mobile) | cart button right with id=\"cc\" counter\\n' +\n  '3. HERO: pill badge → giant h1 text-white → p text-slate-300 → 2 CTA buttons → 4 trust badges in bg-slate-800/60 border border-slate-700 rounded-xl p-4 grid grid-cols-2 md:grid-cols-4 mt-12\\n' +\n  '4. PRODUCTS section id=\"products\": h2 + 4-col card grid (2-col mobile), 8 cards with img/badge/name/stars/price/button\\n' +\n  '5. CATEGORIES section id=\"categories\" bg-slate-900: h2 + 3-col grid (2-col mobile), 6 cards with picsum bg-cover + gradient overlay + text\\n' +\n  '6. FOOTER bg-slate-950: 3-col grid (brand+tagline | company links | support links) + bottom bar with copyright\\n' +\n  '7. <script> with addToCart() and smooth scroll\\n\\n' +\n  'FINAL CHECK before outputting: every section has visible text (white/amber on dark). Product cards have images. All 6 sections present. Starts with <!DOCTYPE html>.';\n\nconst htmlRequest = JSON.stringify({\n  model: prev.CLAUDE_MODEL,\n  max_tokens: 6000,\n  messages: [{ role: 'user', content: htmlPrompt }]\n});\n\nreturn [{ json: {\n  searchNiche: prev.searchNiche,\n  websiteType: prev.websiteType,\n  designStyle: prev.designStyle,\n  nicheSlug: prev.nicheSlug,\n  isFormTrigger: prev.isFormTrigger,\n  sitesFound: prev.sitesFound,\n  urls: prev.urls,\n  design: d,\n  CLAUDE_KEY: prev.CLAUDE_KEY,\n  CLAUDE_MODEL: prev.CLAUDE_MODEL,\n  VERCEL_TOKEN: prev.VERCEL_TOKEN,\n  htmlRequest\n}}];"
+      }
+    },
+    {
+      "id": "n6",
+      "name": "Claude: Generate HTML Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 420],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",         "value": "={{ $json.CLAUDE_KEY }}" },
+            { "name": "anthropic-version",  "value": "2023-06-01" },
+            { "name": "Content-Type",       "value": "application/json" },
+            { "name": "Accept-Encoding",    "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.htmlRequest }}",
+        "options": { "timeout": 60000, "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n7",
+      "name": "Extract HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2020, 420],
+      "parameters": {
+        "jsCode": "let resp = $input.item.json;\nconst prev = $('Build HTML Prompt').item.json;\n\n// Decode Buffer/stream if Claude returned a Node.js Readable stream instead of parsed JSON\nif (!resp?.content && resp?._readableState) {\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) {\n      resp = JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n      console.log('[n7] Decoded stream buffer: ' + allBytes.length + ' bytes → model: ' + (resp.model || '?'));\n    }\n  } catch(bufErr) {\n    console.log('[n7] Buffer decode error: ' + bufErr.message);\n  }\n}\n\n// Detect empty response (n8n HTTP error with onError:continueRegularOutput passes {} )\nconst isEmptyResp = !resp || Object.keys(resp).length === 0;\nconst noContent   = !resp?.content || !Array.isArray(resp.content) || resp.content.length === 0;\n\nlet claudeError = null;\nif (resp?.error && resp.error.type)   { claudeError = resp.error.type + ': ' + (resp.error.message || JSON.stringify(resp.error)); }\nelse if (resp?.type === 'error')       { claudeError = 'api_error: ' + JSON.stringify(resp.error || resp); }\nelse if (isEmptyResp)                  { claudeError = 'HTTP_FAIL: Claude node returned empty object — check n8n execution logs for network/timeout error'; }\nelse if (noContent)                    { claudeError = 'NO_CONTENT: ' + JSON.stringify(resp).substring(0, 300); }\n\nconst raw = resp?.content?.[0]?.text || '';\nconsole.log('[Claude HTML] raw=' + raw.length + ' chars | stop=' + resp?.stop_reason + ' | error=' + claudeError);\nconsole.log('[Claude HTML] respKeys=' + Object.keys(resp || {}).join(',') + ' | preview: ' + raw.substring(0, 200));\nif (claudeError) console.log('[Claude HTML] API ERROR: ' + claudeError);\n\nlet html = raw.trim();\n\nconst fenced       = raw.match(/```html?\\s*([\\s\\S]*?)```/i);\nconst doctype      = raw.match(/(<!DOCTYPE[\\s\\S]*<\\/html>)/i);\nconst doctypeStart = raw.toLowerCase().indexOf('<!doctype');\nif (fenced)              html = fenced[1].trim();\nelse if (doctype)        html = doctype[1].trim();\nelse if (doctypeStart >= 0) html = raw.substring(doctypeStart).trim();\n\nif (!html.toLowerCase().startsWith('<!doctype')) {\n  const brand = prev.design?.brandName || prev.searchNiche || 'AI Website';\n  html = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\">'\n    + '<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">'\n    + '<title>' + brand + '</title>'\n    + '<script src=\"https://cdn.tailwindcss.com\"></script></head>'\n    + '<body class=\"bg-gray-900 text-white flex items-center justify-center min-h-screen p-8\">'\n    + '<div class=\"max-w-lg text-center\">'\n    + '<h1 class=\"text-4xl font-black text-amber-400 mb-4\">' + brand + '</h1>'\n    + '<p class=\"text-gray-400 mb-6\">HTML generation returned incomplete output. Raw preview:</p>'\n    + '<pre class=\"bg-gray-800 p-4 rounded text-left text-xs text-gray-300 overflow-auto\">'\n    + raw.substring(0, 600).replace(/</g, '&lt;') + '</pre>'\n    + '</div></body></html>';\n}\n\nconsole.log('[HTML] ' + html.length + ' chars | brand: ' + (prev.design?.brandName || prev.searchNiche));\n\nreturn [{ json: {\n  html,\n  htmlLength: html.length,\n  claudeError,\n  rawLength: raw.length,\n  searchNiche: prev.searchNiche,\n  websiteType: prev.websiteType,\n  designStyle: prev.designStyle,\n  nicheSlug: prev.nicheSlug,\n  isFormTrigger: prev.isFormTrigger,\n  brandName: prev.design?.brandName || prev.searchNiche,\n  tagline: prev.design?.tagline || '',\n  sitesFound: prev.sitesFound,\n  urls: prev.urls || [],\n  VERCEL_TOKEN: prev.VERCEL_TOKEN,\n  generatedAt: new Date().toISOString()\n}}];"
+      }
+    },
+    {
+      "id": "n8",
+      "name": "Build Vercel Deploy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2280, 420],
+      "parameters": {
+        "jsCode": "const prev = $input.item.json;\nconst VERCEL_TOKEN = prev.VERCEL_TOKEN || '';\nconst hasToken = !!(VERCEL_TOKEN && VERCEL_TOKEN.trim() && !VERCEL_TOKEN.includes('{{'));\n\n// Save generated HTML to static data so the preview webhook can serve it as backup\ntry {\n  const sd = $getWorkflowStaticData('global');\n  sd.lastHtml    = prev.html        || '';\n  sd.lastBrand   = prev.brandName   || '';\n  sd.lastNiche   = prev.searchNiche || '';\n  sd.lastUpdated = new Date().toISOString();\n  console.log('[Backup] stored ' + (prev.html||'').length + ' chars for: ' + (prev.brandName||''));\n} catch(e) { console.log('[Backup] static data error: ' + e.message); }\n\nconst projectName = 'ai-' + (prev.nicheSlug || 'website').substring(0, 28) + '-' + Date.now().toString().slice(-5);\n\nconst deployRequest = JSON.stringify({\n  name: projectName,\n  files: [{ file: 'index.html', data: prev.html, encoding: 'utf-8' }],\n  target: 'production'\n});\n\nconsole.log('[Vercel] hasToken=' + hasToken + ' project=' + projectName);\n\nreturn [{ json: { ...prev, VERCEL_TOKEN, hasToken, deployRequest, projectName } }];"
+      }
+    },
+    {
+      "id": "n8b",
+      "name": "Has Vercel Token?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2540, 420],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{ "id": "c1", "leftValue": "={{ $json.hasToken }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "n9",
+      "name": "HTTP: Deploy to Vercel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2800, 280],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization",   "value": "={{ 'Bearer ' + $json.VERCEL_TOKEN }}" },
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Accept-Encoding", "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.deployRequest }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n9b",
+      "name": "Skip: No Vercel Token",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2800, 560],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "s1", "name": "skippedDeploy", "value": true, "type": "boolean" }
+          ]
+        },
+        "options": { "includeOtherFields": true }
+      }
+    },
+    {
+      "id": "n10",
+      "name": "Parse Deploy + Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3060, 420],
+      "parameters": {
+        "jsCode": "const input = $input.item.json;\n\n// Detect if we came from the Vercel HTTP call or the skip branch\nconst skipped = !!(input.skippedDeploy);\n\n// When skipped, look back at Build Vercel Deploy for html/meta\nconst prev = skipped ? $('Build Vercel Deploy').item.json : $('Build Vercel Deploy').item.json;\n\n// Decode Buffer/stream if Vercel response came back as Node.js Readable stream\nlet vercelData = input;\nif (!skipped && !vercelData?.url && vercelData?._readableState) {\n  try {\n    const chunks = Array.isArray(vercelData._readableState.buffer) ? vercelData._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) {\n      vercelData = JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n      console.log('[n10] Decoded Vercel stream buffer: ' + allBytes.length + ' bytes → url: ' + (vercelData.url || 'none'));\n    }\n  } catch(e) {\n    console.log('[n10] Vercel Buffer decode error: ' + e.message);\n  }\n}\nconst vercelResp = skipped ? {} : vercelData;\nconst rawUrl  = vercelResp?.url || vercelResp?.alias?.[0] || '';\nconst deployUrl = rawUrl ? ('https://' + rawUrl) : null;\nconst deployOk  = !!(deployUrl && !vercelResp?.error);\n\nconst liveUrl = deployUrl || 'NOT_DEPLOYED';\n\nconst brandName = prev.brandName   || prev.searchNiche;\nconst niche     = prev.searchNiche || '';\nconst style     = prev.designStyle || '';\nconst sitesRef  = (prev.urls || []).slice(0, 5).join(', ');\nconst isFormTrigger = prev.isFormTrigger;\n\nconst A = '#f59e0b';\nconst D = '#0f172a';\nconst C = '#1e293b';\n\nconst tokenMsg = skipped\n  ? 'Add your Vercel token in Parse Input node (replace <code>{{VERCEL_TOKEN}}</code>), then re-run to get a live URL.'\n  : 'There was an error deploying. Check your Vercel token is valid and try again.';\n\nconst deploySection = deployOk\n  ? '<div class=\"url-box\">\\u{1F517} ' + liveUrl + '</div>'\n    + '<a href=\"' + liveUrl + '\" target=\"_blank\" class=\"btn\">Open Live Website \\u2192</a>'\n  : '<div class=\"url-box url-warn\">' + tokenMsg + '</div>';\n\nconst responsePage = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\">'\n  + '<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">'\n  + '<title>Your Website is Ready \\u2014 ' + brandName + '</title>'\n  + '<style>*{box-sizing:border-box;margin:0;padding:0}'\n  + 'body{background:' + D + ';color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}'\n  + '.card{background:' + C + ';border-radius:20px;padding:2.5rem;max-width:620px;width:100%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.4)}'\n  + '.badge{display:inline-block;background:' + (deployOk ? '#16a34a' : '#b45309') + ';color:#fff;font-size:.75rem;font-weight:700;padding:.25rem .75rem;border-radius:999px;letter-spacing:.05em;margin-bottom:1rem}'\n  + 'h1{font-size:1.8rem;font-weight:800;margin-bottom:.5rem}'\n  + '.sub{color:#94a3b8;font-size:.95rem;margin-bottom:1.5rem}'\n  + '.url-box{background:' + D + ';border:1px solid #334155;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem;word-break:break-all;font-size:.9rem;color:' + A + '}'\n  + '.url-warn{color:#fbbf24;font-size:.85rem;line-height:1.6}'\n  + '.btn{display:inline-block;background:' + A + ';color:#0f172a;font-weight:800;padding:.85rem 2rem;border-radius:10px;text-decoration:none;font-size:1rem;transition:opacity .2s}'\n  + '.btn:hover{opacity:.85}'\n  + '.meta{margin-top:1.75rem;display:grid;grid-template-columns:1fr 1fr;gap:.75rem;text-align:left}'\n  + '.meta-item{background:' + D + ';border-radius:10px;padding:.75rem 1rem}'\n  + '.meta-label{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem}'\n  + '.meta-val{font-size:.85rem;font-weight:600;color:#e2e8f0}'\n  + '.sources{margin-top:1.25rem;font-size:.75rem;color:#475569;line-height:1.6}'\n  + '</style></head><body>'\n  + '<div class=\"card\">'\n  + '<div class=\"badge\">' + (deployOk ? '\\u{1F680} Live on Vercel' : '\\u2705 HTML Generated') + '</div>'\n  + '<h1>\\u2728 ' + brandName + '</h1>'\n  + '<p class=\"sub\">' + niche + ' \\u00B7 ' + style + ' \\u00B7 AI-generated from ' + (prev.sitesFound || 0) + ' real websites</p>'\n  + deploySection\n  + '<div class=\"meta\">'\n  + '<div class=\"meta-item\"><div class=\"meta-label\">Website Type</div><div class=\"meta-val\">' + (prev.websiteType || 'E-Commerce') + '</div></div>'\n  + '<div class=\"meta-item\"><div class=\"meta-label\">HTML Size</div><div class=\"meta-val\">' + (((prev.htmlLength || 0) / 1024).toFixed(1)) + ' KB</div></div>'\n  + '<div class=\"meta-item\"><div class=\"meta-label\">Sites Analyzed</div><div class=\"meta-val\">' + (prev.sitesFound || 0) + ' websites</div></div>'\n  + '<div class=\"meta-item\"><div class=\"meta-label\">Generated At</div><div class=\"meta-val\">' + new Date().toLocaleTimeString() + '</div></div>'\n  + '</div>'\n  + (sitesRef ? '<p class=\"sources\">\\u{1F4CC} Sources: ' + sitesRef + '</p>' : '')\n  + '<p style=\"margin-top:1.25rem;font-size:.75rem;color:#334155\">Re-run the form to generate a new niche anytime</p>'\n  + '</div></body></html>';\n\nconst vercelError = skipped ? null\n  : vercelResp?.error                                            ? JSON.stringify(vercelResp.error)\n  : (vercelResp?.name === 'AxiosError' || vercelResp?.code)      ? (vercelResp.message || vercelResp.code)\n  : (!deployOk && !vercelResp?._readableState)                   ? 'NO_URL: ' + JSON.stringify(Object.keys(vercelResp || {}))\n  : null;\n\nreturn [{ json: {\n  deployUrl,\n  deployOk,\n  skipped,\n  liveUrl,\n  responsePage,\n  brandName,\n  niche,\n  style,\n  htmlLength: prev.htmlLength,\n  sitesFound: prev.sitesFound,\n  claudeError: prev.claudeError || null,\n  rawLength: prev.rawLength || 0,\n  vercelError,\n  isFormTrigger,\n  generatedAt: prev.generatedAt\n}}];"
+      }
+    },
+    {
+      "id": "n11",
+      "name": "Is Form Trigger?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3320, 420],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{ "id": "c1", "leftValue": "={{ $json.isFormTrigger }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "n12",
+      "name": "Form: Show Live Result",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [3580, 260],
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "={{ $json.deployOk ? '🚀 ' + $json.brandName + ' is Live!' : '✅ Website Generated!' }}",
+        "completionMessage": "={{ $json.deployOk ? '**Live URL:** ' + $json.liveUrl + '\\n\\n**Niche:** ' + $json.niche + ' | **Style:** ' + $json.style + '\\n**Sites analyzed:** ' + ($json.sitesFound || 0) : '**HTML generated** (' + (($json.htmlLength||0)/1024).toFixed(1) + ' KB)\\n\\nTo deploy live, replace `{{VERCEL_TOKEN}}` in the Parse Input node with your real Vercel token from vercel.com/account/tokens, then re-run.' }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "n13",
+      "name": "Manual / Schedule Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3580, 580],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "o4", "name": "🌐 LIVE URL",     "value": "={{ $json.liveUrl }}",     "type": "string" },
+            { "id": "o5", "name": "deployOk",      "value": "={{ $json.deployOk }}",    "type": "boolean" },
+            { "id": "o1", "name": "status",        "value": "={{ $json.deployOk ? 'LIVE' : 'failed' }}", "type": "string" },
+            { "id": "o2", "name": "brand",         "value": "={{ $json.brandName }}",   "type": "string" },
+            { "id": "o3", "name": "niche",         "value": "={{ $json.niche }}",       "type": "string" },
+            { "id": "o6", "name": "sitesAnalyzed", "value": "={{ $json.sitesFound }}",  "type": "number" },
+            { "id": "o7", "name": "htmlKB",        "value": "={{ (($json.htmlLength||0)/1024).toFixed(1) }}", "type": "string" },
+            { "id": "o8", "name": "generatedAt",   "value": "={{ $json.generatedAt }}", "type": "string" },
+            { "id": "o9", "name": "claudeError",   "value": "={{ $json.claudeError || 'none' }}", "type": "string" },
+            { "id": "o10","name": "rawLength",     "value": "={{ $json.rawLength || 0 }}", "type": "number" },
+            { "id": "o11","name": "vercelError",   "value": "={{ $json.vercelError || 'none' }}", "type": "string" },
+            { "id": "o12","name": "htmlSnippet",   "value": "={{ $json.html ? $json.html.substring(0, 300) + '...' : 'NO HTML' }}", "type": "string" },
+            { "id": "o13","name": "📺 Preview URL", "value": "https://newworksatnight.app.n8n.cloud/webhook/preview-website", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e1",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [180, 820],
+      "parameters": {}
+    },
+    {
+      "id": "e2",
+      "name": "Set: Log Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 820],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "er1", "name": "errorAt",      "value": "={{ $now.toISO() }}",                                      "type": "string" },
+            { "id": "er2", "name": "errorMessage", "value": "={{ $json.execution?.error?.message || 'Unknown error' }}", "type": "string" },
+            { "id": "er3", "name": "lastNode",     "value": "={{ $json.execution?.lastNodeExecuted || '' }}",             "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "w1",
+      "name": "Webhook: Preview Website",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 1020],
+      "parameters": {
+        "path": "preview-website",
+        "httpMethod": "GET",
+        "responseMode": "responseNode"
+      },
+      "webhookId": "preview-website-001"
+    },
+    {
+      "id": "w2",
+      "name": "Read Stored HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 1020],
+      "parameters": {
+        "jsCode": "const sd = $getWorkflowStaticData('global');\nconst html = sd.lastHtml || '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Preview</title><script src=\"https://cdn.tailwindcss.com\"></script></head><body class=\"bg-gray-900 text-white flex items-center justify-center min-h-screen\"><div class=\"text-center p-8\"><h1 class=\"text-3xl font-bold text-amber-400 mb-6\">No Website Generated Yet</h1><p class=\"text-gray-400 mb-2\">Run the workflow first, then refresh this page.</p><p class=\"text-gray-500 text-sm\">Trigger the Manual Trigger or fill the form.</p></div></body></html>';\nreturn [{ json: { html, brand: sd.lastBrand || '', niche: sd.lastNiche || '', updatedAt: sd.lastUpdated || 'never' } }];"
+      }
+    },
+    {
+      "id": "w3",
+      "name": "Respond: Show HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 1020],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "text/html; charset=utf-8" }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Form Trigger: Build My Website": {
+      "main": [[ { "node": "Parse Input", "type": "main", "index": 0 } ]]
+    },
+    "Manual Trigger": {
+      "main": [[ { "node": "Parse Input", "type": "main", "index": 0 } ]]
+    },
+    "Schedule Trigger": {
+      "main": [[ { "node": "Parse Input", "type": "main", "index": 0 } ]]
+    },
+    "Parse Input": {
+      "main": [[ { "node": "Firecrawl: Search Top Sites", "type": "main", "index": 0 } ]]
+    },
+    "Firecrawl: Search Top Sites": {
+      "main": [[ { "node": "Build Analysis Prompt", "type": "main", "index": 0 } ]]
+    },
+    "Build Analysis Prompt": {
+      "main": [[ { "node": "Claude: Analyze Design Patterns", "type": "main", "index": 0 } ]]
+    },
+    "Claude: Analyze Design Patterns": {
+      "main": [[ { "node": "Build HTML Prompt", "type": "main", "index": 0 } ]]
+    },
+    "Build HTML Prompt": {
+      "main": [[ { "node": "Claude: Generate HTML Website", "type": "main", "index": 0 } ]]
+    },
+    "Claude: Generate HTML Website": {
+      "main": [[ { "node": "Extract HTML", "type": "main", "index": 0 } ]]
+    },
+    "Extract HTML": {
+      "main": [[ { "node": "Build Vercel Deploy", "type": "main", "index": 0 } ]]
+    },
+    "Build Vercel Deploy": {
+      "main": [[ { "node": "Has Vercel Token?", "type": "main", "index": 0 } ]]
+    },
+    "Has Vercel Token?": {
+      "main": [
+        [ { "node": "HTTP: Deploy to Vercel",  "type": "main", "index": 0 } ],
+        [ { "node": "Skip: No Vercel Token",   "type": "main", "index": 0 } ]
+      ]
+    },
+    "HTTP: Deploy to Vercel": {
+      "main": [[ { "node": "Parse Deploy + Build Response", "type": "main", "index": 0 } ]]
+    },
+    "Skip: No Vercel Token": {
+      "main": [[ { "node": "Parse Deploy + Build Response", "type": "main", "index": 0 } ]]
+    },
+    "Parse Deploy + Build Response": {
+      "main": [[ { "node": "Is Form Trigger?", "type": "main", "index": 0 } ]]
+    },
+    "Is Form Trigger?": {
+      "main": [
+        [ { "node": "Form: Show Live Result",    "type": "main", "index": 0 } ],
+        [ { "node": "Manual / Schedule Output", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [[ { "node": "Set: Log Error", "type": "main", "index": 0 } ]]
+    },
+    "Webhook: Preview Website": {
+      "main": [[ { "node": "Read Stored HTML", "type": "main", "index": 0 } ]]
+    },
+    "Read Stored HTML": {
+      "main": [[ { "node": "Respond: Show HTML", "type": "main", "index": 0 } ]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "tags": [
+    { "name": "basic-workflow" },
+    { "name": "website-cloner" },
+    { "name": "ai-designer" },
+    { "name": "firecrawl" },
+    { "name": "vercel" }
+  ]
+}

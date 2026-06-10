@@ -1,0 +1,192 @@
+<!-- ============================================================
+     Long Island Card — AI Greeting Widget
+     Calls: https://your-vps-domain.com:8765
+     Paste into Odoo Website Builder -> Custom HTML block
+     ============================================================ -->
+
+<div id="cel-ai-widget">
+
+  <!-- Floating chat button -->
+  <div id="cel-bubble" onclick="celToggleChat()" style="
+      position:fixed;bottom:24px;right:24px;z-index:99999;
+      width:56px;height:56px;border-radius:50%;
+      background:#134e5e;color:#FFD700;
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.6rem;cursor:pointer;
+      box-shadow:0 4px 18px rgba(0,0,0,.35);
+      transition:transform .2s;
+  " onmouseover="this.style.transform='scale(1.12)'" onmouseout="this.style.transform='scale(1)'"
+     title="Ask our AI assistant">
+    🎖️
+    <span id="cel-badge" style="
+        position:absolute;top:-4px;right:-4px;
+        background:#e63946;color:#fff;border-radius:50%;
+        width:18px;height:18px;font-size:.65rem;font-weight:700;
+        display:flex;align-items:center;justify-content:center;
+    ">1</span>
+  </div>
+
+  <!-- Toast notification (auto-shows on load) -->
+  <div id="cel-toast" style="
+      position:fixed;bottom:92px;right:24px;z-index:99998;
+      background:#fff;border-left:4px solid #134e5e;
+      border-radius:12px;padding:14px 16px;
+      box-shadow:0 6px 24px rgba(0,0,0,.18);
+      max-width:270px;font-family:'Segoe UI',Arial,sans-serif;
+      opacity:0;transform:translateY(20px);
+      transition:opacity .4s,transform .4s;pointer-events:none;
+  ">
+    <div style="font-size:.7rem;color:#888;margin-bottom:4px">Long Island Card</div>
+    <div style="font-weight:700;color:#222;font-size:.9rem;margin-bottom:4px">
+      🎖️ Memorial Day is coming up in 1 day!
+    </div>
+    <div style="font-size:.82rem;color:#555">
+      Use code <b>MEMORIAL26</b> for 15% off!
+    </div>
+    <div onclick="document.getElementById('cel-toast').style.opacity='0'"
+         style="position:absolute;top:8px;right:10px;cursor:pointer;color:#bbb;font-size:.9rem">&#10005;</div>
+  </div>
+
+  <!-- Chat window -->
+  <div id="cel-chat" style="
+      position:fixed;bottom:92px;right:24px;z-index:99998;
+      width:330px;max-height:520px;
+      background:#fff;border-radius:18px;
+      box-shadow:0 8px 32px rgba(0,0,0,.22);
+      font-family:'Segoe UI',Arial,sans-serif;
+      display:none;flex-direction:column;overflow:hidden;
+  ">
+    <!-- Header -->
+    <div style="background:#134e5e;color:#FFD700;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-weight:700;font-size:.95rem">🎖️ Long Island Card</div>
+        <div style="font-size:.72rem;opacity:.85">AI Shopping Assistant</div>
+      </div>
+      <div onclick="celToggleChat()" style="cursor:pointer;font-size:1.1rem;opacity:.8">&#10005;</div>
+    </div>
+
+    <!-- Messages area -->
+    <div id="cel-messages" style="
+        flex:1;overflow-y:auto;padding:12px;
+        display:flex;flex-direction:column;gap:8px;
+        max-height:330px;
+    "></div>
+
+    <!-- Input row -->
+    <div style="padding:10px 12px;border-top:1px solid #f0f0f0;display:flex;gap:8px;">
+      <input id="cel-input" type="text" placeholder="Ask about products..."
+             onkeydown="if(event.key==='Enter')celSend()"
+             style="flex:1;border:1px solid #ddd;border-radius:20px;padding:8px 14px;
+                    font-size:.85rem;outline:none;font-family:inherit;">
+      <button onclick="celSend()" style="
+          background:#134e5e;color:#FFD700;border:none;border-radius:50%;
+          width:36px;height:36px;cursor:pointer;font-size:1rem;
+          display:flex;align-items:center;justify-content:center;
+      ">&#9658;</button>
+    </div>
+    <div style="text-align:center;font-size:.65rem;color:#ccc;padding:4px 0 8px">
+      Powered by AI &#183; Long Island Card
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  var PROXY = "https://your-vps-domain.com:8765";
+  var STORE = "LongIslandCards";
+  var CEL_DATA = [{"d": 1, "name": "Memorial Day", "emoji": "\ud83c\udf96\ufe0f", "disc": 15, "code": "MEMORIAL26"}, {"d": 1, "name": "National Wine Day", "emoji": "\ud83c\udf77", "disc": 15, "code": "NATIONAL26"}, {"d": 5, "name": "Spring Graduation Ceremonies (LI Schools", "emoji": "\ud83c\udf93", "disc": 25, "code": "SPRINGGR26"}, {"d": 6, "name": "Law School Graduation (JD Ceremony)", "emoji": "\u2696\ufe0f", "disc": 25, "code": "LAWSCHOO26"}, {"d": 6, "name": "Nassau County Memorial Day Parade", "emoji": "\ud83c\uddfa\ud83c\uddf8", "disc": 15, "code": "NASSAUCO26"}, {"d": 8, "name": "National Donut Day", "emoji": "\ud83c\udf69", "disc": 8, "code": "NATIONAL26"}, {"d": 12, "name": "June Graduation Ceremonies", "emoji": "\ud83c\udf93", "disc": 25, "code": "JUNEGRAD26"}, {"d": 13, "name": "MBA Graduation & Business School", "emoji": "\ud83d\udcbc", "disc": 25, "code": "MBAGRADU26"}, {"d": 14, "name": "Military Graduation / Boot Camp Completi", "emoji": "\ud83c\udf96\ufe0f", "disc": 25, "code": "MILITARY26"}, {"d": 17, "name": "Pre-K & Nursery Graduation", "emoji": "\ud83d\udc76", "disc": 10, "code": "PRE-KNUR26"}, {"d": 19, "name": "Summer Graduation Parties", "emoji": "\ud83c\udf93", "disc": 20, "code": "SUMMERGR26"}, {"d": 20, "name": "Middle School Promotion Ceremony", "emoji": "\ud83c\udfc5", "disc": 15, "code": "MIDDLESC26"}, {"d": 21, "name": "Retirement Party", "emoji": "\ud83c\udfd6\ufe0f", "disc": 25, "code": "RETIREME26"}, {"d": 21, "name": "National Flag Day (Corporate Gifting)", "emoji": "\ud83c\uddfa\ud83c\uddf8", "disc": 10, "code": "NATIONAL26"}, {"d": 21, "name": "Plainview-Old Bethpage School Events", "emoji": "\ud83d\udcda", "disc": 15, "code": "PLAINVIE26"}, {"d": 26, "name": "Juneteenth", "emoji": "\u270a", "disc": 15, "code": "JUNETEEN26"}, {"d": 27, "name": "Trade & Vocational School Graduation", "emoji": "\ud83d\udd27", "disc": 20, "code": "TRADEVOC26"}, {"d": 28, "name": "Father's Day", "emoji": "\ud83d\udc54", "disc": 25, "code": "FATHERSD26"}, {"d": 28, "name": "First Day of Summer", "emoji": "\u2600\ufe0f", "disc": 15, "code": "FIRSTDAY26"}, {"d": 30, "name": "National Pink Day", "emoji": "\ud83c\udf38", "disc": 10, "code": "NATIONAL26"}, {"d": 35, "name": "Quinceanera Season (June)", "emoji": "\ud83c\udf3a", "disc": 20, "code": "QUINCEAN26"}, {"d": 38, "name": "National Postal Worker Day", "emoji": "\ud83d\udcec", "disc": 10, "code": "NATIONAL26"}, {"d": 38, "name": "Mid-Year Sale", "emoji": "\u2600\ufe0f", "disc": 20, "code": "MID-YEAR26"}, {"d": 41, "name": "Independence Day", "emoji": "\ud83c\udf86", "disc": 20, "code": "INDEPEND26"}, {"d": 41, "name": "Hamptons Fourth of July", "emoji": "\ud83c\udf86", "disc": 20, "code": "HAMPTONS26"}, {"d": 44, "name": "National Chocolate Day", "emoji": "\ud83c\udf6b", "disc": 12, "code": "NATIONAL26"}, {"d": 49, "name": "New Home / Housewarming", "emoji": "\ud83c\udfe0", "disc": 20, "code": "NEWHOME/26"}, {"d": 55, "name": "National Ice Cream Day", "emoji": "\ud83c\udf66", "disc": 10, "code": "NATIONAL26"}, {"d": 57, "name": "Engagement Announcement", "emoji": "\ud83d\udc8d", "disc": 20, "code": "ENGAGEME26"}, {"d": 67, "name": "International Friendship Day", "emoji": "\ud83d\udc6b", "disc": 15, "code": "INTERNAT26"}];
+
+  // Find today's celebration from data
+  function todayCel() {
+    for (var i = 0; i < CEL_DATA.length; i++) {
+      if (CEL_DATA[i].d === 0) return CEL_DATA[i];
+    }
+    return CEL_DATA[0] || {name:"", emoji:"🎉", disc:10, code:""};
+  }
+
+  var cel = todayCel();
+  var chatHistory = [];
+  var chatOpen = false;
+  var greeted = false;
+
+  // Show toast after 2.5s
+  setTimeout(function() {
+    var t = document.getElementById("cel-toast");
+    if (t) { t.style.opacity="1"; t.style.transform="translateY(0)"; t.style.pointerEvents="auto"; }
+    setTimeout(function() {
+      if (t) t.style.opacity="0";
+    }, 7000);
+  }, 2500);
+
+  window.celToggleChat = function() {
+    chatOpen = !chatOpen;
+    var chat  = document.getElementById("cel-chat");
+    var toast = document.getElementById("cel-toast");
+    var badge = document.getElementById("cel-badge");
+    if (chat)  chat.style.display  = chatOpen ? "flex" : "none";
+    if (toast) toast.style.opacity = "0";
+    if (badge) badge.style.display = "none";
+    if (chatOpen && !greeted) { celAutoGreet(); greeted = true; }
+    if (chatOpen) { setTimeout(function(){var inp=document.getElementById("cel-input");if(inp)inp.focus();},100); }
+  };
+
+  function celAutoGreet() {
+    var msg = cel.name
+      ? "Hello! " + cel.emoji + " " + (cel.d===0 ? "Happy " + cel.name + "!" : cel.name + " is in " + cel.d + " days!") + " What would you like to find today?"
+      : "Hello! Welcome to Long Island Card. How can I help you today?";
+    celAppendMessage("assistant", msg);
+    chatHistory.push({role:"assistant", content:msg});
+  }
+
+  window.celSend = function() {
+    var inp = document.getElementById("cel-input");
+    if (!inp || !inp.value.trim()) return;
+    var txt = inp.value.trim();
+    inp.value = "";
+    celAppendMessage("user", txt);
+    chatHistory.push({role:"user", content:txt});
+    celFetch(txt);
+  };
+
+  function celFetch(userMsg) {
+    var typing = celAppendMessage("assistant", "...", true);
+    fetch(PROXY + "/ai-chat", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        store: STORE,
+        celebration: cel.name || "",
+        emoji: cel.emoji || "🎉",
+        message: userMsg,
+        history: chatHistory.slice(-8)
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (typing) typing.remove();
+      var reply = d.reply || d.error || "Sorry, I couldn't connect right now.";
+      celAppendMessage("assistant", reply);
+      chatHistory.push({role:"assistant", content:reply});
+    })
+    .catch(function(){
+      if (typing) typing.remove();
+      celAppendMessage("assistant", "Sorry, the assistant is temporarily unavailable. Please call us or browse the shop!");
+    });
+  }
+
+  function celAppendMessage(role, text, isTyping) {
+    var msgs = document.getElementById("cel-messages");
+    if (!msgs) return null;
+    var div = document.createElement("div");
+    div.style.cssText = "max-width:85%;padding:9px 13px;border-radius:14px;font-size:.84rem;line-height:1.4;" +
+      (role==="user"
+        ? "background:#134e5e;color:#FFD700;align-self:flex-end;border-bottom-right-radius:4px;"
+        : "background:#f4f4f4;color:#222;align-self:flex-start;border-bottom-left-radius:4px;");
+    div.textContent = text;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+})();
+</script>

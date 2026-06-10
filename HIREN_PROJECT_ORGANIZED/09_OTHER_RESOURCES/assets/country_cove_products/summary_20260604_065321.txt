@@ -1,0 +1,42 @@
+COUNTRY COVE INC. — IMAGE INVENTORY REPORT
+======================================================================
+
+Generated: 2026-06-04 06:53:21
+
+Total Images: 373
+Duplicates Removed: 244
+Categories: 31
+
+BREAKDOWN BY CATEGORY:
+----------------------------------------------------------------------
+Banners / Backlit                                   10 images
+Banners / Birthday                                   1 images
+Banners / Breakaway                                  1 images
+Banners / Church                                     1 images
+Banners / Fabric                                    15 images
+Banners / General                                    5 images
+Banners / Holiday                                    1 images
+Banners / Mesh & Fence                               2 images
+Banners / Political                                  2 images
+Banners / Vinyl                                     10 images
+Decals / General                                    20 images
+Decals / Wall                                        1 images
+Decals / Window                                      2 images
+Displays / Canopy Tents                              1 images
+Displays / Counters                                  1 images
+Displays / General                                   7 images
+Flags / Feather                                      1 images
+Flags / General                                      3 images
+Flags / Teardrop                                     1 images
+Marketing / Facility                                 3 images
+Marketing / Hero Slides                              1 images
+Marketing / Lifestyle                               26 images
+Signs / Aluminum                                     3 images
+Signs / General                                     20 images
+Signs / LED & Neon                                  18 images
+Signs / Yard Signs                                   1 images
+Stands / General                                     2 images
+Stands / Retractable                                 1 images
+Table Covers / Fitted                                2 images
+Table Covers / Stretch                               2 images
+Uncategorized                                      209 images

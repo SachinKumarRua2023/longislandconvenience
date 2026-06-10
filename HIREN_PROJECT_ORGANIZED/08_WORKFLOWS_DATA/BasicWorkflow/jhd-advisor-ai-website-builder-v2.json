@@ -1,0 +1,461 @@
+{
+  "name": "JHD Advisor — Universal Website Scraper + Odoo AI Builder v2",
+  "nodes": [
+    {
+      "id": "t0",
+      "name": "Form: Enter Inspiration URL",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [200, 200],
+      "parameters": {
+        "path": "jhd-website-builder",
+        "formTitle": "🚀 JHD Advisor — AI Website Builder",
+        "formDescription": "Enter any competitor or inspiration website URL. The AI will scrape it, analyze the design, and build a professional JHD Advisor page in Odoo automatically.",
+        "responseMode": "responseNode",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Inspiration Website URL",
+              "fieldType": "text",
+              "placeholder": "https://www.designrush.com/",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Page to Build",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "Home Page" },
+                  { "option": "Services Page" },
+                  { "option": "About Page" },
+                  { "option": "Landing Page — AI Automation" },
+                  { "option": "Landing Page — Odoo ERP" },
+                  { "option": "Landing Page — Web App Development" }
+                ]
+              },
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Design Style Override",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "Let AI Match Source Website" },
+                  { "option": "Dark Tech (Purple + Black)" },
+                  { "option": "Corporate Blue (Navy + White)" },
+                  { "option": "Minimal Clean (White + Purple)" },
+                  { "option": "Bold Modern (Black + Gold)" }
+                ]
+              },
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Special Offer This Week",
+              "fieldType": "text",
+              "placeholder": "e.g. Free 2-hour automation audit for new clients — this week only",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Auto-Publish to Odoo?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "No — save as draft for review" },
+                  { "option": "Yes — publish immediately (live on site)" }
+                ]
+              },
+              "requiredField": false
+            }
+          ]
+        }
+      },
+      "webhookId": "jhd-website-builder-001"
+    },
+    {
+      "id": "t1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 420],
+      "parameters": {}
+    },
+    {
+      "id": "n1",
+      "name": "Parse Input + Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst isForm = typeof item['Inspiration Website URL'] === 'string';\n\nconst sourceUrl   = ((isForm ? item['Inspiration Website URL'] : '') || 'https://www.designrush.com/').trim();\nconst pageType    = (isForm ? item['Page to Build'] : '') || 'Home Page';\nconst styleOver   = (isForm ? item['Design Style Override'] : '') || 'Let AI Match Source Website';\nconst promotion   = (isForm ? item['Special Offer This Week'] : '') || '';\nconst pubChoice   = (isForm ? item['Auto-Publish to Odoo?'] : '') || 'No — save as draft';\nconst autoPublish = pubChoice.toLowerCase().includes('yes') || pubChoice.toLowerCase().includes('immediately');\n\nconst ts = Date.now();\nconst pageSlug = 'jhd-page-' + ts;\nconst pageKey  = 'website.jhd_page_' + ts;\n\nconsole.log('[Config] sourceUrl=' + sourceUrl + ' page=' + pageType + ' autoPublish=' + autoPublish);\n\nreturn [{ json: {\n  isForm, sourceUrl, pageType, styleOver, promotion, autoPublish,\n  ts, pageSlug, pageKey,\n  FIRECRAWL_KEY: 'fc-471db502e79143e0982f3d2638b8ccdb',\n  CLAUDE_KEY:    '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',\n  CLAUDE_MODEL:  'claude-sonnet-4-6',\n  ODOO_URL:      'https://country-cove-inc.odoo.com',\n  ODOO_DB:       'country-cove-inc',\n  ODOO_USER:     'countrycoveinc@gmail.com',\n  ODOO_PASS:     'M@nhattan1234',\n  JHD_SITE_ID:   41,\n  JHD_DOMAIN:    'jhdadvisor.com',\n  startedAt:     new Date().toISOString()\n}}];"
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Firecrawl: Scrape Source URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [740, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $json.FIRECRAWL_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ url: $json.sourceUrl, formats: ['markdown', 'links', 'extract'], extract: { prompt: 'Extract from this website: 1) Color palette (describe primary, secondary, accent, background colors with hex codes if visible), 2) Navigation menu items, 3) All page sections present (hero, features, pricing, testimonials, FAQ, etc.), 4) Hero headline text, 5) Subheadline or tagline, 6) CTA button labels, 7) Key value propositions or benefit statements, 8) Trust signals (client counts, ratings, certifications, awards), 9) Technologies or tools mentioned, 10) Overall design style description (dark/light, modern/corporate, etc.), 11) Any pricing plans or packages mentioned, 12) Testimonial quotes if any' }, onlyMainContent: false, waitFor: 2000, timeout: 45000 }) }}",
+        "options": {
+          "timeout": 60000,
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      }
+    },
+    {
+      "id": "n3",
+      "name": "Firecrawl: Search Consulting Inspiration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $('Parse Input + Config').item.json.FIRECRAWL_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ query: 'best IT consulting AI automation agency website design portfolio award 2024 2025', limit: 4 }) }}",
+        "options": {
+          "timeout": 45000,
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      }
+    },
+    {
+      "id": "n4",
+      "name": "Code: Merge + Build Analysis Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1260, 300],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.data !== undefined || resp?.result !== undefined || resp?.content) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst scrapeResp  = decodeBuffer($('Firecrawl: Scrape Source URL').item.json);\nconst searchResp  = decodeBuffer($input.item.json);\nconst cfg         = $('Parse Input + Config').item.json;\n\n// ── Extract scrape data ───────────────────────────────────────────────────────\nconst scrapeData   = scrapeResp?.data || {};\nconst markdown     = (scrapeData.markdown || '').substring(0, 6000);\nconst extractedData= scrapeData.extract  || {};\nconst metadata     = scrapeData.metadata || {};\nconst links        = (scrapeData.links   || []).slice(0, 20);\n\nconst scraped = {\n  url:       cfg.sourceUrl,\n  title:     metadata.title || metadata.ogTitle || '',\n  desc:      metadata.description || metadata.ogDescription || '',\n  markdown,\n  extracted: extractedData,\n  links\n};\n\n// ── Extract search results ────────────────────────────────────────────────────\nconst searchItems = Array.isArray(searchResp?.data) ? searchResp.data : [];\nconst inspirationSites = searchItems.slice(0, 4).map((r, i) => ({\n  n: i + 1,\n  url:     r.url || '',\n  title:   r.title || '',\n  desc:    r.description || '',\n  content: (r.markdown || '').substring(0, 800)\n}));\n\nconst inspirationText = inspirationSites.length\n  ? inspirationSites.map(s => `## ${s.n}. ${s.title}\\nURL: ${s.url}\\n${s.desc}\\n${s.content}\\n---`).join('\\n\\n')\n  : 'No additional sites found. Use expert knowledge of leading agencies: WPP, Accenture, Deloitte Digital, McKinsey Digital, IBM Consulting.';\n\n// ── Build Claude analysis prompt ──────────────────────────────────────────────\nconst analyzePrompt =\n  `You are a senior UI/UX director specializing in consulting and technology agency websites.\\n\\n` +\n  `== PRIMARY INSPIRATION SOURCE ==\\n` +\n  `URL: ${scraped.url}\\nTitle: ${scraped.title}\\nDesc: ${scraped.desc}\\n\\n` +\n  `SCRAPED CONTENT:\\n${scraped.markdown.substring(0, 3000)}\\n\\n` +\n  `EXTRACTED DATA:\\n${JSON.stringify(scraped.extracted, null, 2).substring(0, 2000)}\\n\\n` +\n  `== ADDITIONAL INSPIRATION SITES ==\\n${inspirationText.substring(0, 3000)}\\n\\n` +\n  `== TASK ==\\n` +\n  `Analyze all of this and return ONLY valid JSON (no markdown fences) for building a world-class consulting agency website:\\n` +\n  `{\\n` +\n  `  \"colorPalette\": { \"primary\": \"#hex\", \"secondary\": \"#hex\", \"accent\": \"#hex\", \"background\": \"#hex\", \"surface\": \"#hex\", \"textPrimary\": \"#hex\", \"textSecondary\": \"#hex\" },\\n` +\n  `  \"typography\": { \"headingFont\": \"font name\", \"bodyFont\": \"font name\", \"style\": \"description\" },\\n` +\n  `  \"designStyle\": \"description of overall visual style\",\\n` +\n  `  \"heroPattern\": \"description of hero layout (split, centered, video bg, etc)\",\\n` +\n  `  \"trustSignals\": [\"4-5 specific trust elements that work for this niche\"],\\n` +\n  `  \"keyValueProps\": [\"5-6 compelling value propositions for an IT consulting firm\"],\\n` +\n  `  \"ctaPrimary\": \"best primary CTA text for consulting\",\\n` +\n  `  \"ctaSecondary\": \"best secondary CTA\",\\n` +\n  `  \"serviceSections\": [\"section name 1\", \"section name 2\", \"...\"],\\n` +\n  `  \"socialProofType\": \"best type of social proof for this niche (testimonials, logos, case studies, etc)\",\\n` +\n  `  \"pricingStrategy\": \"description of pricing approach (transparent tiers, custom quote, etc)\",\\n` +\n  `  \"navigationItems\": [\"Home\", \"Services\", \"...\"],\\n` +\n  `  \"heroHeadline\": \"compelling 6-8 word headline for JHD Advisor IT consulting\",\\n` +\n  `  \"heroSubheadline\": \"1-2 sentence compelling subheadline\",\\n` +\n  `  \"tagline\": \"short memorable tagline for JHD Advisor\"\\n` +\n  `}`;\n\nconst analyzeRequest = JSON.stringify({\n  model:      cfg.CLAUDE_MODEL,\n  max_tokens: 1500,\n  messages:   [{ role: 'user', content: analyzePrompt }]\n});\n\nconsole.log('[Analysis] scraped=' + scraped.markdown.length + 'chars inspSites=' + inspirationSites.length);\n\nreturn [{ json: { ...cfg, scraped, inspirationSites, analyzeRequest } }];"
+      }
+    },
+    {
+      "id": "n5",
+      "name": "HTTP: Claude — Analyze Design Patterns",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1520, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",          "value": "={{ $json.CLAUDE_KEY }}" },
+            { "name": "anthropic-version",   "value": "2023-06-01" },
+            { "name": "Content-Type",        "value": "application/json" },
+            { "name": "Accept-Encoding",     "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.analyzeRequest }}",
+        "options": {
+          "timeout": 60000,
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      }
+    },
+    {
+      "id": "n6",
+      "name": "Code: Build JHD HTML Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 300],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data !== undefined) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst claudeResp = decodeBuffer($input.item.json);\nconst prev       = $('Code: Merge + Build Analysis Prompt').item.json;\n\n// ── Parse Claude's design analysis ───────────────────────────────────────────\nconst raw = claudeResp?.content?.[0]?.text || '';\nlet d = {};\ntry { const m = raw.match(/\\{[\\s\\S]*\\}/); if (m) d = JSON.parse(m[0]); } catch(e) {}\n\n// ── Determine final colors based on style override ───────────────────────────\nconst styleOverride = prev.styleOver || '';\nlet cp = d.colorPalette || {};\nif (styleOverride.includes('Dark Tech')) {\n  cp = { primary:'#7c3aed', secondary:'#1e1b4b', accent:'#a78bfa', background:'#0f0a1e', surface:'#1a1035', textPrimary:'#ffffff', textSecondary:'#a5b4fc' };\n} else if (styleOverride.includes('Corporate Blue')) {\n  cp = { primary:'#1e40af', secondary:'#1e3a5f', accent:'#3b82f6', background:'#0f172a', surface:'#1e293b', textPrimary:'#ffffff', textSecondary:'#94a3b8' };\n} else if (styleOverride.includes('Minimal Clean')) {\n  cp = { primary:'#7c3aed', secondary:'#f3f4f6', accent:'#7c3aed', background:'#ffffff', surface:'#f9fafb', textPrimary:'#111827', textSecondary:'#6b7280' };\n} else if (styleOverride.includes('Bold Modern')) {\n  cp = { primary:'#111827', secondary:'#1f2937', accent:'#d97706', background:'#000000', surface:'#111827', textPrimary:'#ffffff', textSecondary:'#9ca3af' };\n} else {\n  cp.primary      = cp.primary     || '#7c3aed';\n  cp.secondary    = cp.secondary   || '#1e1b4b';\n  cp.accent       = cp.accent      || '#a78bfa';\n  cp.background   = cp.background  || '#0f0a1e';\n  cp.surface      = cp.surface     || '#1a1035';\n  cp.textPrimary  = cp.textPrimary || '#ffffff';\n  cp.textSecondary= cp.textSecondary|| '#a5b4fc';\n}\n\n// ── JHD Advisor locked brand data ────────────────────────────────────────────\nconst brand = {\n  name:       'JHD Advisor',\n  url:        'jhdadvisor.com',\n  address:    '605 Old Country Road, Plainview, NY 11803',\n  phone:      '(212) 564-8585',\n  email:      'hello@jhdadvisor.com',\n  hours:      'Mon–Fri 9am–6pm EST',\n  tagline:    d.tagline || 'Scale Your Business with AI Automation & Digital Systems',\n  headline:   d.heroHeadline || 'We Build the Systems That Scale Your Business',\n  subheadline:d.heroSubheadline || 'AI automation, n8n workflows, Odoo ERP, custom web apps and SEO systems — all under one roof. From discovery to launch in weeks, not months.',\n  ctaPrimary:  d.ctaPrimary  || 'Book a Free Strategy Call',\n  ctaSecondary:d.ctaSecondary|| 'See Our Work',\n  nav:        d.navigationItems || ['Home','Services','How It Works','Case Studies','Pricing','Blog','Contact']\n};\n\nconst SERVICES = [\n  { icon:'🤖', name:'AI Automation & Agents',    desc:'Custom AI agents, chatbots, voice assistants and LLM pipelines that handle leads, support, reporting and operations 24/7.',     cta:'Explore AI Automation', href:'/services/ai-automation', color:'#7c3aed' },\n  { icon:'🔄', name:'n8n Workflow Automation',   desc:'Self-hosted n8n workflows that connect every tool in your stack — CRM, email, WhatsApp, Shopify, Odoo — and eliminate manual work.', cta:'Explore n8n Workflows',  href:'/services/n8n',          color:'#0ea5e9' },\n  { icon:'📦', name:'Odoo ERP Implementation',   desc:'Full Odoo One setup: CRM, inventory, accounting, ecommerce, POS and email — replacing 12 apps with one intelligent platform.',    cta:'Explore Odoo ERP',       href:'/services/odoo',         color:'#10b981' },\n  { icon:'💻', name:'Web App & SaaS Development',desc:'Production-grade web apps and SaaS MVPs built in React + Node.js or Django. From idea to deployed product in 4–8 weeks.',        cta:'Explore Web Apps',       href:'/services/web-apps',     color:'#f59e0b' },\n  { icon:'🔍', name:'SEO & GEO Optimization',    desc:'AI-Overview optimization, local SEO, GEO targeting and content automation that drives organic leads from Google and Bing.',        cta:'Explore SEO/GEO',        href:'/services/seo',          color:'#ec4899' },\n  { icon:'🔒', name:'Cybersecurity & Compliance', desc:'Security audits, infrastructure hardening, compliance frameworks and VOIP systems that protect your business and customer data.',  cta:'Explore Security',       href:'/services/security',     color:'#ef4444' }\n];\n\nconst STATS = [\n  { number:'50+',  label:'Businesses Automated',    icon:'🏢' },\n  { number:'200+', label:'Workflows Built & Live',   icon:'⚡' },\n  { number:'$2M+', label:'Client Revenue Unlocked',  icon:'💰' },\n  { number:'4.9★', label:'Average Client Rating',    icon:'⭐' }\n];\n\nconst PROCESS = [\n  { step:'01', name:'Discovery Call',   desc:'30-minute free session. We map your current operations, identify the highest-ROI automation opportunities, and scope the project.', icon:'🎯' },\n  { step:'02', name:'Design & Propose', desc:'We design your full digital system — architecture diagrams, workflow maps, timeline and fixed-price proposal — in 5 business days.', icon:'🗺️' },\n  { step:'03', name:'Build & Launch',   desc:'Our team builds, tests and deploys your system. Most projects go live in 2–6 weeks. You own everything — code, data, workflows.', icon:'🚀' },\n  { step:'04', name:'Scale & Support',  desc:'Monthly retainer or ad-hoc support. We monitor, optimize and expand your system as your business grows. 24hr response SLA.', icon:'📈' }\n];\n\nconst CASE_STUDIES = [\n  { client:'Country Cove Inc.',  industry:'Retail / Gift & Balloons', result:'7 Odoo websites + 12 n8n workflows launched in 45 days. Revenue pipeline grew 3× in 6 months.', tag:'E-commerce + Automation', icon:'🎁',  color:'#7c3aed' },\n  { client:'Medical Practice',   industry:'Healthcare',                result:'Patient intake fully automated. 40% reduction in admin hours. Patient satisfaction +25 points NPS.', tag:'AI + CRM Automation',      icon:'🏥', color:'#10b981' },\n  { client:'Real Estate Firm',   industry:'Real Estate',              result:'AI lead qualification system delivers 3× more qualified appointments. 60% faster response time.', tag:'Lead Generation AI',       icon:'🏠',  color:'#0ea5e9' }\n];\n\nconst TECH_STACK = ['Odoo', 'n8n', 'Claude AI', 'OpenAI', 'React', 'Node.js', 'Python', 'PostgreSQL', 'Shopify', 'Twilio', 'Stripe', 'AWS', 'Docker', 'Playwright'];\n\nconst TESTIMONIALS = [\n  { name:'Hiren Kumar',  co:'Country Cove Inc.',   text:'JHD Advisor transformed our entire business. 7 websites, full Odoo ERP, and automation workflows — all running without us lifting a finger. Revenue up 3× in 6 months.',          stars:5 },\n  { name:'Dr. Sarah M.', co:'Dental Practice',      text:'Our patient intake is now fully automated. We save 15 hours a week and our satisfaction scores jumped 25%. The ROI was immediate.',                                           stars:5 },\n  { name:'Mike R.',      co:'Real Estate Group',    text:'The AI lead system generates 3× more qualified appointments and responds in under 60 seconds. Best technology investment our firm has ever made.',                          stars:5 }\n];\n\nconst PRICING = [\n  {\n    name:'Starter Automation', price:'$1,500', period:'/month', badge:'',\n    desc:'Perfect for small businesses ready to eliminate manual work.',\n    features:['n8n self-hosted setup','3 custom workflows','CRM + email integration','WhatsApp notifications','Monthly check-in call','Email support 48hr SLA'],\n    cta:'Get Started', highlight:false\n  },\n  {\n    name:'Business Builder', price:'$3,500', period:'/month', badge:'Most Popular',\n    desc:'Full-stack digital presence for growing businesses.',\n    features:['Everything in Starter','Odoo ERP implementation','Up to 2 websites built','AI chatbot or agent','SEO/GEO optimization','Weekly strategy calls','Priority support 24hr SLA'],\n    cta:'Book a Call', highlight:true\n  },\n  {\n    name:'Digital Transform', price:'Custom', period:'', badge:'Enterprise',\n    desc:'Complete digital transformation — our flagship engagement.',\n    features:['Everything in Business Builder','Up to 7 websites','12+ automation workflows','Custom AI agents','VOIP + CRM setup','Mobile app (iOS + Android)','Dedicated account manager','4hr emergency SLA'],\n    cta:'Let\\'s Talk', highlight:false\n  }\n];\n\nconst FAQ = [\n  { q:'How long does a typical project take?', a:'Simple automations launch in 1–2 weeks. Full Odoo ERP implementations take 4–6 weeks. Complete digital transformations (multiple sites + workflows) run 6–12 weeks. We give fixed timelines in the proposal and hold to them.' },\n  { q:'Do you provide ongoing support after launch?', a:'Yes. All projects include a 30-day post-launch support period. After that, monthly retainer packages start at $400/month, covering monitoring, updates, bug fixes and expansion work.' },\n  { q:'Can you work with our existing software?', a:'Absolutely. We integrate with 400+ tools via n8n and APIs — QuickBooks, HubSpot, Salesforce, Shopify, WooCommerce, Calendly, Stripe, Twilio and more. If it has an API, we can connect it.' },\n  { q:'What industries do you work with?', a:'Retail, e-commerce, medical/dental, real estate, restaurants, law firms, nonprofits and professional services. If your business has manual, repetitive processes and customer-facing digital presence, we can help.' },\n  { q:'Is there a free consultation?', a:'Yes — always. Our 30-minute discovery call is 100% free. No pitch, no pressure. We\\'ll tell you exactly what can be automated, what it costs, and what ROI you can realistically expect.' }\n];\n\nconst bg  = cp.background;\nconst surf= cp.surface;\nconst pri = cp.primary;\nconst acc = cp.accent;\nconst txt = cp.textPrimary;\nconst txt2= cp.textSecondary;\nconst promo = prev.promotion || '';\n\nconst pageInstructions = prev.pageType || 'Home Page';\n\nconst htmlPrompt =\n`You are a senior frontend engineer. Build a complete, production-ready, single-file TailwindCSS HTML page for \"JHD Advisor\" — an IT consulting, AI automation, and digital transformation agency.\n\nThe page to build: ${pageInstructions}\n\n══ MANDATORY COLOR RULES — NEVER VIOLATE ══\n1. <body style=\"background:${bg};color:${txt};font-family:Inter,sans-serif\">\n2. ALL text on dark panels MUST have explicit color class — text-white or text-slate-300. NEVER rely on inheritance.\n3. ALL headings: font-weight 900, font-family Poppins (import from Google Fonts)\n4. ALL panels/cards: use surface color ${surf} — never leave a panel without explicit background\n5. Accent ${acc} for CTAs, hover states, highlights, active indicators\n6. Tailwind config: extend colors with brand:'${bg}', surface:'${surf}', accent:'${acc}'\n\n══ BRAND DATA — USE EXACTLY ══\nName: ${brand.name} | Domain: ${brand.url}\nAddress: ${brand.address} | Phone: ${brand.phone} | Email: ${brand.email}\nTagline: ${brand.tagline}\nHero Headline: ${brand.headline}\nHero Sub: ${brand.subheadline}\nPrimary CTA: \"${brand.ctaPrimary}\" | Secondary CTA: \"${brand.ctaSecondary}\"\nNav items: ${brand.nav.join(' · ')}\n${promo ? 'ANNOUNCEMENT / PROMOTION: ' + promo : ''}\n\n══ DATA BLOCKS — RENDER EXACTLY AS PROVIDED ══\nSTATS: ${JSON.stringify(STATS)}\nSERVICES: ${JSON.stringify(SERVICES)}\nPROCESS: ${JSON.stringify(PROCESS)}\nCASE_STUDIES: ${JSON.stringify(CASE_STUDIES)}\nTECH_STACK: ${JSON.stringify(TECH_STACK)}\nTESTIMONIALS: ${JSON.stringify(TESTIMONIALS)}\nPRICING: ${JSON.stringify(PRICING)}\nFAQ: ${JSON.stringify(FAQ)}\n\n══ BUILD ALL 16 SECTIONS IN EXACT ORDER ══\n\n[S1] ANNOUNCEMENT BAR (id=\"announce-bar\", z-[70], fixed top-0, full width)\n  bg-[${acc}] text-black py-2 px-4 flex justify-between items-center text-sm font-semibold\n  Left: scrolling marquee with text: \"${promo || '⚡ Free 30-minute automation audit — no strings attached  |  Odoo ERP setup from $1,500/mo  |  We build, you own — forever  |  Book your strategy call today →'}\"  \n  Right: × button (id=\"dismiss-announce\", removes bar on click)\n  Marquee CSS: @keyframes marquee { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} } .animate-marquee{animation:marquee 30s linear infinite}\n\n[S2] STICKY HEADER (id=\"main-header\", fixed top-8, z-50, w-full, bg-[${bg}]/95 backdrop-blur-xl border-b border-white/10)\n  3 zones: LEFT logo | CENTER nav | RIGHT CTAs\n  LEFT: gradient icon ◆ (text-[${acc}]) + \"JHD Advisor\" (font-black text-white text-xl Poppins) + \"Plainview, NY\" (text-xs text-slate-500)\n  CENTER (hidden lg:flex gap-6): nav links class=\"text-sm font-medium text-slate-400 hover:text-white transition-colors\" for each: ${brand.nav.join(', ')}\n  RIGHT: hidden lg:flex gap-3 — (1) \"(212) 564-8585\" pill (border border-white/20 text-slate-300 text-sm px-4 py-2 rounded-full hover:border-white) + (2) \"${brand.ctaPrimary}\" btn (bg-[${acc}] text-black font-bold px-5 py-2 rounded-xl text-sm hover:scale-105 transition)\n  MOBILE (<lg): hamburger icon (3-line SVG) right — toggles #mobile-menu dropdown\n  MOBILE MENU (id=\"mobile-menu\", hidden, bg-[${surf}] border-b border-white/10 px-4 py-4): stacked nav links + CTA button\n\n[S3] HERO (id=\"hero\", min-h-screen flex items-center pt-32 pb-20 px-4 relative overflow-hidden)\n  Background: radial gradient glow circles (absolute, blurred, ${acc}/10 and ${pri}/10)\n  Max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center\n  LEFT (text content):\n    Small badge pill (bg-[${acc}]/15 text-[${acc}] border border-[${acc}]/30 rounded-full px-4 py-1 text-sm inline-flex): \"🤖 AI + Automation + Digital Systems\"\n    H1 (text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.1] mt-4 Poppins): \"${brand.headline}\"\n    P (text-xl text-slate-300 mt-6 max-w-lg leading-relaxed): \"${brand.subheadline}\"\n    Button row (mt-8 flex flex-wrap gap-4):\n      Primary: class=\"bg-[${acc}] text-black font-bold px-8 py-4 rounded-2xl text-lg hover:scale-105 hover:shadow-[0_0_30px_${acc}40] transition-all\" — \"${brand.ctaPrimary}\"\n      Secondary: class=\"border-2 border-white/20 text-white font-bold px-8 py-4 rounded-2xl text-lg hover:bg-white/5 transition\" — \"${brand.ctaSecondary}\"\n    Trust micro-badges (mt-8 flex flex-wrap gap-4): each = ✓ icon (text-[${acc}]) + text (text-slate-300 text-sm) for each stat: \"50+ Businesses Automated\", \"200+ Workflows Built\", \"4.9★ Average Rating\"\n  RIGHT: visual card stack\n    3 floating stat cards (bg-[${surf}] border border-white/10 rounded-2xl p-4 shadow-2xl), each with icon + big number (text-[${acc}] text-3xl font-black) + label\n    Positioned with absolute/relative overlapping layout and slight rotation\n    Bottom: \"Powered by\" row with small tech logos (text pills): Odoo · n8n · Claude AI · React\n\n[S4] STATS BAR (id=\"stats\", py-12 bg-[${surf}] border-y border-white/10)\n  max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 px-4\n  EACH STAT: text-center — icon (text-3xl mb-2) + number (text-4xl font-black text-[${acc}] Poppins) + label (text-slate-400 text-sm mt-1)\n  Data: ${JSON.stringify(STATS)}\n\n[S5] SERVICES (id=\"services\", py-20 px-4 max-w-7xl mx-auto)\n  Header: \"What We Build\" (text-sm text-[${acc}] font-bold uppercase tracking-widest) + H2 (text-4xl font-black text-white Poppins mt-2) + subtitle (text-slate-400 max-w-xl mt-3)\n  Grid (mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6)\n  EACH SERVICE CARD (class=\"group bg-[${surf}] rounded-2xl p-6 border border-white/5 hover:border-[${acc}]/40 hover:scale-[1.02] transition-all duration-300 cursor-pointer\"):\n    Icon circle (w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4, bg uses service color at 20%: style=\"background:{color}33\")\n    Name: font-bold text-white text-lg\n    Desc: text-slate-400 text-sm mt-2 leading-relaxed\n    CTA arrow link: class=\"mt-4 inline-flex items-center gap-2 text-[${acc}] text-sm font-semibold group-hover:gap-3 transition-all\" — \"{cta} →\"\n\n[S6] HOW IT WORKS (id=\"process\", py-20 px-4 bg-[${surf}]/50)\n  max-w-5xl mx-auto text-center\n  Header: \"How It Works\" (text-4xl font-black text-white Poppins)\n  Sub: \"From discovery call to live system — a clear, fixed process with no surprises.\" (text-slate-400 mt-3)\n  Grid (mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center)\n  EACH STEP:\n    Step number badge: text-6xl font-black text-[${acc}]/20 Poppins\n    Icon: text-4xl mt-2\n    Name: font-black text-white text-lg mt-3\n    Desc: text-slate-400 text-sm mt-2 leading-relaxed\n    Connector line between steps (hidden on mobile): absolute border-t border-[${acc}]/20 dashed\n\n[S7] CASE STUDIES (id=\"case-studies\", py-20 px-4 max-w-7xl mx-auto)\n  Header: \"Real Results\" (text-4xl font-black text-white Poppins) + \"Actual client outcomes — not projections\" (text-slate-400)\n  Grid (mt-12 grid grid-cols-1 md:grid-cols-3 gap-6)\n  EACH CASE STUDY (bg-[${surf}] rounded-2xl overflow-hidden border border-white/5 hover:border-[${acc}]/30 transition-all group):\n    Top bar: bg gradient using card color, py-4 px-6 — industry tag badge + icon\n    Body p-6:\n      Client name: font-black text-white text-lg\n      Industry: text-[${acc}] text-xs font-bold uppercase tracking-wider\n      Result: text-slate-300 text-sm mt-3 leading-relaxed\n      Bottom: tag pill (bg-[${acc}]/10 text-[${acc}] text-xs px-3 py-1 rounded-full border border-[${acc}]/20) + \"→ Read full case study\" link\n\n[S8] TECH STACK (id=\"tech\", py-14 bg-[${surf}] border-y border-white/10)\n  max-w-6xl mx-auto px-4 flex flex-col items-center\n  Label: \"We Work With\" (text-xs text-slate-500 uppercase tracking-widest font-bold)\n  Logo row (mt-6 flex flex-wrap justify-center gap-3): each tech = pill (bg-[${bg}] border border-white/10 text-slate-300 text-sm px-4 py-2 rounded-full font-medium hover:border-[${acc}]/40 hover:text-white transition)\n  Data: ${JSON.stringify(TECH_STACK)}\n\n[S9] TESTIMONIALS (id=\"testimonials\", py-20 px-4 max-w-7xl mx-auto)\n  Header center: ★ badge (text-[${acc}] text-sm font-bold) + \"What Clients Say\" (text-4xl font-black text-white Poppins) + \"4.9/5 from 50+ engagements\" (text-slate-400)\n  Grid (mt-12 grid grid-cols-1 md:grid-cols-3 gap-6)\n  EACH REVIEW (bg-[${surf}] rounded-2xl p-6 border border-white/5 hover:border-[${acc}]/20 transition):\n    Stars row: 5× ★ (text-[${acc}])\n    Quote: text-slate-300 text-sm leading-relaxed mt-4 italic — \"text\"\n    Footer mt-5 flex items-center gap-3:\n      Avatar circle (w-10 h-10 rounded-full flex items-center justify-center font-black text-sm, bg-[${pri}]/30 text-white): first initial\n      Name (font-bold text-white text-sm) + Company (text-slate-500 text-xs)\n      Right: \"Verified Client\" (bg-green-500/15 text-green-400 border border-green-500/20 text-xs px-2 py-0.5 rounded-full)\n\n[S10] PRICING (id=\"pricing\", py-20 px-4 bg-[${surf}]/30)\n  max-w-5xl mx-auto text-center\n  Header: \"Transparent Pricing\" (text-4xl font-black text-white Poppins) + \"No hidden fees. You own everything we build.\" (text-slate-400 mt-3)\n  Toggle (mt-6): Monthly / Annual (10% off) button toggle — default Monthly\n  Grid (mt-12 grid grid-cols-1 md:grid-cols-3 gap-6)\n  EACH PLAN:\n    If highlight=true: ring-2 ring-[${acc}] scale-[1.03] — otherwise normal\n    Card: bg-[${surf}] rounded-2xl p-6 border border-white/10 relative\n    \"Most Popular\" badge (if badge): absolute -top-3 left-1/2 -translate-x-1/2 bg-[${acc}] text-black text-xs font-bold px-4 py-1 rounded-full\n    Plan name: font-bold text-slate-400 text-sm uppercase tracking-wider\n    Price: text-5xl font-black text-white Poppins mt-2 + period: text-slate-400 text-sm\n    Desc: text-slate-400 text-sm mt-3 border-b border-white/10 pb-4\n    Features (mt-4 space-y-2): each = ✓ (text-[${acc}]) + text (text-slate-300 text-sm)\n    CTA btn (mt-6 w-full py-3 rounded-xl font-bold transition): if highlight: bg-[${acc}] text-black hover:opacity-90 else border border-white/20 text-white hover:bg-white/5\n\n[S11] FAQ (id=\"faq\", py-20 px-4 max-w-3xl mx-auto)\n  Header center: \"Frequently Asked Questions\" (text-4xl font-black text-white Poppins)\n  Accordion list (mt-12 space-y-3): each item = div with border border-white/10 rounded-xl overflow-hidden\n    Question row (flex justify-between items-center p-5 cursor-pointer hover:bg-white/5, onclick toggles answer)\n      Q text: font-semibold text-white\n      Icon: ＋/－ (text-[${acc}] font-bold text-xl)\n    Answer div (hidden by default, p-5 pt-0 text-slate-400 text-sm leading-relaxed): answer text\n\n[S12] BOOK A CALL CTA (id=\"cta\", py-20 px-4)\n  max-w-4xl mx-auto bg-gradient-to-br from-[${pri}]/30 to-[${acc}]/10 rounded-3xl p-10 lg:p-16 border border-[${acc}]/20 text-center\n  Icon: 📞 text-5xl\n  H2 (text-4xl font-black text-white Poppins mt-4): \"Ready to Automate Your Business?\"\n  P (text-slate-300 mt-4 text-lg max-w-2xl mx-auto): \"Book a free 30-minute strategy call. No pitch. Just an honest assessment of what AI automation can do for your specific business.\"\n  Benefits row (mt-6 flex flex-wrap justify-center gap-4): each = ✓ pill — \"100% Free\" | \"No Commitment\" | \"Expert Advice\" | \"Actionable Roadmap\"\n  Button (mt-8): bg-[${acc}] text-black font-black px-10 py-5 rounded-2xl text-xl hover:scale-105 hover:shadow-[0_0_40px_${acc}50] transition-all — \"${brand.ctaPrimary} →\"\n  Sub: \"Or call us directly: ${brand.phone}\" (text-slate-500 text-sm mt-4)\n\n[S13] NEWSLETTER (py-16 px-4 bg-[${surf}] border-t border-white/10)\n  max-w-xl mx-auto text-center\n  Icon: 📬 text-4xl\n  H2 (text-2xl font-black text-white Poppins mt-3): \"Get Weekly Automation Tips\"\n  P (text-slate-400 text-sm mt-2): \"Practical AI and automation insights for business owners. One email per week. Unsubscribe anytime.\"\n  Form (mt-6 flex gap-3):\n    Input: flex-1 bg-[${bg}] text-white border border-white/20 rounded-xl px-4 py-3 placeholder-slate-600 focus:outline-none focus:border-[${acc}] text-sm | placeholder=\"Your email address\"\n    Button: bg-[${acc}] text-black font-bold px-5 py-3 rounded-xl text-sm whitespace-nowrap hover:opacity-90 — \"Subscribe\"\n  Sub (mt-3 text-slate-600 text-xs): \"Join 2,000+ business owners. No spam.\"\n\n[S14] FOOTER (id=\"footer\", bg-[${bg}] border-t border-white/10 pt-16 pb-8)\n  max-w-7xl mx-auto px-4\n  Top grid (grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10):\n    COL 1 (lg:col-span-2): brand block\n      ◆ JHD Advisor (font-black text-white text-xl Poppins)\n      Tagline (text-slate-500 text-sm mt-2 max-w-xs leading-relaxed)\n      Contact block mt-4 space-y-1 text-slate-500 text-sm: 📍 address | 📞 phone | ✉️ email | 🕐 hours\n      Social row mt-4: LinkedIn · Twitter · YouTube · GitHub — each w-9 h-9 bg-[${surf}] hover:bg-[${acc}] hover:text-black text-slate-400 rounded-full flex items-center justify-center transition text-xs font-bold\n    COL 2: \"SERVICES\" + links: AI Automation, n8n Workflows, Odoo ERP, Web Apps, SEO/GEO, Cybersecurity\n    COL 3: \"COMPANY\" + links: About, Case Studies, Blog, Pricing, Careers, Contact\n    COL 4: \"RESOURCES\" + links: Free Audit, Documentation, Templates, API Guide, FAQ\n    Footer link style: text-slate-500 text-sm hover:text-white transition block py-1\n  Bottom bar (mt-12 pt-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-600 text-xs):\n    © 2025 JHD Advisor. All rights reserved.\n    Links row: Privacy Policy · Terms of Service · Cookie Policy\n    \"Built with ❤️ using Odoo + Claude AI\" on right\n\n══ JAVASCRIPT (place all before </body>) ══\n1. Announce bar dismiss: document.getElementById('dismiss-announce')?.addEventListener('click',()=>document.getElementById('announce-bar')?.remove())\n2. Mobile menu toggle: let mOpen=false; document.getElementById('hamburger')?.addEventListener('click',()=>{mOpen=!mOpen;document.getElementById('mobile-menu')?.classList.toggle('hidden',!mOpen)})\n3. Sticky header adjustment when announce bar removed: window.addEventListener('scroll',()=>{const h=document.getElementById('main-header');if(h)h.style.top=document.getElementById('announce-bar')?'2rem':'0'})\n4. FAQ accordion: document.querySelectorAll('.faq-item').forEach(item=>{item.querySelector('.faq-q').addEventListener('click',()=>{const a=item.querySelector('.faq-a');a.classList.toggle('hidden');item.querySelector('.faq-icon').textContent=a.classList.contains('hidden')?'+':'−'})})\n5. Pricing toggle Monthly/Annual: const pToggle=document.getElementById('billing-toggle');if(pToggle)pToggle.addEventListener('click',()=>{pToggle.classList.toggle('annual');document.querySelectorAll('.annual-price').forEach(el=>el.classList.toggle('hidden'));document.querySelectorAll('.monthly-price').forEach(el=>el.classList.toggle('hidden'))})\n6. Smooth scroll for nav links: document.querySelectorAll('a[href^=\"#\"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'})}))\n7. Intersection Observer for fade-in on scroll: const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('opacity-100','translate-y-0')}),{threshold:0.1}); document.querySelectorAll('.fade-in').forEach(el=>{el.classList.add('opacity-0','translate-y-8','transition-all','duration-700');obs.observe(el)})\n\n══ TECHNICAL REQUIREMENTS ══\n- TailwindCSS: <script src=\"https://cdn.tailwindcss.com\"></script>\n- tailwind.config: { theme: { extend: { colors: { brand:'${bg}', surface:'${surf}', accent:'${acc}' }, fontFamily: { heading: ['Poppins','sans-serif'] } } } }\n- Google Fonts: <link href=\"https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&family=Inter:wght@400;500;600&display=swap\" rel=\"stylesheet\">\n- Custom styles in <style>: marquee animation, scrollbar-hide, fade-in transition classes\n- Every section has id= attribute matching the section map above\n- NO dark text on dark backgrounds anywhere — every text element must be explicitly styled\n- All cards have explicit bg color, never transparent or default\n\nOUTPUT: Return ONLY the complete HTML starting with <!DOCTYPE html> and ending with </html>. NO markdown fences. NO explanations. JUST the full production HTML.`;\n\nconst htmlRequest = JSON.stringify({\n  model:      prev.CLAUDE_MODEL,\n  max_tokens: 12000,\n  messages:   [{ role: 'user', content: htmlPrompt }]\n});\n\nconsole.log('[HTMLPrompt] design style=' + prev.styleOver + ' promo=' + !!promo);\n\nreturn [{ json: { ...prev, design: d, colorPalette: cp, brand, htmlRequest } }];"
+      }
+    },
+    {
+      "id": "n7",
+      "name": "HTTP: Claude — Generate JHD HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2040, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",        "value": "={{ $json.CLAUDE_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type",      "value": "application/json" },
+            { "name": "Accept-Encoding",   "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.htmlRequest }}",
+        "options": {
+          "timeout": 180000,
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      }
+    },
+    {
+      "id": "n8",
+      "name": "HTTP: Odoo Authenticate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2300, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Parse Input + Config').item.json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Accept",          "value": "application/json" },
+            { "name": "Accept-Encoding", "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ jsonrpc:'2.0', method:'call', id:1, params:{ service:'common', method:'authenticate', args:[$('Parse Input + Config').item.json.ODOO_DB, $('Parse Input + Config').item.json.ODOO_USER, $('Parse Input + Config').item.json.ODOO_PASS, {}] } }) }}",
+        "options": {
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Code: Extract HTML + Prepare Odoo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2560, 300],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.content || resp?.result !== undefined || resp?.data !== undefined) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst authResp   = decodeBuffer($('HTTP: Odoo Authenticate').item.json);\nconst claudeResp = decodeBuffer($('HTTP: Claude — Generate JHD HTML').item.json);\nconst cfg        = $('Parse Input + Config').item.json;\nconst prevCfg    = $('Code: Build JHD HTML Prompt').item.json;\n\n// ── Authenticate ──────────────────────────────────────────────────────────────\nconst uid    = (typeof authResp?.result === 'number' && authResp.result > 0) ? authResp.result : null;\nconst odooOk = !!(uid);\nconsole.log('[Auth] uid=' + uid + ' ok=' + odooOk);\n\n// ── Extract HTML from Claude ──────────────────────────────────────────────────\nconst raw = claudeResp?.content?.[0]?.text || '';\nlet fullHtml = raw.trim();\nconst fenced    = raw.match(/```html?\\s*([\\s\\S]*?)```/i);\nconst doctypeIdx = raw.toLowerCase().indexOf('<!doctype');\nif (fenced)          fullHtml = fenced[1].trim();\nelse if (doctypeIdx >= 0) fullHtml = raw.substring(doctypeIdx).trim();\n\n// ── Extract head assets ───────────────────────────────────────────────────────\nconst headMatch   = fullHtml.match(/<head[^>]*>([\\s\\S]*?)<\\/head>/i);\nconst headContent = headMatch ? headMatch[1] : '';\nconst styleTags   = [];\nlet sm; const sRx = /<style[\\s\\S]*?<\\/style>/gi; while((sm=sRx.exec(headContent))!==null) styleTags.push(sm[0]);\nlet lm; const lRx = /<link[^>]+(?:stylesheet|font)[^>]*\\/?>/gi; while((lm=lRx.exec(headContent))!==null) styleTags.push(lm[0]);\nlet scm; const scRx = /<script[^>]+src=['\"][^'\"]*(?:tailwind|cdn\\.tailwindcss)[^'\"]*['\"][^>]*>[\\s\\S]*?<\\/script>/gi; while((scm=scRx.exec(headContent))!==null) styleTags.push(scm[0]);\nconst headAssets = styleTags.join('\\n');\n\n// ── Extract body content ──────────────────────────────────────────────────────\nconst bodyMatch = fullHtml.match(/<body[^>]*>([\\s\\S]*)<\\/body>/i);\nlet bodyContent = bodyMatch ? bodyMatch[1].trim() : fullHtml;\nbodyContent = bodyContent\n  .replace(/<!DOCTYPE[^>]*>/gi, '')\n  .replace(/<\\/?html[^>]*>/gi, '')\n  .replace(/<head[\\s\\S]*?<\\/head>/gi, '')\n  .replace(/<\\/?body[^>]*>/gi, '')\n  .trim();\n\nif (bodyContent.length < 200) {\n  bodyContent = '<div class=\"min-h-screen flex items-center justify-center\" style=\"background:#0f0a1e\"><div class=\"text-center\"><h1 style=\"color:#a78bfa;font-size:2.5rem;font-weight:900\">JHD Advisor</h1><p style=\"color:#a5b4fc;margin-top:1rem\">AI Automation · n8n Workflows · Odoo ERP · Web Apps</p><p style=\"color:#ef4444;margin-top:1rem;font-size:0.875rem\">Page generation returned ' + raw.length + ' chars — click Retry to regenerate.</p><a href=\"/contact\" style=\"display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:12px;margin-top:1.5rem;font-weight:700;text-decoration:none\">Book a Strategy Call</a></div></div>';\n}\n\n// ── Build Odoo QWeb view arch ─────────────────────────────────────────────────\nconst odooArch = `<t t-name=\"${cfg.pageKey}\"><t t-call=\"website.layout\"><div id=\"wrap\" class=\"oe_structure\">${headAssets ? '\\n' + headAssets + '\\n' : ''}${bodyContent}\\n</div></t></t>`;\n\n// ── Build Odoo create view request ────────────────────────────────────────────\nconst createViewReq = JSON.stringify({\n  jsonrpc:'2.0', method:'call', id:2,\n  params:{\n    service:'object', method:'execute_kw',\n    args:[\n      cfg.ODOO_DB, uid, cfg.ODOO_PASS,\n      'ir.ui.view', 'create',\n      [{ name: 'JHD Advisor AI Page: ' + cfg.pageType, type:'qweb', arch_db: odooArch, key: cfg.pageKey, mode:'primary' }]\n    ]\n  }\n});\n\nconsole.log('[HTML] full=' + fullHtml.length + ' body=' + bodyContent.length + ' assets=' + headAssets.length);\n\nreturn [{ json: { ...prevCfg, uid, odooOk, bodyContent, htmlLength: bodyContent.length, odooArch, createViewReq, startedAt: cfg.startedAt } }];"
+      }
+    },
+    {
+      "id": "n10",
+      "name": "HTTP: Odoo Create ir.ui.view",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2820, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Accept-Encoding", "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.createViewReq }}",
+        "options": {
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      }
+    },
+    {
+      "id": "n11",
+      "name": "Code: Build Page Create Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3080, 300],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.result !== undefined || resp?.data !== undefined || resp?.content) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst viewResp = decodeBuffer($input.item.json);\nconst prev     = $('Code: Extract HTML + Prepare Odoo').item.json;\n\nconst viewId = typeof viewResp?.result === 'number' ? viewResp.result : null;\nconsole.log('[View] created viewId=' + viewId);\n\nconst pageUrl  = '/' + prev.pageSlug;\nconst pageType = (prev.pageType || 'Home Page').toLowerCase().replace(/[^a-z0-9]+/g, '-');\n\nconst createPageReq = JSON.stringify({\n  jsonrpc:'2.0', method:'call', id:3,\n  params:{\n    service:'object', method:'execute_kw',\n    args:[\n      prev.ODOO_DB, prev.uid, prev.ODOO_PASS,\n      'website.page', 'create',\n      [{\n        name:       'JHD Advisor — ' + (prev.pageType || 'AI Home'),\n        url:        pageUrl,\n        website_id: prev.JHD_SITE_ID,\n        view_id:    viewId || false,\n        is_published: false,\n        website_published: false,\n        track: true\n      }]\n    ]\n  }\n});\n\nreturn [{ json: { ...prev, viewId, pageUrl, createPageReq } }];"
+      }
+    },
+    {
+      "id": "n12",
+      "name": "HTTP: Odoo Create website.page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3340, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Accept-Encoding", "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.createPageReq }}",
+        "options": {
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      }
+    },
+    {
+      "id": "n13",
+      "name": "Code: Build Publish Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3600, 300],
+      "parameters": {
+        "jsCode": "function decodeBuffer(resp) {\n  if (resp?.result !== undefined || resp?.data !== undefined || resp?.content) return resp;\n  if (!resp?._readableState) return resp;\n  try {\n    const chunks = Array.isArray(resp._readableState.buffer) ? resp._readableState.buffer : [];\n    const allBytes = [];\n    for (const chunk of chunks) {\n      const d = chunk?.data;\n      if (Array.isArray(d)) allBytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) allBytes.push(...d.data);\n    }\n    if (allBytes.length > 0) return JSON.parse(Buffer.from(allBytes).toString('utf-8'));\n  } catch(e) {}\n  return resp;\n}\n\nconst pageResp = decodeBuffer($input.item.json);\nconst prev     = $('Code: Build Page Create Request').item.json;\n\nconst pageId = typeof pageResp?.result === 'number' ? pageResp.result : null;\nconsole.log('[Page] created pageId=' + pageId + ' autoPublish=' + prev.autoPublish);\n\nlet publishReq = null;\nif (prev.autoPublish && pageId) {\n  publishReq = JSON.stringify({\n    jsonrpc:'2.0', method:'call', id:4,\n    params:{\n      service:'object', method:'execute_kw',\n      args:[\n        prev.ODOO_DB, prev.uid, prev.ODOO_PASS,\n        'website.page', 'write',\n        [[pageId], { is_published: true, website_published: true }]\n      ]\n    }\n  });\n}\n\nconst previewUrl = prev.ODOO_URL + prev.pageUrl;\nconst odooAdmin  = prev.ODOO_URL + '/odoo/website/' + prev.JHD_SITE_ID;\n\nreturn [{ json: { ...prev, pageId, publishReq, shouldPublish: !!(prev.autoPublish && pageId), previewUrl, odooAdmin } }];"
+      }
+    },
+    {
+      "id": "n14",
+      "name": "HTTP: Odoo Publish Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3860, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Accept-Encoding", "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.publishReq || JSON.stringify({ jsonrpc:'2.0', method:'call', id:4, params:{ service:'common', method:'version', args:[] } }) }}",
+        "options": {
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      }
+    },
+    {
+      "id": "n15",
+      "name": "Code: Final Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4120, 300],
+      "parameters": {
+        "jsCode": "const prev = $('Code: Build Publish Request').item.json;\n\nconst duration = Math.round((Date.now() - (parseInt(prev.ts) || Date.now())) / 1000);\nconst published = prev.shouldPublish ? 'PUBLISHED LIVE' : 'SAVED AS DRAFT';\n\nconst emailBody = `<div style=\"font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0a1e;color:#fff;border-radius:16px;overflow:hidden;\">\n<div style=\"background:linear-gradient(135deg,#7c3aed,#a78bfa);padding:32px;text-align:center;\">\n  <h1 style=\"margin:0;font-size:24px;font-weight:900;\">✅ JHD Advisor Page Ready</h1>\n  <p style=\"margin:8px 0 0;opacity:0.9;\">${published} — Built in ${duration}s</p>\n</div>\n<div style=\"padding:32px;\">\n  <table style=\"width:100%;border-collapse:collapse;\">\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Page Type</td><td style=\"color:#fff;font-weight:600;\">${prev.pageType}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Inspiration URL</td><td style=\"color:#fff;font-size:13px;\">${prev.sourceUrl}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Design Style</td><td style=\"color:#fff;\">${prev.styleOver}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">HTML Size</td><td style=\"color:#fff;\">${(prev.htmlLength/1024).toFixed(1)} KB</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Page ID</td><td style=\"color:#fff;\">${prev.pageId || 'N/A'}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">View ID</td><td style=\"color:#fff;\">${prev.viewId || 'N/A'}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Status</td><td style=\"color:${prev.shouldPublish?'#4ade80':'#fbbf24'};font-weight:700;\">${published}</td></tr>\n  </table>\n  <div style=\"margin-top:24px;text-align:center;\">\n    <a href=\"${prev.previewUrl}\" style=\"display:inline-block;background:#7c3aed;color:#fff;padding:14px 28px;border-radius:12px;font-weight:700;text-decoration:none;margin-right:12px;\">🌐 Preview Page</a>\n    <a href=\"${prev.odooAdmin}\" style=\"display:inline-block;background:#1e1b4b;color:#a78bfa;border:2px solid #7c3aed;padding:12px 24px;border-radius:12px;font-weight:700;text-decoration:none;\">⚙️ Odoo Admin</a>\n  </div>\n</div>\n<div style=\"padding:20px 32px;background:#1a1035;border-top:1px solid #2d2a5e;\">\n  <p style=\"color:#6b7280;font-size:12px;margin:0;\">🤖 Built by JHD Advisor AI Website Builder v2 | Powered by Firecrawl + Claude AI + Odoo</p>\n</div>\n</div>`;\n\nconsole.log('[Done] pageId=' + prev.pageId + ' viewId=' + prev.viewId + ' published=' + prev.shouldPublish + ' duration=' + duration + 's');\n\nreturn [{ json: { ...prev, emailBody, emailSubject: '✅ JHD Advisor page ready — ' + prev.pageType + ' (' + published + ')', duration } }];"
+      }
+    },
+    {
+      "id": "n16",
+      "name": "Email: Send Build Report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [4380, 300],
+      "parameters": {
+        "fromEmail": "countrycoveinc@gmail.com",
+        "toEmail": "kahpk1933@gmail.com",
+        "subject": "={{ $json.emailSubject }}",
+        "message": "={{ $json.emailBody }}",
+        "options": {
+          "appendAttribution": false
+        }
+      }
+    },
+    {
+      "id": "r0",
+      "name": "Form Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [4620, 200],
+      "parameters": {
+        "respondWith": "html",
+        "responseBody": "<div style=\"font-family:Inter,sans-serif;text-align:center;padding:60px 20px;background:#0f0a1e;min-height:100vh;color:#fff;\"><div style=\"background:#1a1035;border:2px solid #7c3aed;border-radius:20px;padding:48px;max-width:500px;margin:0 auto;\"><div style=\"font-size:48px;\">✅</div><h1 style=\"font-size:28px;font-weight:900;color:#a78bfa;margin-top:16px;\">Page Build Complete!</h1><p style=\"color:#a5b4fc;margin-top:12px;\">Your JHD Advisor page has been generated and sent to Odoo.<br>Check your email for the full report and preview link.</p><a href=\"/\" style=\"display:inline-block;background:#7c3aed;color:#fff;padding:14px 28px;border-radius:12px;font-weight:700;text-decoration:none;margin-top:24px;\">Back to Home</a></div></div>",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Form: Enter Inspiration URL": {
+      "main": [[{ "node": "Parse Input + Config", "type": "main", "index": 0 }]]
+    },
+    "Manual Trigger": {
+      "main": [[{ "node": "Parse Input + Config", "type": "main", "index": 0 }]]
+    },
+    "Parse Input + Config": {
+      "main": [[{ "node": "Firecrawl: Scrape Source URL", "type": "main", "index": 0 }]]
+    },
+    "Firecrawl: Scrape Source URL": {
+      "main": [[{ "node": "Firecrawl: Search Consulting Inspiration", "type": "main", "index": 0 }]]
+    },
+    "Firecrawl: Search Consulting Inspiration": {
+      "main": [[{ "node": "Code: Merge + Build Analysis Prompt", "type": "main", "index": 0 }]]
+    },
+    "Code: Merge + Build Analysis Prompt": {
+      "main": [[{ "node": "HTTP: Claude — Analyze Design Patterns", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Claude — Analyze Design Patterns": {
+      "main": [[{ "node": "Code: Build JHD HTML Prompt", "type": "main", "index": 0 }]]
+    },
+    "Code: Build JHD HTML Prompt": {
+      "main": [[{ "node": "HTTP: Claude — Generate JHD HTML", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Claude — Generate JHD HTML": {
+      "main": [[{ "node": "HTTP: Odoo Authenticate", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Authenticate": {
+      "main": [[{ "node": "Code: Extract HTML + Prepare Odoo", "type": "main", "index": 0 }]]
+    },
+    "Code: Extract HTML + Prepare Odoo": {
+      "main": [[{ "node": "HTTP: Odoo Create ir.ui.view", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Create ir.ui.view": {
+      "main": [[{ "node": "Code: Build Page Create Request", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Page Create Request": {
+      "main": [[{ "node": "HTTP: Odoo Create website.page", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Create website.page": {
+      "main": [[{ "node": "Code: Build Publish Request", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Publish Request": {
+      "main": [[{ "node": "HTTP: Odoo Publish Page", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Publish Page": {
+      "main": [[{ "node": "Code: Final Summary", "type": "main", "index": 0 }]]
+    },
+    "Code: Final Summary": {
+      "main": [
+        [{ "node": "Email: Send Build Report", "type": "main", "index": 0 }],
+        [{ "node": "Form Response", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York",
+    "errorWorkflow": ""
+  },
+  "active": false,
+  "tags": ["JHD Advisor", "Website Builder", "AI", "Odoo", "Firecrawl", "Universal Scraper"]
+}

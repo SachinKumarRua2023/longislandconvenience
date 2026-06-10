@@ -1,0 +1,445 @@
+{
+  "name": "Universal Website Builder v3 — Any Category + New Odoo Site + Full URL",
+  "nodes": [
+    {
+      "id": "w0",
+      "name": "Webhook: Build My Website",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [160, 400],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "build-my-website",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {
+          "allowedOrigins": "*",
+          "rawBody": false
+        }
+      },
+      "webhookId": "universal-website-builder-v3-wh"
+    },
+    {
+      "id": "n1",
+      "name": "Parse Input + Category Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 420],
+      "parameters": {
+        "jsCode": "const raw = $input.item.json;\n\n// Body arrives in 3 possible formats depending on Content-Type:\n//   application/json  → raw.body is already a parsed object\n//   text/plain        → raw.body is a JSON string, must JSON.parse\n//   fallback          → data is flat on raw itself\nlet data;\nif (raw.body && typeof raw.body === 'object') {\n  data = raw.body;                              // JSON POST\n} else if (raw.body && typeof raw.body === 'string') {\n  try { data = JSON.parse(raw.body); }          // text/plain POST with JSON string\n  catch(e) { data = {}; }\n} else if (raw.rawBody && typeof raw.rawBody === 'string') {\n  try { data = JSON.parse(raw.rawBody); }       // rawBody fallback\n  catch(e) { data = raw; }\n} else {\n  data = raw;                                   // flat webhook or manual test\n}\n\n// Map webhook field names (sent from HTML form)\nconst category    = data.category    || 'Business Portfolio / Agency';\nconst bizName     = data.bizName     || 'My Business';\nconst bizServices = data.bizServices || '';\nconst bizAddress  = data.bizAddress  || '';\nconst bizPhone    = data.bizPhone    || '';\nconst bizEmail    = data.bizEmail    || '';\nconst contactName = data.contactName || '';\nconst targetCust  = data.targetCust  || '';\nconst usp         = data.usp         || '';\nconst competitorUrl = (data.competitorUrl || '').trim();\nconst mustFeatures  = data.mustFeatures  || '';\nconst colorPref     = data.colorPref     || 'Let AI Choose Best for My Industry';\nconst vision        = data.vision        || '';\nconst autoPublish   = String(data.autoPublish || '').toLowerCase() === 'yes' || String(data.autoPublish || '') === 'true';\n\n// ── HARD GUARD: block test/placeholder runs before spending any API credits or writing to Odoo ──\nconst BLOCKED_NAMES = ['my business','test','demo','example','sample','bizname','untitled','default','placeholder'];\nif (!bizName || bizName.trim().length < 3 || BLOCKED_NAMES.includes(bizName.trim().toLowerCase())) {\n  throw new Error('BLOCKED: bizName is missing or a placeholder (\"' + bizName + '\"). Provide a real business name to run.');\n}\nif (!bizEmail || !bizEmail.includes('@')) {\n  throw new Error('BLOCKED: bizEmail is missing or invalid (\"' + bizEmail + '\"). A real client email is required.');\n}\nif (!vision || vision.trim().length < 20) {\n  throw new Error('BLOCKED: vision is too short. Fill in the client vision before running.');\n}\nconsole.log('[GUARD] Passed — real client: ' + bizName + ' <' + bizEmail + '>');\n\nconst CATEGORY_MAP = {\n  'Business Portfolio / Agency': {\n    q1: 'best business portfolio agency company website design award winning modern 2024 2025',\n    q2: 'business portfolio website essential features case studies portfolio gallery team about',\n    colorDark:  { bg:'#0a0f1a', surf:'#0f172a', pri:'#1d4ed8', acc:'#60a5fa', txt:'#ffffff', txt2:'#94a3b8', isLight: false },\n    colorLight: { bg:'#f8fafc', surf:'#ffffff', pri:'#1d4ed8', acc:'#3b82f6', txt:'#0f172a', txt2:'#64748b', isLight: true },\n    colorLuxury:{ bg:'#0a0a0a', surf:'#111111', pri:'#111111', acc:'#d97706', txt:'#ffffff', txt2:'#a8a29e', isLight: false },\n    defaultScheme: 'dark',\n    cta: 'Start a Project',\n    navItems: 'Home, About, Services, Portfolio, Team, Blog, Contact'\n  },\n  'AI Agency / Automation Provider': {\n    q1: 'best AI agency automation marketing technology company website design dark modern 2024 2025',\n    q2: 'AI automation agency website essential features n8n workflow showcase ROI case studies pricing',\n    colorDark:  { bg:'#0f0a1e', surf:'#1a1035', pri:'#7c3aed', acc:'#a78bfa', txt:'#ffffff', txt2:'#a5b4fc', isLight: false },\n    colorLight: { bg:'#faf5ff', surf:'#ffffff', pri:'#7c3aed', acc:'#8b5cf6', txt:'#0f172a', txt2:'#6b7280', isLight: true },\n    colorLuxury:{ bg:'#000000', surf:'#0d0d0d', pri:'#1a0030', acc:'#c084fc', txt:'#ffffff', txt2:'#a78bfa', isLight: false },\n    defaultScheme: 'dark',\n    cta: 'Book a Free AI Audit',\n    navItems: 'Home, Services, How It Works, Case Studies, Pricing, Blog, Contact'\n  },\n  'E-commerce / Online Store': {\n    q1: 'best ecommerce online store website design conversion optimized modern clean 2024 2025',\n    q2: 'ecommerce website essential features product grid cart wishlist reviews search filter checkout UX',\n    colorDark:  { bg:'#0a0a0a', surf:'#111111', pri:'#171717', acc:'#f59e0b', txt:'#ffffff', txt2:'#9ca3af', isLight: false },\n    colorLight: { bg:'#ffffff', surf:'#f9fafb', pri:'#111827', acc:'#ef4444', txt:'#111827', txt2:'#6b7280', isLight: true },\n    colorLuxury:{ bg:'#0a0a0a', surf:'#111111', pri:'#111111', acc:'#eab308', txt:'#ffffff', txt2:'#d4d4d4', isLight: false },\n    defaultScheme: 'light',\n    cta: 'Shop Now',\n    navItems: 'Home, Shop, Categories, Sale, About, Contact'\n  },\n  'Medical / Clinic / Healthcare': {\n    q1: 'best medical clinic hospital healthcare dental website design clean professional modern 2024 2025',\n    q2: 'medical clinic website essential features appointment booking doctor profiles insurance patient reviews',\n    colorDark:  { bg:'#0f172a', surf:'#1e293b', pri:'#0369a1', acc:'#38bdf8', txt:'#ffffff', txt2:'#94a3b8', isLight: false },\n    colorLight: { bg:'#f0f9ff', surf:'#ffffff', pri:'#0369a1', acc:'#0284c7', txt:'#0f172a', txt2:'#475569', isLight: true },\n    colorLuxury:{ bg:'#f8fafc', surf:'#ffffff', pri:'#1e3a5f', acc:'#059669', txt:'#0f172a', txt2:'#475569', isLight: true },\n    defaultScheme: 'light',\n    cta: 'Book an Appointment',\n    navItems: 'Home, Services, Our Doctors, Appointments, Patients, Insurance, Contact'\n  },\n  'Restaurant / Cafe / Food': {\n    q1: 'best restaurant cafe bar food website design elegant warm dark modern 2024 2025',\n    q2: 'restaurant website essential features online menu reservation gallery chef story reviews hours',\n    colorDark:  { bg:'#0c0404', surf:'#1a0808', pri:'#7f1d1d', acc:'#ef4444', txt:'#ffffff', txt2:'#fca5a5', isLight: false },\n    colorLight: { bg:'#fffbf0', surf:'#ffffff', pri:'#92400e', acc:'#d97706', txt:'#1c1917', txt2:'#78716c', isLight: true },\n    colorLuxury:{ bg:'#09090b', surf:'#18181b', pri:'#18181b', acc:'#ca8a04', txt:'#ffffff', txt2:'#a1a1aa', isLight: false },\n    defaultScheme: 'dark',\n    cta: 'Reserve a Table',\n    navItems: 'Home, Menu, About, Reservations, Gallery, Events, Contact'\n  },\n  'Real Estate / Property': {\n    q1: 'best real estate property agency listing website design modern clean professional 2024 2025',\n    q2: 'real estate website essential features property search listings agent profiles market stats neighborhood guide',\n    colorDark:  { bg:'#0f172a', surf:'#1e293b', pri:'#1e3a5f', acc:'#d97706', txt:'#ffffff', txt2:'#94a3b8', isLight: false },\n    colorLight: { bg:'#f8fafc', surf:'#ffffff', pri:'#1e3a5f', acc:'#2563eb', txt:'#0f172a', txt2:'#64748b', isLight: true },\n    colorLuxury:{ bg:'#0a0a0a', surf:'#111111', pri:'#111111', acc:'#d4af37', txt:'#ffffff', txt2:'#9ca3af', isLight: false },\n    defaultScheme: 'dark',\n    cta: 'Find Your Property',\n    navItems: 'Home, Properties, Sell, Buy, Agents, Neighborhoods, Blog, Contact'\n  },\n  'Law Firm / Legal Services': {\n    q1: 'best law firm legal services attorney website design professional authoritative modern 2024 2025',\n    q2: 'law firm website essential features practice areas attorney profiles case results free consultation form',\n    colorDark:  { bg:'#0c0a09', surf:'#1c1917', pri:'#292524', acc:'#b45309', txt:'#ffffff', txt2:'#a8a29e', isLight: false },\n    colorLight: { bg:'#fafaf9', surf:'#ffffff', pri:'#1c1917', acc:'#b45309', txt:'#1c1917', txt2:'#57534e', isLight: true },\n    colorLuxury:{ bg:'#0a0a0a', surf:'#111111', pri:'#111111', acc:'#854d0e', txt:'#ffffff', txt2:'#d4d4d4', isLight: false },\n    defaultScheme: 'dark',\n    cta: 'Free Consultation',\n    navItems: 'Home, Practice Areas, Attorneys, Results, Resources, Blog, Contact'\n  }\n};\n\nconst catCfg = CATEGORY_MAP[category] || CATEGORY_MAP['Business Portfolio / Agency'];\n\nlet schemeKey = 'colorDark';\nif (colorPref.includes('Clean') || colorPref.includes('Professional') || colorPref.includes('Fresh')) schemeKey = 'colorLight';\nelse if (colorPref.includes('Warm')) schemeKey = 'colorLight';\nelse if (colorPref.includes('Luxury')) schemeKey = 'colorLuxury';\nelse if (colorPref.includes('Dark') || colorPref.includes('Bold')) schemeKey = 'colorDark';\nelse schemeKey = 'colorDark';\n\nconst colors = catCfg[schemeKey] || catCfg.colorDark;\n\nconst ts      = Date.now();\nconst slug    = bizName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);\nconst pageSlug = '/' + slug + '-' + ts;\nconst pageKey  = 'website.' + slug.replace(/-/g, '_') + '_' + ts;\n\nconsole.log('[Config] category=' + category + ' biz=' + bizName + ' scheme=' + schemeKey + ' autoPublish=' + autoPublish);\n\nreturn [{ json: {\n  category, bizName, bizServices, bizAddress, bizPhone, bizEmail,\n  contactName, targetCust, usp, competitorUrl, mustFeatures, colorPref, vision,\n  autoPublish, catCfg, colors,\n  q1: catCfg.q1, q2: catCfg.q2,\n  cta: catCfg.cta, navItems: catCfg.navItems,\n  ts, slug, pageSlug, pageKey,\n  FIRECRAWL_KEY: 'fc-471db502e79143e0982f3d2638b8ccdb',\n  CLAUDE_KEY:    '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',\n  CLAUDE_MODEL:  'claude-sonnet-4-6',\n  ODOO_URL:      'https://country-cove-inc.odoo.com',\n  ODOO_DB:       'country-cove-inc',\n  ODOO_USER:     'countrycoveinc@gmail.com',\n  ODOO_PASS:     'M@nhattan1234',\n  startedAt: new Date().toISOString()\n}}];"
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Firecrawl: Search Top Design Examples",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $json.FIRECRAWL_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ query: $json.q1, limit: 5 }) }}",
+        "options": { "timeout": 60000, "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n3",
+      "name": "Firecrawl: Search Features & UX",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 540],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $('Parse Input + Category Config').item.json.FIRECRAWL_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ query: $('Parse Input + Category Config').item.json.q2, limit: 5 }) }}",
+        "options": { "timeout": 60000, "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n4",
+      "name": "Code: Extract Scrape URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 420],
+      "parameters": {
+        "jsCode": "function decode(r) {\n  if (r?.data !== undefined || r?.result !== undefined || r?.content) return r;\n  if (!r?._readableState) return r;\n  try {\n    const chunks = Array.isArray(r._readableState.buffer) ? r._readableState.buffer : [];\n    const bytes = [];\n    for (const c of chunks) {\n      const d = c?.data;\n      if (Array.isArray(d)) bytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) bytes.push(...d.data);\n    }\n    if (bytes.length) return JSON.parse(Buffer.from(bytes).toString('utf-8'));\n  } catch(e) {}\n  return r;\n}\n\nconst s1 = decode($('Firecrawl: Search Top Design Examples').item.json);\nconst s2 = decode($input.item.json);\nconst cfg = $('Parse Input + Category Config').item.json;\n\nconst sites1 = Array.isArray(s1?.data) ? s1.data : [];\nconst sites2 = Array.isArray(s2?.data) ? s2.data : [];\n\nconst urls1 = sites1.map(s => s.url).filter(Boolean);\nconst urls2 = sites2.map(s => s.url).filter(Boolean);\n\nconst site1Url = cfg.competitorUrl || urls1[0] || 'https://www.awwwards.com';\nconst site2Url = urls1[1] || urls2[0] || 'https://dribbble.com';\n\nconst summary1 = sites1.slice(0,5).map((s,i) => '## Site ' + (i+1) + ': ' + s.title + '\\nURL: ' + s.url + '\\n' + (s.description||'') + '\\n' + (s.markdown||'').slice(0,600)).join('\\n---\\n');\nconst summary2 = sites2.slice(0,5).map((s,i) => '## Feature Site ' + (i+1) + ': ' + s.title + '\\nURL: ' + s.url + '\\n' + (s.description||'') + '\\n' + (s.markdown||'').slice(0,600)).join('\\n---\\n');\n\nconsole.log('[URLs] site1=' + site1Url + ' site2=' + site2Url + ' total sites=' + (sites1.length + sites2.length));\n\nreturn [{ json: { ...cfg, site1Url, site2Url, summary1, summary2, totalSites: sites1.length + sites2.length } }];"
+      }
+    },
+    {
+      "id": "n5",
+      "name": "Firecrawl: Deep Scrape Site 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1220, 300],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $json.FIRECRAWL_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ url: $json.site1Url, formats: ['markdown', 'links', 'extract'], extract: { prompt: 'Extract: 1) Color palette with hex codes if visible, 2) Navigation menu items, 3) All page sections present (list each), 4) Hero headline text, 5) Subheadline, 6) All CTA button texts, 7) Key value propositions and benefit statements, 8) Trust signals (stats, ratings, awards, certifications, client count), 9) Technology or service names mentioned, 10) Pricing info if any, 11) Overall design style (dark/light, minimalist/bold/etc), 12) Typography style (serif/sans-serif, weights used), 13) Unique features or interactions (accordion, tabs, sliders, calculators, booking forms, etc)' }, onlyMainContent: false, waitFor: 2000, timeout: 45000 }) }}",
+        "options": { "timeout": 60000, "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n6",
+      "name": "Firecrawl: Deep Scrape Site 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1220, 540],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $('Code: Extract Scrape URLs').item.json.FIRECRAWL_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ url: $('Code: Extract Scrape URLs').item.json.site2Url, formats: ['markdown', 'extract'], extract: { prompt: 'Extract all page sections, features, design patterns, CTAs, trust elements, pricing structure, and any unique interactive features like booking forms, calculators, filtering, or galleries' }, waitFor: 2000, timeout: 40000 }) }}",
+        "options": { "timeout": 60000, "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n7",
+      "name": "Code: Merge Research + Analysis Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1480, 420],
+      "parameters": {
+        "jsCode": "function decode(r) {\n  if (r?.data !== undefined || r?.result !== undefined || r?.content) return r;\n  if (!r?._readableState) return r;\n  try {\n    const chunks = Array.isArray(r._readableState.buffer) ? r._readableState.buffer : [];\n    const bytes = [];\n    for (const c of chunks) {\n      const d = c?.data;\n      if (Array.isArray(d)) bytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) bytes.push(...d.data);\n    }\n    if (bytes.length) return JSON.parse(Buffer.from(bytes).toString('utf-8'));\n  } catch(e) {}\n  return r;\n}\n\nconst sc1 = decode($('Firecrawl: Deep Scrape Site 1').item.json);\nconst sc2 = decode($input.item.json);\nconst cfg = $('Code: Extract Scrape URLs').item.json;\n\nconst d1 = sc1?.data || {};\nconst d2 = sc2?.data || {};\n\nconst fullScrape1 = (d1.markdown || '').slice(0, 3000);\nconst fullScrape2 = (d2.markdown || '').slice(0, 2000);\nconst extract1    = JSON.stringify(d1.extract || {}).slice(0, 1500);\nconst extract2    = JSON.stringify(d2.extract || {}).slice(0, 1000);\n\nconst prompt = 'You are a senior UI/UX director specializing in ' + cfg.category + ' websites.\\n\\n' +\n  '== 10 TOP ' + cfg.category.toUpperCase() + ' WEBSITES RESEARCHED ==\\n\\n' +\n  '=== DESIGN EXAMPLES (5 sites) ===\\n' + cfg.summary1.slice(0, 3000) + '\\n\\n' +\n  '=== FEATURE & UX EXAMPLES (5 sites) ===\\n' + cfg.summary2.slice(0, 3000) + '\\n\\n' +\n  '=== FULL SCRAPE: TOP SITE #1 ===\\n' + fullScrape1 + '\\nExtracted Data: ' + extract1 + '\\n\\n' +\n  '=== FULL SCRAPE: TOP SITE #2 ===\\n' + fullScrape2 + '\\nExtracted: ' + extract2 + '\\n\\n' +\n  '== TASK ==\\n' +\n  'Based on ALL 10 websites above, return ONLY valid JSON (no markdown fences):\\n' +\n  '{\\n' +\n  '  \"dominantDesignStyle\": \"exact description of what the best sites in this category look like\",\\n' +\n  '  \"colorPalette\": { \"primary\": \"#hex\", \"secondary\": \"#hex\", \"accent\": \"#hex\", \"background\": \"#hex\", \"surface\": \"#hex\", \"textPrimary\": \"#hex\", \"textSecondary\": \"#hex\" },\\n' +\n  '  \"typography\": { \"heading\": \"font name\", \"body\": \"font name\", \"style\": \"description\" },\\n' +\n  '  \"heroPattern\": \"best hero layout for this category\",\\n' +\n  '  \"mustHaveSections\": [\"ordered list of all sections the top sites have\"],\\n' +\n  '  \"uniqueFeatures\": [\"interactive features seen across top sites\"],\\n' +\n  '  \"trustSignals\": [\"most effective trust elements for this category\"],\\n' +\n  '  \"conversionElements\": [\"top CTAs and conversion patterns used\"],\\n' +\n  '  \"navigationPattern\": \"describe the nav structure of top sites\",\\n' +\n  '  \"ctaPrimary\": \"best primary CTA for this category\",\\n' +\n  '  \"heroHeadlinePattern\": \"formula for great headlines in this category\",\\n' +\n  '  \"keyDifferentiators\": [\"what separates the top sites from average ones\"]\\n' +\n  '}';\n\nconst analyzeRequest = JSON.stringify({\n  model: cfg.CLAUDE_MODEL, max_tokens: 1800,\n  messages: [{ role: 'user', content: prompt }]\n});\n\nconsole.log('[Research] 10 sites analyzed, scrapes: ' + fullScrape1.length + '+' + fullScrape2.length + ' chars');\n\nreturn [{ json: { ...cfg, analyzeRequest, researchSummary: { totalSites: cfg.totalSites, site1: cfg.site1Url, site2: cfg.site2Url } } }];"
+      }
+    },
+    {
+      "id": "n8",
+      "name": "HTTP: Claude — Analyze 10 Sites",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1740, 420],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",        "value": "={{ $json.CLAUDE_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type",      "value": "application/json" },
+            { "name": "Accept-Encoding",   "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.analyzeRequest }}",
+        "options": { "timeout": 90000, "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Code: Build Category HTML Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 420],
+      "parameters": {
+        "jsCode": "function decode(r) {\n  if (r?.content || r?.result !== undefined || r?.data !== undefined) return r;\n  if (!r?._readableState) return r;\n  try {\n    const chunks = Array.isArray(r._readableState.buffer) ? r._readableState.buffer : [];\n    const bytes = [];\n    for (const c of chunks) {\n      const d = c?.data;\n      if (Array.isArray(d)) bytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) bytes.push(...d.data);\n    }\n    if (bytes.length) return JSON.parse(Buffer.from(bytes).toString('utf-8'));\n  } catch(e) {}\n  return r;\n}\n\nconst claudeResp = decode($input.item.json);\nconst cfg = $('Code: Merge Research + Analysis Prompt').item.json;\n\nconst raw = claudeResp?.content?.[0]?.text || '';\nlet analysis = {};\ntry { const m = raw.match(/\\{[\\s\\S]*\\}/); if (m) analysis = JSON.parse(m[0]); } catch(e) {}\n\n// ── Determine final color scheme ──────────────────────────────────────────────\nlet cp = cfg.colors;\nif (analysis.colorPalette && cfg.colorPref === 'Let AI Choose Best for My Industry') {\n  const ap = analysis.colorPalette;\n  cp = {\n    bg:   ap.background  || cp.bg,\n    surf: ap.surface     || cp.surf,\n    pri:  ap.primary     || cp.pri,\n    acc:  ap.accent      || cp.acc,\n    txt:  ap.textPrimary || cp.txt,\n    txt2: ap.textSecondary || cp.txt2,\n    isLight: cp.isLight\n  };\n}\n\nconst bg   = cp.bg;\nconst surf = cp.surf;\nconst pri  = cp.pri;\nconst acc  = cp.acc;\nconst txt  = cp.txt;\nconst txt2 = cp.txt2;\nconst isLight = cp.isLight;\n\nconst bodyStyle = 'background:' + bg + ';color:' + txt + ';font-family:Inter,sans-serif';\nconst textMain  = isLight ? 'text-gray-900' : 'text-white';\nconst textSub   = isLight ? 'text-gray-600' : 'text-slate-400';\nconst cardBg    = isLight ? 'bg-white border border-gray-200' : 'bg-[' + surf + '] border border-white/10';\nconst headingFont = (analysis.typography && analysis.typography.heading) ? analysis.typography.heading : 'Poppins';\n\n// ── Category-specific section instructions ────────────────────────────────────\nconst SECTIONS = {\n  'Business Portfolio / Agency':\n    '[S1] ANNOUNCEMENT BAR: bg-[' + acc + '] text-black py-2 px-4, scrolling marquee: \"' + (cfg.mustFeatures || 'Free project consultation · Award-winning design · Delivered on time & budget') + '\" + × dismiss btn\\n' +\n    '[S2] STICKY HEADER: logo (◆ + bizName in ' + headingFont + ' font-black ' + textMain + ') | CENTER nav: ' + cfg.navItems + ' (text-sm ' + textSub + ' hover:' + textMain + ') | RIGHT: Phone pill + \"' + cfg.cta + '\" btn (bg-[' + acc + '] text-black) | Mobile hamburger menu\\n' +\n    '[S3] HERO (min-h-screen pt-28 pb-20): centered layout. Small badge pill (bg-[' + acc + ']/15 text-[' + acc + '] border border-[' + acc + ']/30): \"✦ ' + cfg.category + '\". H1 (text-6xl lg:text-7xl font-black ' + textMain + ' ' + headingFont + '): auto-generate from \"' + cfg.bizName + '\" + \"' + cfg.usp.slice(0,50) + '\". Sub p (text-xl ' + textSub + ' max-w-2xl mx-auto mt-4). Dual CTA row. Trust numbers row: 3 inline stats. BG: subtle radial gradient glow from acc/10\\n' +\n    '[S4] CLIENT LOGOS BAR (py-10 border-y border-white/10): \"Trusted by\" label + 6 company name pills (grayscale style, hover:color)\\n' +\n    '[S5] SERVICES (py-20): H2 \"What We Do\" + grid (3 cols lg). 6 service cards each: icon circle (acc/20 bg) + name (font-bold ' + textMain + ') + 2-line desc (' + textSub + ') + \"Learn More →\" (text-[' + acc + ']). Use services from: \"' + cfg.bizServices.slice(0,300) + '\"\\n' +\n    '[S6] PORTFOLIO / WORK (py-20 bg-[' + surf + ']/50): H2 \"Our Work\". Filter tabs: All / Web / Branding / Apps / Marketing (JS tab switch). 6 project cards: aspect-video img (picsum random) + hover overlay (bg-black/60, project name + category badge + \"View Case →\")\\n' +\n    '[S7] PROCESS (py-20): H2 \"How We Work\". 4-step horizontal timeline: 01 Discovery → 02 Strategy → 03 Build → 04 Launch. Each: number (text-[' + acc + '] text-5xl font-black) + name + desc. Connector line between steps (hidden mobile)\\n' +\n    '[S8] ABOUT (py-20): 2-col. LEFT: \"About Us\" H2 + story from vision: \"' + cfg.vision.slice(0,400) + '\". 4 value pills (inline). RIGHT: 2×2 stat cards: Years / Projects / Clients / Rating\\n' +\n    '[S9] TEAM (py-20 bg-[' + surf + ']/30): H2 \"Meet the Team\". 4-col grid. Each card: img (picsum 200×200) + name (font-bold ' + textMain + ') + role (' + textSub + ') + social icons (LinkedIn Twitter)\\n' +\n    '[S10] TESTIMONIALS (py-20): H2 \"What Clients Say\". 3 review cards: 5★ + quote + avatar + name + company + \"Verified Client\" badge (green)\\n' +\n    '[S11] AWARDS BAR (py-10 bg-[' + surf + ']): \"Recognition & Awards\" label. 4 award pills/badges\\n' +\n    '[S12] BLOG (py-20): H2 \"Latest Insights\". 3 post cards: img + category badge + date + title (font-bold ' + textMain + ') + excerpt (' + textSub + ') + \"Read More →\"\\n' +\n    '[S13] CTA SECTION (py-20): full-width gradient (from-[' + pri + ']/30 to-[' + acc + ']/10) rounded-3xl. H2 \"Ready to Start Your Project?\". Sub. Two buttons. Background abstract shapes\\n' +\n    '[S14] CONTACT (py-20): 2-col. LEFT: form (name, email, phone, project type, message, submit btn bg-[' + acc + ']). RIGHT: address + phone + email + hours + social links\\n' +\n    '[S15] FOOTER: 4-col (Brand+desc+social | Services links | Company links | Contact details). Bottom bar: © + payment/cert badges',\n\n  'AI Agency / Automation Provider':\n    '[S1] ANNOUNCEMENT: scrolling ticker bg-[' + acc + ']/20 border border-[' + acc + ']/30 text-[' + acc + ']: \"🤖 New: AI Agent for WhatsApp · n8n automation from $1,500/mo · Free audit → \"\\n' +\n    '[S2] STICKY HEADER: ◆ logo + bizName | CENTER nav: ' + cfg.navItems + ' | RIGHT: phone + \"' + cfg.cta + '\" (bg-[' + acc + '] text-black)\\n' +\n    '[S3] HERO (min-h-screen dark, pt-28): LEFT 55%: badge \"🤖 ' + cfg.category + '\". H1 (text-6xl font-black ' + textMain + ' ' + headingFont + '): use vision to craft ROI-focused headline from \"' + cfg.vision.slice(0,200) + '\". Sub (text-xl ' + textSub + ' max-w-lg). Dual CTA. 4 trust stats (clients/automations/revenue/rating). RIGHT 45%: animated dashboard visual (3 floating stat cards with numbers, connected lines, pulsing circles in acc color)\\n' +\n    '[S4] STATS BAR (py-12 bg-[' + surf + '] border-y): 4-col grid. Stats: 50+ Businesses Automated / 200+ Workflows Built / $2M+ Revenue Unlocked / 4.9★ Rating\\n' +\n    '[S5] SERVICES (py-20): H2 \"What We Automate\". 6 cards: 🤖 AI Chatbots & Agents / 🔄 n8n Workflow Automation / 📧 Email & Marketing AI / 🎯 Lead Generation AI / 📊 Analytics & BI Dashboards / 🔒 Cybersecurity & Compliance. Use services from: \"' + cfg.bizServices.slice(0,300) + '\"\\n' +\n    '[S6] HOW IT WORKS (py-20 bg-[' + surf + ']/50): 4-step. 01 Discovery Call (free 30min) → 02 System Design (architecture + proposal) → 03 Build & Test → 04 Launch & Scale. Icons + step number in acc color\\n' +\n    '[S7] CASE STUDIES (py-20): H2 \"Real Results\". 3 cards with colored top bar. Each: client type + industry + specific ROI metric headline (e.g. \"3× Revenue in 45 Days\") + what was built + \"→ View Details\" link\\n' +\n    '[S8] TECH STACK (py-14 bg-[' + surf + '] border-y): pill bar: n8n · Claude AI · OpenAI · HubSpot · Zapier · Shopify · Odoo · Twilio · Stripe · React · Python · AWS\\n' +\n    '[S9] TESTIMONIALS (py-20): 3 review cards, each mentioning specific result (hours saved, revenue increase, leads generated)\\n' +\n    '[S10] PRICING (py-20): 3 tiers. Starter $1,500/mo / Business Builder $3,500/mo (POPULAR, ring-2 ring-[' + acc + ']) / Enterprise Custom. Each: name + price + desc + feature list (✓) + CTA btn\\n' +\n    '[S11] FAQ (py-20 max-w-3xl mx-auto): 5 questions accordion. JS toggle show/hide\\n' +\n    '[S12] BOOK CALL CTA (py-20): gradient section. H2 \"Ready to Automate Your Business?\". Benefits row (✓ pills: Free Audit / No Commitment / Expert Advice / Roadmap). Big CTA btn. \"Or call us: ' + cfg.bizPhone + '\"\\n' +\n    '[S13] NEWSLETTER (py-16 bg-[' + surf + ']): email form. \"Get Weekly AI Automation Tips\"\\n' +\n    '[S14] FOOTER: 4-col. Brand | Services | Company | Contact (addr: ' + cfg.bizAddress + ', phone: ' + cfg.bizPhone + ', email: ' + cfg.bizEmail + ')\\n',\n\n  'E-commerce / Online Store':\n    '[S1] ANNOUNCEMENT BAR: bg-[' + acc + '] text-black marquee: \"🚀 FREE SHIPPING on orders $50+ | Use code WELCOME10 for 10% off first order | New arrivals added daily →\" + dismiss btn\\n' +\n    '[S2] HEADER (sticky): logo + category mega-nav + SEARCH bar (expand on click, full width, \"Search products...\") + wishlist icon (♡ badge) + cart icon (🛒 count badge). Mobile: logo + hamburger + cart\\n' +\n    '[S3] HERO (min-h-[70vh]): full-width banner. Gradient bg-[' + bg + '] to-[' + surf + ']. H1 (text-5xl font-black ' + textMain + '): auto-generate compelling offer headline from \"' + cfg.bizServices.slice(0,150) + '\". Sub + \"Shop Now\" (bg-[' + acc + '] text-black) + \"View All Products\" (border). Visual: 3 product images arranged with slight rotation\\n' +\n    '[S4] CATEGORY TILES (py-16 px-4 max-w-7xl mx-auto): H2 \"Shop by Category\". Grid 2-col md:3-col lg:4-col. 8 category cards: image (picsum) + overlay gradient + category name (font-black text-white text-lg absolute bottom-3 left-3). Hover scale\\n' +\n    '[S5] FEATURED PRODUCTS (py-16): H2 \"Featured Products\" + filter tabs (All / New / Sale / Trending). 8 product cards: image (aspect-[3/4]) + badge (New/Sale/Hot/Limited) + wishlist heart btn + quick-view overlay + name (font-bold ' + textMain + ') + rating stars + price (bold) + strike-through original price + \"Add to Cart\" btn (bg-[' + acc + '] text-black w-full). JS: cart counter increments\\n' +\n    '[S6] PROMO BANNER (py-12): full-width gradient. \"This Week Only\" offer. Countdown timer (days/hrs/mins/secs JS). CTA btn\\n' +\n    '[S7] NEW ARRIVALS (py-16): H2 + horizontal scroll row (overflow-x-auto flex gap-4 snap-x). 6 mini product cards (min-w-[200px] snap-start)\\n' +\n    '[S8] BEST SELLERS (py-16 bg-[' + surf + ']/30): 4 featured product cards in larger format with detailed info\\n' +\n    '[S9] BRAND STORY (py-16): 2-col. LEFT img (picsum). RIGHT: H2 \"Our Story\" + text from vision: \"' + cfg.vision.slice(0,300) + '\". 3 value stats\\n' +\n    '[S10] REVIEWS (py-16 bg-[' + surf + ']): aggregate rating (stars + x.x/5 + N reviews). 3 review cards\\n' +\n    '[S11] NEWSLETTER (py-16): email form. \"Join 10,000+ Shoppers — Get exclusive deals\"\\n' +\n    '[S12] FOOTER: 4-col. Brand+social | Shop links | Help links | Contact. BOTTOM BAR with payment badges: VISA · MC · AMEX · PAYPAL · APPLE PAY\\n',\n\n  'Medical / Clinic / Healthcare':\n    '[S1] EMERGENCY BAR: bg-red-600 text-white py-2 px-4. \"🚨 Medical Emergency? Call ' + (cfg.bizPhone || '(911)') + ' or visit us at ' + (cfg.bizAddress || 'our clinic') + '\". Always visible, no dismiss\\n' +\n    '[S2] STICKY HEADER: logo + nav: ' + cfg.navItems + ' + \"' + cfg.cta + '\" btn (bg-[' + acc + '] text-white). Phone number prominent. Mobile hamburger\\n' +\n    '[S3] HERO (min-h-screen pt-28): 2-col layout. LEFT: trust badge \"🏥 Trusted Care Since [Year]\". H1 (text-5xl font-black ' + textMain + '): headline from vision: \"' + cfg.vision.slice(0,150) + '\". Sub. Dual CTA: \"' + cfg.cta + '\" + \"Call Us Now\". 4 trust stats (Patients Served / Years Experience / Specialists / Satisfaction). RIGHT: doctor/clinic image (picsum medical) with floating badge \"4.9★ Rating\"\\n' +\n    '[S4] STATS BAR (py-12 bg-[' + acc + ']/10 border-y border-[' + acc + ']/20): 4 stats\\n' +\n    '[S5] SERVICES (py-20): H2 \"Our Specialties\". Grid 2×3 lg:3×2. 6-8 service cards. Each: icon (medical emoji or SVG) + specialty name (font-bold ' + textMain + ') + 2-line desc + \"Learn More →\". Use: \"' + cfg.bizServices.slice(0,300) + '\"\\n' +\n    '[S6] WHY CHOOSE US (py-16 bg-[' + surf + ']): H2 \"Why Patients Choose Us\". 4 differentiator blocks (icon + name + desc). Use USP: \"' + cfg.usp.slice(0,300) + '\"\\n' +\n    '[S7] DOCTORS (py-20): H2 \"Meet Our Doctors\". 4-col grid. Each: profile img (picsum) + name (font-bold ' + textMain + ') + specialty (' + textSub + ') + credentials (text-xs) + \"Book with Dr.\" link (text-[' + acc + '])\\n' +\n    '[S8] APPOINTMENT BOOKING (py-20 bg-[' + acc + ']/5 border-y border-[' + acc + ']/10): H2 \"Book an Appointment\". Centered form (max-w-2xl mx-auto): Patient Name / Phone / Email / Service (dropdown) / Preferred Date / Message / submit btn (bg-[' + acc + '] text-white w-full py-4 font-bold). \"Or call us: ' + (cfg.bizPhone || '555-0100') + '\"\\n' +\n    '[S9] TESTIMONIALS (py-20): H2 \"Patient Stories\". 3 review cards. Each mentions health outcome or experience\\n' +\n    '[S10] INSURANCE (py-14 bg-[' + surf + ']): H2 \"Insurance Accepted\". Grid of insurance company name pills (bg-white border rounded-full px-4 py-2 text-gray-700)\\n' +\n    '[S11] BLOG (py-20): H2 \"Health Resources\". 3 article cards: category badge (Health/Wellness/Tips) + date + title + excerpt + \"Read →\"\\n' +\n    '[S12] FAQ (py-20 max-w-3xl mx-auto): 5 questions accordion (medical focus)\\n' +\n    '[S13] LOCATION + HOURS (py-20 bg-[' + surf + ']): 2-col. LEFT: embedded map placeholder (gray div with 📍 icon + address overlay). RIGHT: address card + hours table (Mon-Fri / Sat / Sun rows) + phone + email\\n' +\n    '[S14] EMERGENCY CTA (py-12 bg-red-600 text-white text-center): \"Medical Emergency or Urgent Care\" + phone number (text-4xl font-black) + \"We are here for you 24/7\"\\n' +\n    '[S15] FOOTER: 4-col. Clinic logo+tagline+social | Services | Patient Info | Contact+Hours\\n',\n\n  'Restaurant / Cafe / Food':\n    '[S1] TODAY BAR: bg-[' + acc + '] text-black py-2 marquee: \"Today\\'s Special: [featured dish] · Open: Mon–Sun 11am–11pm · Reserve online, call ' + (cfg.bizPhone || 'us') + '\"\\n' +\n    '[S2] HEADER: logo (restaurant name elegant font) + nav: ' + cfg.navItems + ' + \"' + cfg.cta + '\" btn (bg-[' + acc + '] text-black)\\n' +\n    '[S3] HERO (min-h-screen): FULL-SCREEN food image (picsum food) with dark overlay gradient (from-black/80 to-black/40). Centered text: H1 (text-7xl font-black text-white ' + headingFont + '): restaurant name + mood tagline from vision: \"' + cfg.vision.slice(0,120) + '\". Sub (text-white/80 text-xl). CTA row: \"' + cfg.cta + '\" (bg-[' + acc + '] text-black) + \"View Menu\" (border-white text-white). Scroll arrow\\n' +\n    '[S4] FEATURED DISHES (py-20): H2 \"Chef\\'s Selections\". 6 dish cards: img (picsum food, aspect-square rounded-xl) + dish name (font-bold ' + textMain + ') + desc (' + textSub + ' text-sm) + price (text-[' + acc + '] font-black text-xl). Use dishes from: \"' + cfg.bizServices.slice(0,300) + '\"\\n' +\n    '[S5] MENU (py-20 bg-[' + surf + ']): H2 \"Our Menu\". TAB nav: Starters | Mains | Desserts | Drinks | Cocktails. EACH TAB: grid of menu items (name + desc + price). JS: show/hide tab content\\n' +\n    '[S6] ABOUT / CHEF STORY (py-20): 2-col. LEFT: chef/interior photo (picsum). RIGHT: H2 \"Our Story\" + text from vision: \"' + cfg.vision.slice(0,400) + '\". 3 value badges (e.g. Farm-to-Table / Locally Sourced / Award Winning)\\n' +\n    '[S7] GALLERY (py-20): H2 \"From Our Kitchen\". Masonry grid (3-col): 9 food photos (picsum food, varied sizes). Hover: overlay with dish name. Click: lightbox JS\\n' +\n    '[S8] RESERVATIONS (py-20 bg-[' + acc + ']/10 border-y border-[' + acc + ']/20): H2 \"Reserve a Table\". Centered form (max-w-xl): Date / Time / Party Size / Name / Phone / Special Requests / submit btn (bg-[' + acc + '] text-black w-full py-4 font-bold)\\n' +\n    '[S9] REVIEWS (py-20): aggregate stars + \"x/5 on Google\". 3 review cards\\n' +\n    '[S10] EVENTS (py-16 bg-[' + surf + ']): H2 \"Special Events & Nights\". 3 event cards: date badge + event name + desc + \"Reserve Spot\" link\\n' +\n    '[S11] HOURS + LOCATION (py-20): 2-col. LEFT: map placeholder. RIGHT: hours table + address + phone\\n' +\n    '[S12] NEWSLETTER (py-16): email form. \"Get weekly specials & event invites\"\\n' +\n    '[S13] FOOTER: 3-col. Brand+social | Navigation | Contact+Hours\\n',\n\n  'Real Estate / Property':\n    '[S1] HEADER (sticky, no announcement bar): logo + nav: ' + cfg.navItems + ' + prominent search input (\"Search by city, zip, address...\") + \"' + cfg.cta + '\" btn (bg-[' + acc + '] text-white)\\n' +\n    '[S2] HERO (min-h-[85vh] pt-24): full-width property image (picsum architecture). Dark overlay. Centered H1 (text-6xl font-black text-white ' + headingFont + '): headline from vision: \"' + cfg.vision.slice(0,120) + '\". Sub (text-white/80). SEARCH FORM (bg-white/10 backdrop-blur rounded-2xl p-6 mt-8 max-w-3xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3): Location input / Property Type dropdown / Price Range dropdown / \"Search\" btn (bg-[' + acc + '] text-black font-bold)\\n' +\n    '[S3] STATS (py-12 bg-[' + surf + '] border-y): 4 stats: Properties Sold / Years Experience / Active Agents / Client Satisfaction\\n' +\n    '[S4] FEATURED LISTINGS (py-20): H2 \"Featured Properties\". 6 property cards: img (picsum architecture, aspect-video) + badge (NEW/FEATURED/SOLD) + address (font-bold ' + textMain + ') + specs row (🛏 3 beds · 🚿 2 baths · 📐 1,800 sqft) + price (text-[' + acc + '] text-2xl font-black) + agent name + \"View Property →\"\\n' +\n    '[S5] PROPERTY TYPES (py-16 bg-[' + surf + ']): H2 \"Browse by Type\". 4 cards: 🏠 Residential / 🏢 Commercial / 🏗 New Development / 🌿 Land & Lots\\n' +\n    '[S6] WHY CHOOSE US (py-20): 4 differentiator blocks from USP: \"' + cfg.usp.slice(0,300) + '\"\\n' +\n    '[S7] AGENTS (py-20 bg-[' + surf + ']): H2 \"Our Agents\". 4-col grid. Each: photo (picsum) + name + specialization + listings count + contact btn\\n' +\n    '[S8] TESTIMONIALS (py-20): 3 client reviews mentioning specific property outcomes\\n' +\n    '[S9] MARKET REPORT CTA (py-16): gradient section. \"Get a Free Market Report for Your Area\". Form: email + neighborhood. CTA btn\\n' +\n    '[S10] BLOG / INSIGHTS (py-20): H2 \"Market Insights\". 3 article cards: market data focus\\n' +\n    '[S11] FREE CONSULT CTA (py-20 bg-[' + acc + ']/10 border border-[' + acc + ']/20 rounded-3xl mx-4): H2 \"Free Property Valuation\". Form: name / phone / email / address / message. Submit btn\\n' +\n    '[S12] CONTACT + MAP (py-20): map placeholder + contact details\\n' +\n    '[S13] FOOTER: 4-col. Brand | Buying | Selling | Contact+Social\\n',\n\n  'Law Firm / Legal Services':\n    '[S1] ALERT BAR: bg-[' + acc + '] text-black py-2 px-4. \"⚖️ Free 30-Minute Consultation Available — Call ' + (cfg.bizPhone || 'us') + ' or Submit Online\" + CTA link\\n' +\n    '[S2] STICKY HEADER: law firm logo + nav: ' + cfg.navItems + ' + \"' + cfg.cta + '\" btn (bg-[' + acc + '] text-black font-bold). Authority bar below header: [Bar Admissions | Member: ABA | 20+ Years Experience]\\n' +\n    '[S3] HERO (min-h-screen pt-28): 2-col. LEFT 60%: authority badge. H1 (text-5xl font-black ' + textMain + ' ' + headingFont + '): powerful statement from vision: \"' + cfg.vision.slice(0,150) + '\". Sub. 4 authority stats (Cases Won / Years / Clients / Jurisdictions). CTA row. RIGHT 40%: QUICK CONSULTATION FORM (bg-[' + surf + ']/80 backdrop-blur rounded-2xl p-6 border border-[' + acc + ']/20): Your Name / Phone / Email / Legal Matter (dropdown) / Brief Description / submit btn (bg-[' + acc + '] text-black w-full py-4 font-bold)\\n' +\n    '[S4] PRACTICE AREAS (py-20): H2 \"Practice Areas\". Grid 2×3 lg:3×2. 6-8 area cards: icon (⚖️🏠💼👥🚗💰) + area name (font-bold ' + textMain + ') + 2-line desc + cases count badge. Use services: \"' + cfg.bizServices.slice(0,300) + '\"\\n' +\n    '[S5] WHY TRUST US (py-16 bg-[' + surf + ']): 3 pillars. EXPERIENCE / RESULTS / SERVICE. Each: large icon + H3 + desc from USP: \"' + cfg.usp.slice(0,200) + '\"\\n' +\n    '[S6] STATS (py-12 bg-[' + acc + '] text-black): 4-col: Cases Won / Years Experience / Clients Served / Jurisdictions\\n' +\n    '[S7] ATTORNEYS (py-20): H2 \"Our Attorneys\". 4-col grid. Each: profile photo (picsum) + name (font-black ' + textMain + ') + title (' + textSub + ') + bar admissions (text-xs) + practice areas (small badges) + \"Schedule Consultation\" btn (border text-[' + acc + '])\\n' +\n    '[S8] CASE RESULTS (py-20 bg-[' + surf + ']): H2 \"Notable Results\". 3 result cards: large outcome number/verdict (text-[' + acc + '] text-4xl font-black) + case type + brief summary + disclaimer text (text-xs)\\n' +\n    '[S9] TESTIMONIALS (py-20): 3 client reviews mentioning case outcome or experience\\n' +\n    '[S10] FREE CONSULTATION FORM (py-20 bg-[' + acc + ']/5 border-y border-[' + acc + ']/20): H2 \"Request Your Free Consultation\". Full form: First Name / Last Name / Phone / Email / Practice Area (dropdown) / How can we help? (textarea) / How did you hear about us? / submit btn (bg-[' + acc + '] text-black w-full py-5 font-black text-lg). Sub: \"Confidential · No obligation · Response within 24 hours\"\\n' +\n    '[S11] BLOG / RESOURCES (py-20): H2 \"Legal Resources\". 3 article cards\\n' +\n    '[S12] FAQ (py-20 max-w-3xl mx-auto): 5 questions accordion (legal focus)\\n' +\n    '[S13] CONTACT + MAP (py-20 bg-[' + surf + ']): map placeholder + contact card\\n' +\n    '[S14] FOOTER: 4-col. Firm logo+disclaimer | Practice Areas | Resources | Contact. Bottom: © + \"Attorney Advertising\" disclaimer\\n'\n};\n\nconst sectionInstructions = SECTIONS[cfg.category] || SECTIONS['Business Portfolio / Agency'];\n\nconst googleFonts = headingFont === 'Poppins' ? 'Poppins:wght@700;800;900' : headingFont + ':wght@700;800;900';\nconst accHex = acc.replace('#','');\n\nconst htmlPrompt =\n  'You are a world-class frontend engineer specializing in premium, award-winning websites. Build a COMPLETE, visually spectacular, production-ready single-file HTML website using Three.js, GSAP, and Lenis smooth scroll.\\n\\n' +\n  '== BUSINESS INFORMATION — USE THROUGHOUT THE ENTIRE WEBSITE ==\\n' +\n  'Business Name: ' + cfg.bizName + '\\n' +\n  'Category: ' + cfg.category + '\\n' +\n  'Services/Products: ' + cfg.bizServices + '\\n' +\n  'Address: ' + (cfg.bizAddress || 'Contact us for location') + '\\n' +\n  'Phone: ' + (cfg.bizPhone || 'Contact us') + '\\n' +\n  'Email: ' + (cfg.bizEmail || 'Contact us online') + '\\n' +\n  'Target Customer: ' + (cfg.targetCust || 'Customers in the area') + '\\n' +\n  'What Makes Us Different: ' + (cfg.usp || 'Quality service and expertise') + '\\n' +\n  'Must-Have Features: ' + (cfg.mustFeatures || 'Standard features') + '\\n\\n' +\n  '== OWNER\\'S VISION — READ THIS CAREFULLY AND INFUSE IT INTO THE ENTIRE SITE ==\\n' +\n  cfg.vision + '\\n\\n' +\n  '== DESIGN INSIGHTS FROM TOP 10 WEBSITES IN THIS CATEGORY ==\\n' +\n  'Dominant Style: ' + (analysis.dominantDesignStyle || 'Modern, clean, professional') + '\\n' +\n  'Hero Pattern: ' + (analysis.heroPattern || 'Full-screen hero with strong headline') + '\\n' +\n  'Key Differentiators of Top Sites: ' + JSON.stringify(analysis.keyDifferentiators || []) + '\\n' +\n  'Unique Features Seen: ' + JSON.stringify(analysis.uniqueFeatures || []) + '\\n' +\n  'Trust Signals That Work: ' + JSON.stringify(analysis.trustSignals || []) + '\\n\\n' +\n  '== DESIGN INSIGHTS FROM TOP 10 WEBSITES ==\\n' +\n  'Dominant Style: ' + (analysis.dominantDesignStyle || 'Modern dark, premium, high-impact') + '\\n' +\n  'Hero Pattern: ' + (analysis.heroPattern || 'Full-screen immersive hero with 3D background') + '\\n' +\n  'Key Differentiators: ' + JSON.stringify(analysis.keyDifferentiators || ['Motion design','3D elements','Micro-interactions','Bold typography']) + '\\n\\n' +\n  '== CDN LIBRARIES — INCLUDE ALL IN <head> BEFORE </head> ==\\n' +\n  '<!-- Google Fonts -->\\n' +\n  '<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\\n' +\n  '<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\\n' +\n  '<link href=\"https://fonts.googleapis.com/css2?family=' + googleFonts + '&family=Inter:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\">\\n' +\n  '<!-- Three.js r128 -->\\n' +\n  '<script src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js\"></script>\\n' +\n  '<!-- GSAP 3.12 + ScrollTrigger -->\\n' +\n  '<script src=\"https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js\"></script>\\n' +\n  '<script src=\"https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js\"></script>\\n' +\n  '<!-- Lenis smooth scroll -->\\n' +\n  '<script src=\"https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js\"></script>\\n\\n' +\n  '== MANDATORY CSS IN <style> BLOCK ==\\n' +\n  ':root { --bg:' + bg + '; --surf:' + surf + '; --pri:' + pri + '; --acc:' + acc + '; --txt:' + txt + '; --txt2:' + txt2 + '; --radius:16px; }\\n' +\n  '*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }\\n' +\n  'html { scroll-behavior:smooth; }\\n' +\n  'body { background:var(--bg); color:var(--txt); font-family:Inter,sans-serif; overflow-x:hidden; }\\n' +\n  '@keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }\\n' +\n  '@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }\\n' +\n  '@keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px ' + acc + '40} 50%{box-shadow:0 0 50px ' + acc + '80} }\\n' +\n  '@keyframes fadeUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }\\n' +\n  '@keyframes countUp { from{opacity:0} to{opacity:1} }\\n' +\n  '.gsap-fade { opacity:0; }\\n' +\n  '#hero-canvas { position:absolute; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }\\n' +\n  '.hero-content { position:relative; z-index:1; }\\n' +\n  'img { max-width:100%; height:auto; display:block; }\\n' +\n  '::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:var(--bg); } ::-webkit-scrollbar-thumb { background:var(--acc); border-radius:3px; }\\n\\n' +\n  '== COLORS & TYPOGRAPHY ==\\n' +\n  'Primary BG: ' + bg + ' | Surface: ' + surf + ' | Primary: ' + pri + ' | Accent: ' + acc + '\\n' +\n  'Text: ' + txt + ' | Text2: ' + txt2 + ' | IsLight: ' + isLight + '\\n' +\n  'Heading font: ' + headingFont + ' (font-weight 700/800/900) | Body: Inter\\n' +\n  'ALL headings: color:' + txt + '; font-family:' + headingFont + ',sans-serif; font-weight:900\\n' +\n  'ALL body text on dark bg: color:' + txt2 + ' — NEVER leave text without explicit color\\n\\n' +\n  '== HERO SECTION — THREE.JS REQUIRED ==\\n' +\n  'The hero section MUST have id=\"hero\" with position:relative and a <canvas id=\"hero-canvas\"> as first child.\\n' +\n  'Three.js creates an animated particle system on this canvas: 2000 floating points in color ' + acc + ', responding to mouse movement.\\n' +\n  'Hero content goes inside <div class=\"hero-content\"> with position:relative z-index:1 so it sits above the canvas.\\n\\n' +\n  '== ALL SECTIONS TO BUILD ==\\n' +\n  sectionInstructions + '\\n\\n' +\n  '== JAVASCRIPT — ALL AT BOTTOM OF <body> ==\\n\\n' +\n  'BLOCK 1 — Lenis smooth scroll (MUST BE FIRST):\\n' +\n  'const lenis = new Lenis({ duration:1.2, easing:t=>Math.min(1,1.001-Math.pow(2,-10*t)), smooth:true });\\n' +\n  'function raf(time){ lenis.raf(time); requestAnimationFrame(raf); } requestAnimationFrame(raf);\\n\\n' +\n  'BLOCK 2 — Three.js particle hero background:\\n' +\n  'if(document.getElementById(\"hero-canvas\") && typeof THREE !== \"undefined\"){\\n' +\n  '  const canvas=document.getElementById(\"hero-canvas\");\\n' +\n  '  const scene=new THREE.Scene();\\n' +\n  '  const camera=new THREE.PerspectiveCamera(75,canvas.offsetWidth/canvas.offsetHeight,0.1,1000);\\n' +\n  '  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});\\n' +\n  '  renderer.setSize(canvas.offsetWidth,canvas.offsetHeight);\\n' +\n  '  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));\\n' +\n  '  const count=2000; const pos=new Float32Array(count*3);\\n' +\n  '  for(let i=0;i<count*3;i++) pos[i]=(Math.random()-0.5)*20;\\n' +\n  '  const geo=new THREE.BufferGeometry(); geo.setAttribute(\"position\",new THREE.BufferAttribute(pos,3));\\n' +\n  '  const mat=new THREE.PointsMaterial({color:0x' + accHex + ',size:0.04,transparent:true,opacity:0.7});\\n' +\n  '  const pts=new THREE.Points(geo,mat); scene.add(pts); camera.position.z=5;\\n' +\n  '  let mx=0,my=0; document.addEventListener(\"mousemove\",e=>{mx=(e.clientX/innerWidth-0.5)*2;my=-(e.clientY/innerHeight-0.5)*2;});\\n' +\n  '  (function animate(){ requestAnimationFrame(animate); pts.rotation.x+=0.0003; pts.rotation.y+=0.0006;\\n' +\n  '    camera.position.x+=(mx*0.5-camera.position.x)*0.05; camera.position.y+=(my*0.3-camera.position.y)*0.05;\\n' +\n  '    renderer.render(scene,camera); })();\\n' +\n  '  window.addEventListener(\"resize\",()=>{ camera.aspect=canvas.offsetWidth/canvas.offsetHeight; camera.updateProjectionMatrix(); renderer.setSize(canvas.offsetWidth,canvas.offsetHeight); });\\n' +\n  '}\\n\\n' +\n  'BLOCK 3 — GSAP ScrollTrigger animations:\\n' +\n  'if(typeof gsap !== \"undefined\" && typeof ScrollTrigger !== \"undefined\"){\\n' +\n  '  gsap.registerPlugin(ScrollTrigger);\\n' +\n  '  gsap.fromTo(\"#hero h1\",{opacity:0,y:80},{opacity:1,y:0,duration:1.2,ease:\"power4.out\",delay:0.2});\\n' +\n  '  gsap.fromTo(\"#hero p\",{opacity:0,y:40},{opacity:1,y:0,duration:1,ease:\"power3.out\",delay:0.5});\\n' +\n  '  gsap.fromTo(\"#hero .cta-row\",{opacity:0,y:30},{opacity:1,y:0,duration:0.8,ease:\"power3.out\",delay:0.8});\\n' +\n  '  document.querySelectorAll(\".gsap-fade\").forEach(el=>{\\n' +\n  '    gsap.fromTo(el,{opacity:0,y:50},{opacity:1,y:0,duration:0.9,ease:\"power3.out\",\\n' +\n  '      scrollTrigger:{trigger:el,start:\"top 82%\",toggleActions:\"play none none none\"}});\\n' +\n  '  });\\n' +\n  '  document.querySelectorAll(\".gsap-counter\").forEach(el=>{\\n' +\n  '    const target=parseFloat(el.dataset.target)||0; const prefix=el.dataset.prefix||\"\"; const suffix=el.dataset.suffix||\"\";\\n' +\n  '    gsap.fromTo({val:0},{val:target,duration:2,ease:\"power1.out\",\\n' +\n  '      onUpdate:function(){el.textContent=prefix+Math.round(this.targets()[0].val)+suffix;},\\n' +\n  '      scrollTrigger:{trigger:el,start:\"top 85%\"}});\\n' +\n  '  });\\n' +\n  '  gsap.utils.toArray(\".gsap-slide-left\").forEach(el=>{\\n' +\n  '    gsap.fromTo(el,{opacity:0,x:-60},{opacity:1,x:0,duration:0.9,ease:\"power3.out\",\\n' +\n  '      scrollTrigger:{trigger:el,start:\"top 80%\"}});\\n' +\n  '  });\\n' +\n  '  gsap.utils.toArray(\".gsap-slide-right\").forEach(el=>{\\n' +\n  '    gsap.fromTo(el,{opacity:0,x:60},{opacity:1,x:0,duration:0.9,ease:\"power3.out\",\\n' +\n  '      scrollTrigger:{trigger:el,start:\"top 80%\"}});\\n' +\n  '  });\\n' +\n  '}\\n\\n' +\n  'BLOCK 4 — UI interactions (hamburger, FAQ, tabs, counter, sticky header, dismiss bars):\\n' +\n  '// Hamburger\\n' +\n  'document.getElementById(\"hamburger\")?.addEventListener(\"click\",()=>document.getElementById(\"mobile-menu\")?.classList.toggle(\"hidden\"));\\n' +\n  '// Dismiss bars\\n' +\n  'document.querySelectorAll(\".dismiss-bar\").forEach(b=>b.addEventListener(\"click\",()=>b.closest(\"[data-bar]\")?.remove()));\\n' +\n  '// FAQ accordion\\n' +\n  'document.querySelectorAll(\".faq-q\").forEach(q=>q.addEventListener(\"click\",()=>{const a=q.nextElementSibling;const icon=q.querySelector(\".faq-icon\");a.classList.toggle(\"hidden\");icon.textContent=a.classList.contains(\"hidden\")?\"＋\":\"－\";}));\\n' +\n  '// Tabs\\n' +\n  'document.querySelectorAll(\"[data-tab]\").forEach(btn=>btn.addEventListener(\"click\",()=>{const g=btn.dataset.tabgroup;document.querySelectorAll(`[data-tab][data-tabgroup=${g}]`).forEach(b=>b.classList.remove(\"tab-active\"));document.querySelectorAll(`[data-tabcontent=${g}]`).forEach(c=>c.classList.add(\"hidden\"));btn.classList.add(\"tab-active\");document.querySelector(`[data-tabcontent=${g}][data-tabid=${btn.dataset.tab}]`)?.classList.remove(\"hidden\");}));\\n' +\n  '// Sticky header\\n' +\n  'window.addEventListener(\"scroll\",()=>{const h=document.getElementById(\"main-header\");if(h){h.style.boxShadow=scrollY>60?\"0 2px 30px rgba(0,0,0,0.3)\":\"none\";h.style.padding=scrollY>60?\"8px 24px\":\"\";}});\\n' +\n  '// Cart counter\\n' +\n  'let cart=0; document.querySelectorAll(\".add-to-cart\").forEach(b=>b.addEventListener(\"click\",()=>{cart++;document.querySelectorAll(\".cart-count\").forEach(el=>el.textContent=cart);}));\\n' +\n  '// Form submit\\n' +\n  'document.querySelectorAll(\"form\").forEach(f=>f.addEventListener(\"submit\",e=>{e.preventDefault();const btn=f.querySelector(\"[type=submit]\");if(btn){btn.textContent=\"✓ Sent!\";btn.style.background=\"#22c55e\";}setTimeout(()=>f.reset(),3000);}));\\n\\n' +\n  '== IMPORTANT RULES ==\\n' +\n  '- Add class=\"gsap-fade\" to every section card, heading, and feature block so GSAP animates them on scroll\\n' +\n  '- Add class=\"gsap-counter\" data-target=\"50\" data-suffix=\"+\" to ALL stat numbers\\n' +\n  '- Add class=\"gsap-slide-left\" to left-column content and \"gsap-slide-right\" to right-column content in 2-col sections\\n' +\n  '- Every image: <img src=\"https://picsum.photos/[W]/[H]?random=[unique-number]\" alt=\"descriptive\">\\n' +\n  '- NO dark text on dark background anywhere — every text element must have explicit color\\n' +\n  '- Every section must have id= attribute\\n' +\n  '- Footer last line: \"Built with ❤️ by JHD Advisor — AI Automation & Digital Systems | jhdadvisor.com\"\\n\\n' +\n  'OUTPUT: Return ONLY the complete HTML starting <!DOCTYPE html> ending </html>. NO markdown. NO explanation. JUST the full production HTML file.';\n\nconst htmlRequest = JSON.stringify({\n  model:      cfg.CLAUDE_MODEL,\n  max_tokens: 16000,\n  messages:   [{ role: 'user', content: htmlPrompt }]\n});\n\nconsole.log('[Prompt] category=' + cfg.category + ' vision=' + cfg.vision.length + 'chars light=' + isLight);\n\nreturn [{ json: { ...cfg, analysis, colorPalette: cp, htmlRequest, isLight } }];"
+      }
+    },
+    {
+      "id": "n10",
+      "name": "HTTP: Claude — Generate Full Website HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2260, 420],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",        "value": "={{ $json.CLAUDE_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type",      "value": "application/json" },
+            { "name": "Accept-Encoding",   "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.htmlRequest }}",
+        "options": { "timeout": 240000, "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n11",
+      "name": "HTTP: Odoo Authenticate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2520, 420],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Parse Input + Category Config').item.json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Accept-Encoding", "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ jsonrpc:'2.0', method:'call', id:1, params:{ service:'common', method:'authenticate', args:[$('Parse Input + Category Config').item.json.ODOO_DB, $('Parse Input + Category Config').item.json.ODOO_USER, $('Parse Input + Category Config').item.json.ODOO_PASS, {}] } }) }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n12",
+      "name": "Code: Parse Auth + Extract HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2780, 420],
+      "parameters": {
+        "jsCode": "function decode(r) {\n  if (r?.content || r?.result !== undefined || r?.data !== undefined) return r;\n  if (!r?._readableState) return r;\n  try {\n    const chunks = Array.isArray(r._readableState.buffer) ? r._readableState.buffer : [];\n    const bytes = [];\n    for (const c of chunks) {\n      const d = c?.data;\n      if (Array.isArray(d)) bytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) bytes.push(...d.data);\n    }\n    if (bytes.length) return JSON.parse(Buffer.from(bytes).toString('utf-8'));\n  } catch(e) {}\n  return r;\n}\n\nconst authResp   = decode($('HTTP: Odoo Authenticate').item.json);\nconst claudeResp = decode($('HTTP: Claude — Generate Full Website HTML').item.json);\nconst cfg        = $('Code: Build Category HTML Prompt').item.json;\n\nconst uid    = (typeof authResp?.result === 'number' && authResp.result > 0) ? authResp.result : null;\nconst odooOk = !!(uid);\nconsole.log('[Auth] uid=' + uid + ' ok=' + odooOk);\n\n// Extract HTML from Claude response\nconst raw = claudeResp?.content?.[0]?.text || '';\nlet fullHtml = raw.trim();\nconst fenced    = raw.match(/```html?[\\s\\S]*?([\\s\\S]*?)```/i);\nconst doctypeIdx = raw.toLowerCase().indexOf('<!doctype');\nif (fenced && fenced[1])   fullHtml = fenced[1].trim();\nelse if (doctypeIdx >= 0)  fullHtml = raw.substring(doctypeIdx).trim();\n\n// Extract head assets\nconst headMatch  = fullHtml.match(/<head[^>]*>([\\s\\S]*?)<\\/head>/i);\nconst headContent = headMatch ? headMatch[1] : '';\nconst styleTags = [];\nlet sm; const sRx = /<style[\\s\\S]*?<\\/style>/gi; while((sm=sRx.exec(headContent))!==null) styleTags.push(sm[0]);\nlet lm; const lRx = /<link[^>]+(?:stylesheet|font)[^>]*\\/?>/gi; while((lm=lRx.exec(headContent))!==null) styleTags.push(lm[0]);\nlet scm; const scRx = /<script[^>]+src=['\"][^'\"]*(?:tailwind|cdn\\.tailwindcss)[^'\"]*['\"][^>]*>[\\s\\S]*?<\\/script>/gi; while((scm=scRx.exec(headContent))!==null) styleTags.push(scm[0]);\nconst headAssets = styleTags.join('\\n');\n\n// Extract body\nconst bodyMatch = fullHtml.match(/<body[^>]*>([\\s\\S]*)<\\/body>/i);\nlet bodyContent = bodyMatch ? bodyMatch[1].trim() : fullHtml;\nbodyContent = bodyContent.replace(/<!DOCTYPE[^>]*>/gi,'').replace(/<\\/?html[^>]*>/gi,'').replace(/<head[\\s\\S]*?<\\/head>/gi,'').replace(/<\\/?body[^>]*>/gi,'').trim();\n\nif (bodyContent.length < 300) {\n  bodyContent = '<div style=\"min-height:100vh;display:flex;align-items:center;justify-content:center;background:' + cfg.colorPalette.bg + '\"><div style=\"text-align:center;color:#fff\"><h1 style=\"font-size:2rem;font-weight:900\">' + cfg.bizName + '</h1><p style=\"margin-top:1rem;color:#94a3b8\">' + cfg.category + '</p><p style=\"color:#ef4444;margin-top:1rem\">Generation returned ' + raw.length + ' chars — please retry</p></div></div>';\n}\n\n// Create NEW Odoo website — each client gets their own site ID (42, 43, 44...)\nconst websiteName = cfg.bizName + ' — ' + cfg.category;\nconst createWebsiteReq = JSON.stringify({\n  jsonrpc:'2.0', method:'call', id:2,\n  params:{\n    service:'object', method:'execute_kw',\n    args:[\n      cfg.ODOO_DB, uid, cfg.ODOO_PASS,\n      'website.website', 'create',\n      [{\n        name:       websiteName,\n        company_id: 1,\n        is_published: true\n      }]\n    ]\n  }\n});\nconsole.log('[CreateSite] requesting new website: ' + websiteName);\n\nconsole.log('[HTML] body=' + bodyContent.length + ' raw=' + raw.length + ' assets=' + headAssets.length);\n\nreturn [{ json: { ...cfg, uid, odooOk, bodyContent, headAssets, fullHtml, htmlLength: bodyContent.length, createWebsiteReq } }];"
+      }
+    },
+    {
+      "id": "n13",
+      "name": "Skip: Odoo SaaS blocks website.website via RPC",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3040, 420],
+      "parameters": {
+        "jsCode": "// Odoo SaaS restricts website.website creation via JSON-RPC.\n// Pages are assigned to the JHD Advisor site (ID 41) with unique slug URLs.\n// This node is a no-op pass-through — no HTTP call, no wasted credits.\nconst prev = $input.item.json;\nconsole.log('[Skip] website.website creation skipped — using fallback siteId=41');\nreturn [{ json: { ...prev, result: null } }];"
+      }
+    },
+    {
+      "id": "n14",
+      "name": "Code: Build View + Page Requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3300, 420],
+      "parameters": {
+        "jsCode": "function decode(r) {\n  if (r?.result !== undefined || r?.data !== undefined || r?.content) return r;\n  if (!r?._readableState) return r;\n  try {\n    const chunks = Array.isArray(r._readableState.buffer) ? r._readableState.buffer : [];\n    const bytes = [];\n    for (const c of chunks) {\n      const d = c?.data;\n      if (Array.isArray(d)) bytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) bytes.push(...d.data);\n    }\n    if (bytes.length) return JSON.parse(Buffer.from(bytes).toString('utf-8'));\n  } catch(e) {}\n  return r;\n}\n\nconst siteResp = decode($input.item.json);\nconst prev = $('Code: Parse Auth + Extract HTML').item.json;\n\n// Parse the newly created website ID\nconst newSiteId = typeof siteResp?.result === 'number' && siteResp.result > 0 ? siteResp.result : null;\nconst siteError = siteResp?.error || null;\nconsole.log('[NewSite] raw response: ' + JSON.stringify(siteResp).slice(0,300));\nconsole.log('[NewSite] newSiteId=' + newSiteId + ' error=' + JSON.stringify(siteError));\nif (!newSiteId) {\n  console.error('[NewSite] FAILED to create new website. Error: ' + JSON.stringify(siteError));\n}\n\n// Use full standalone HTML — no t-call=website.layout so zero Odoo header/footer overlap\n// Claude already generated a complete HTML document; embed it directly without any Odoo layout wrapper.\nconst fullHtmlDoc = prev.fullHtml && prev.fullHtml.length > 500\n  ? prev.fullHtml\n  : '<!DOCTYPE html><html><head>' + prev.headAssets + '</head><body>' + prev.bodyContent + '</body></html>';\n\nconst odooArch = '<t t-name=\"' + prev.pageKey + '\">' + fullHtmlDoc + '</t>';\n\nconst createViewReq = JSON.stringify({\n  jsonrpc:'2.0', method:'call', id:3,\n  params:{\n    service:'object', method:'execute_kw',\n    args:[\n      prev.ODOO_DB, prev.uid, prev.ODOO_PASS,\n      'ir.ui.view', 'create',\n      [{ name: prev.bizName + ': AI Homepage', type:'qweb', arch_db: odooArch, key: prev.pageKey, mode:'primary' }]\n    ]\n  }\n});\n\nreturn [{ json: { ...prev, newSiteId, odooArch, createViewReq } }];"
+      }
+    },
+    {
+      "id": "n15",
+      "name": "HTTP: Odoo Create ir.ui.view",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3560, 420],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Accept-Encoding", "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.createViewReq }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n16",
+      "name": "Code: Build Homepage + Publish",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3820, 420],
+      "parameters": {
+        "jsCode": "function decode(r) {\n  if (r?.result !== undefined || r?.data !== undefined || r?.content) return r;\n  if (!r?._readableState) return r;\n  try {\n    const chunks = Array.isArray(r._readableState.buffer) ? r._readableState.buffer : [];\n    const bytes = [];\n    for (const c of chunks) {\n      const d = c?.data;\n      if (Array.isArray(d)) bytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) bytes.push(...d.data);\n    }\n    if (bytes.length) return JSON.parse(Buffer.from(bytes).toString('utf-8'));\n  } catch(e) {}\n  return r;\n}\n\nconst viewResp = decode($input.item.json);\nconst prev     = $('Code: Build View + Page Requests').item.json;\n\nconst viewId = typeof viewResp?.result === 'number' ? viewResp.result : null;\nconsole.log('[View] id=' + viewId + ' newSite=' + prev.newSiteId);\n\n// Odoo SaaS blocks website.website creation via RPC — use JHD Advisor (ID 41) as host.\n// Each client page gets a unique slug URL so pages never conflict.\nconst siteId = prev.newSiteId || 41;\nconst pageUrl = prev.pageSlug || ('/' + prev.slug + '-' + prev.ts);\nconsole.log('[Page] siteId=' + siteId + ' url=' + pageUrl);\n\nconst createPageReq = JSON.stringify({\n  jsonrpc:'2.0', method:'call', id:4,\n  params:{\n    service:'object', method:'execute_kw',\n    args:[\n      prev.ODOO_DB, prev.uid, prev.ODOO_PASS,\n      'website.page', 'create',\n      [{\n        name:              prev.bizName + ' — Homepage',\n        url:               pageUrl,\n        website_id:        siteId,\n        view_id:           viewId || false,\n        is_published:      false,\n        website_published: false,\n        track:             true\n      }]\n    ]\n  }\n});\n\nreturn [{ json: { ...prev, viewId, siteId, pageUrl, createPageReq } }];"
+      }
+    },
+    {
+      "id": "n17",
+      "name": "HTTP: Odoo Create Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4080, 420],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Accept-Encoding", "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.createPageReq }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n18",
+      "name": "Code: Publish + Build Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4340, 420],
+      "parameters": {
+        "jsCode": "function decode(r) {\n  if (r?.result !== undefined || r?.data !== undefined || r?.content) return r;\n  if (!r?._readableState) return r;\n  try {\n    const chunks = Array.isArray(r._readableState.buffer) ? r._readableState.buffer : [];\n    const bytes = [];\n    for (const c of chunks) {\n      const d = c?.data;\n      if (Array.isArray(d)) bytes.push(...d);\n      else if (d?.type === 'Buffer' && Array.isArray(d.data)) bytes.push(...d.data);\n    }\n    if (bytes.length) return JSON.parse(Buffer.from(bytes).toString('utf-8'));\n  } catch(e) {}\n  return r;\n}\n\nconst pageResp = decode($input.item.json);\nconst prev     = $('Code: Build Homepage + Publish').item.json;\n\nconst pageId = typeof pageResp?.result === 'number' ? pageResp.result : null;\nconsole.log('[Page] id=' + pageId + ' autoPublish=' + prev.autoPublish);\n\nlet publishReq = null;\nif (prev.autoPublish && pageId) {\n  publishReq = JSON.stringify({\n    jsonrpc:'2.0', method:'call', id:5,\n    params:{\n      service:'object', method:'execute_kw',\n      args:[prev.ODOO_DB, prev.uid, prev.ODOO_PASS, 'website.page', 'write',\n        [[pageId], { is_published: true, website_published: true }]]\n    }\n  });\n}\n\nconst siteUrl    = prev.ODOO_URL + '/odoo/website/' + prev.siteId;  // Admin view of the new site\nconst adminUrl   = prev.ODOO_URL + '/odoo/website';                  // All websites list\nconst previewUrl = prev.ODOO_URL + '/odoo/website/' + prev.siteId;  // Direct to new site in editor\nconst duration   = Math.round((Date.now() - parseInt(prev.ts)) / 1000);\nconst status     = prev.autoPublish ? 'LIVE ✅' : 'Draft (review in Odoo)';\n\nconst emailHtml = `<div style=\"font-family:Inter,Arial,sans-serif;max-width:650px;margin:0 auto;border-radius:16px;overflow:hidden;\">\n<div style=\"background:linear-gradient(135deg,#7c3aed,#a78bfa);padding:36px;text-align:center;\">\n  <div style=\"font-size:48px;\">🌐</div>\n  <h1 style=\"margin:12px 0 0;font-size:26px;font-weight:900;color:#fff;\">Your Website Is Ready!</h1>\n  <p style=\"color:rgba(255,255,255,0.85);margin:8px 0 0;\">${prev.bizName} · ${prev.category}</p>\n</div>\n<div style=\"background:#0f0a1e;padding:36px;\">\n  <table style=\"width:100%;border-collapse:collapse;\">\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Business</td><td style=\"color:#fff;font-weight:600;\">${prev.bizName}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Category</td><td style=\"color:#fff;\">${prev.category}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Sites Researched</td><td style=\"color:#fff;\">10 top ${prev.category} websites analyzed</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">HTML Generated</td><td style=\"color:#fff;\">${Math.round(prev.htmlLength/1024)}KB production HTML</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Odoo Website ID</td><td style=\"color:#fff;\">${prev.siteId}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Page ID</td><td style=\"color:#fff;\">${pageId || 'N/A'}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">View ID</td><td style=\"color:#fff;\">${prev.viewId || 'N/A'}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Status</td><td style=\"color:${prev.autoPublish?'#4ade80':'#fbbf24'};font-weight:700;\">${status}</td></tr>\n    <tr><td style=\"color:#a5b4fc;padding:8px 0;font-size:14px;\">Build Time</td><td style=\"color:#fff;\">${duration}s</td></tr>\n  </table>\n  <div style=\"margin-top:28px;text-align:center;\">\n    <a href=\"${siteUrl}\" style=\"display:inline-block;background:#7c3aed;color:#fff;padding:14px 28px;border-radius:12px;font-weight:700;text-decoration:none;margin:6px;\">🌐 View Website</a>\n    <a href=\"${adminUrl}\" style=\"display:inline-block;background:#1a1035;color:#a78bfa;border:2px solid #7c3aed;padding:12px 24px;border-radius:12px;font-weight:700;text-decoration:none;margin:6px;\">⚙️ Edit in Odoo</a>\n  </div>\n  <div style=\"margin-top:24px;background:#1a1035;border:1px solid #2d2a5e;border-radius:12px;padding:16px;\">\n    <p style=\"color:#a5b4fc;font-size:14px;font-weight:600;margin:0 0 8px;\">📋 Next Steps:</p>\n    <ol style=\"color:#94a3b8;font-size:13px;margin:0;padding-left:20px;line-height:1.8;\">\n      <li>Visit the page URL above to preview your website</li>\n      <li>Log in to Odoo admin to make edits using the visual editor</li>\n      <li>Connect your domain in Odoo → Website → Configuration → Settings</li>\n      <li>Update the placeholder images with your real photos</li>\n      <li>Add your real products/services in Odoo and link them</li>\n    </ol>\n  </div>\n</div>\n<div style=\"background:#0d0a1a;padding:16px;text-align:center;\">\n  <p style=\"color:#4b5563;font-size:12px;margin:0;\">🤖 Built by JHD Advisor AI Website Builder v3 · Firecrawl + Claude AI + Odoo · <a href=\"https://jhdadvisor.com\" style=\"color:#7c3aed;\">jhdadvisor.com</a></p>\n</div>\n</div>`;\n\nconst emailSubject = '🌐 Your ' + prev.category + ' website is ready — ' + prev.bizName + ' (' + status + ')';\n\nreturn [{ json: { ...prev, pageId, publishReq, shouldPublish: !!(prev.autoPublish && pageId), siteUrl, adminUrl, previewUrl, emailHtml, emailSubject, duration } }];"
+      }
+    },
+    {
+      "id": "n19",
+      "name": "HTTP: Odoo Publish Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4600, 420],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ODOO_URL }}/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Accept-Encoding", "value": "identity" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.publishReq || JSON.stringify({ jsonrpc:'2.0', method:'call', id:99, params:{ service:'common', method:'version', args:[] } }) }}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+    {
+      "id": "n20",
+      "name": "Gmail: Send Website Report",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [4860, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $('Code: Publish + Build Report').item.json.bizEmail || 'kahpk1933@gmail.com' }}",
+        "subject": "={{ $('Code: Publish + Build Report').item.json.emailSubject }}",
+        "emailType": "html",
+        "message": "={{ $('Code: Publish + Build Report').item.json.emailHtml }}",
+        "options": {
+          "ccList": "kahpk1933@gmail.com"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: Build My Website": {
+      "main": [[{ "node": "Parse Input + Category Config", "type": "main", "index": 0 }]]
+    },
+    "Parse Input + Category Config": {
+      "main": [[{ "node": "Firecrawl: Search Top Design Examples", "type": "main", "index": 0 }]]
+    },
+    "Firecrawl: Search Top Design Examples": {
+      "main": [[{ "node": "Firecrawl: Search Features & UX", "type": "main", "index": 0 }]]
+    },
+    "Firecrawl: Search Features & UX": {
+      "main": [[{ "node": "Code: Extract Scrape URLs", "type": "main", "index": 0 }]]
+    },
+    "Code: Extract Scrape URLs": {
+      "main": [[{ "node": "Firecrawl: Deep Scrape Site 1", "type": "main", "index": 0 }]]
+    },
+    "Firecrawl: Deep Scrape Site 1": {
+      "main": [[{ "node": "Firecrawl: Deep Scrape Site 2", "type": "main", "index": 0 }]]
+    },
+    "Firecrawl: Deep Scrape Site 2": {
+      "main": [[{ "node": "Code: Merge Research + Analysis Prompt", "type": "main", "index": 0 }]]
+    },
+    "Code: Merge Research + Analysis Prompt": {
+      "main": [[{ "node": "HTTP: Claude — Analyze 10 Sites", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Claude — Analyze 10 Sites": {
+      "main": [[{ "node": "Code: Build Category HTML Prompt", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Category HTML Prompt": {
+      "main": [[{ "node": "HTTP: Claude — Generate Full Website HTML", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Claude — Generate Full Website HTML": {
+      "main": [[{ "node": "HTTP: Odoo Authenticate", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Authenticate": {
+      "main": [[{ "node": "Code: Parse Auth + Extract HTML", "type": "main", "index": 0 }]]
+    },
+    "Code: Parse Auth + Extract HTML": {
+      "main": [[{ "node": "HTTP: Odoo Create New Website", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Create New Website": {
+      "main": [[{ "node": "Code: Build View + Page Requests", "type": "main", "index": 0 }]]
+    },
+    "Code: Build View + Page Requests": {
+      "main": [[{ "node": "HTTP: Odoo Create ir.ui.view", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Create ir.ui.view": {
+      "main": [[{ "node": "Code: Build Homepage + Publish", "type": "main", "index": 0 }]]
+    },
+    "Code: Build Homepage + Publish": {
+      "main": [[{ "node": "HTTP: Odoo Create Page", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Create Page": {
+      "main": [[{ "node": "Code: Publish + Build Report", "type": "main", "index": 0 }]]
+    },
+    "Code: Publish + Build Report": {
+      "main": [[{ "node": "HTTP: Odoo Publish Page", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Odoo Publish Page": {
+      "main": [
+        [{ "node": "Gmail: Send Website Report", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York"
+  },
+  "active": false,
+  "tags": ["Universal Website Builder", "AI", "Odoo", "Firecrawl", "JHD Advisor", "v3"]
+}
