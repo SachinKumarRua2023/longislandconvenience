@@ -275,6 +275,94 @@
             margin-top: 5px;
         }
 
+        .trending-section {
+            padding: 60px 20px;
+            margin-top: 40px;
+        }
+
+        .trending-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .trending-card {
+            background: rgba(107, 62, 74, 0.2);
+            border: 2px solid rgba(217, 175, 55, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            transition: var(--transition);
+        }
+
+        .trending-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+            border-color: var(--accent-gold);
+        }
+
+        .trending-header {
+            padding: 30px 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            min-height: 100px;
+        }
+
+        .trending-label {
+            background: rgba(255,255,255,0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: white;
+            display: inline-block;
+        }
+
+        .trending-content {
+            padding: 25px;
+        }
+
+        .trending-content h3 {
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .trending-content p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .trending-link {
+            display: inline-block;
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink));
+            color: var(--primary-dark);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .trending-link:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(217, 175, 55, 0.4);
+        }
+
         .floating-balloons {
             position: fixed;
             width: 100%;
@@ -521,6 +609,46 @@
                     </div>
                 </div>
             `).join('');
+
+        // Add trending section AFTER stores
+        const trendingHTML = `
+        <section class="trending-section">
+            <h2 class="section-title">🔥 Trending Now</h2>
+            <div class="trending-grid">
+                <div class="trending-card">
+                    <div class="trending-header" style="background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);">
+                        <div class="trending-label">TRENDING</div>
+                    </div>
+                    <div class="trending-content">
+                        <h3>Father's Day Special</h3>
+                        <p>Exclusive balloons & gift arrangements</p>
+                        <a href="https://www.longislandballoonsdecor.com/" class="trending-link">Shop Now →</a>
+                    </div>
+                </div>
+                <div class="trending-card">
+                    <div class="trending-header" style="background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);">
+                        <div class="trending-label">TRENDING</div>
+                    </div>
+                    <div class="trending-content">
+                        <h3>Graduation Celebration</h3>
+                        <p>Custom gift baskets & decorations</p>
+                        <a href="https://www.ligiftbasket.com/" class="trending-link">Shop Now →</a>
+                    </div>
+                </div>
+                <div class="trending-card">
+                    <div class="trending-header" style="background: linear-gradient(135deg, #d4af37 0%, #e94b7f 100%);">
+                        <div class="trending-label">NEW</div>
+                    </div>
+                    <div class="trending-content">
+                        <h3>New Releases 2026</h3>
+                        <p>Limited edition items available now</p>
+                        <a href="https://www.longislandballoonsdecor.com/" class="trending-link">Explore →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        `;
+        storesContainer.innerHTML += trendingHTML;
         }
 
         // Seasonal Reminder Timer
