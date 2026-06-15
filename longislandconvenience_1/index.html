@@ -112,11 +112,14 @@
             width: 100%;
             height: 250px;
             background: linear-gradient(45deg, rgba(107, 62, 74, 0.5), rgba(233, 75, 127, 0.3));
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             position: relative;
+            padding: 8px;
         }
 
         .store-card-image img {
@@ -125,6 +128,7 @@
             object-fit: cover;
             transition: var(--transition);
             filter: brightness(0.9);
+            border-radius: 6px;
         }
 
         .store-card:hover .store-card-image img {
@@ -543,7 +547,9 @@
                 category: 'Cards & Collectibles',
                 description: 'Rare and vintage sports cards. Build your collection with us.',
                 status: 'LIVE',
-                image: './images/sports-cards-center.png',
+                imageLeft: './images/sports-cards-left.png',
+                imageCenter: './images/sports-cards-center.png',
+                imageRight: './images/sports-cards-right.png',
                 url: 'https://www.longislandcards.com/'
             },
             {
@@ -551,7 +557,9 @@
                 category: 'Gifts & Occasions',
                 description: 'Beautifully curated gift baskets for every celebration and budget.',
                 status: 'LIVE',
-                image: './images/giftbasket_center.jpg',
+                imageLeft: './images/giftbasket_left.jpg',
+                imageCenter: './images/giftbasket_center.jpg',
+                imageRight: './images/giftbasket_right.jpg',
                 url: 'https://www.ligiftbasket.com/'
             },
             {
@@ -559,7 +567,9 @@
                 category: 'Events & Parties',
                 description: 'Transform any space with our premium balloon arrangements and decorations.',
                 status: 'LIVE',
-                image: './images/BalloonsCenter.png',
+                imageLeft: './images/balloon_left.jfif',
+                imageCenter: './images/BalloonsCenter.png',
+                imageRight: './images/balloon_right.jfif',
                 url: 'https://www.longislandballoonsdecor.com/'
             },
             {
@@ -567,7 +577,9 @@
                 category: 'Print & Shipping',
                 description: 'Professional printing and nationwide shipping services.',
                 status: 'LIVE',
-                image: './images/printmail_center.jpeg',
+                imageLeft: './images/printmail_left.jpeg',
+                imageCenter: './images/printmail_center.jpeg',
+                imageRight: './images/printmail_right.jpeg',
                 url: 'https://www.longislandprintandmail.com/'
             },
             {
@@ -575,7 +587,9 @@
                 category: 'Gaming',
                 description: 'Yu-Gi-Oh, Magic: The Gathering, and more collectible card games.',
                 status: 'LIVE',
-                image: './images/cards_left.png',
+                imageLeft: './images/cards_left.png',
+                imageCenter: './images/cards_center.png',
+                imageRight: './images/cards_right.png',
                 url: 'https://www.longislandcards.com/'
             },
             {
@@ -583,7 +597,9 @@
                 category: 'Cards',
                 description: 'Custom and personalized greeting cards for all occasions.',
                 status: 'COMING',
-                image: './images/GreetingCardCenter.png',
+                imageLeft: './images/GreetingCardLeft.png',
+                imageCenter: './images/GreetingCardCenter.png',
+                imageRight: './images/GreetingCardRight.png',
                 url: '/shop'
             }
         ];
@@ -594,7 +610,9 @@
             storesGrid.innerHTML = stores.map(store => `
                 <div class="store-card">
                     <div class="store-card-image">
-                        <img src="${store.image}" alt="${store.name}" loading="lazy">
+                        <img src="${store.imageLeft}" alt="${store.name} left" loading="lazy">
+                        <img src="${store.imageCenter}" alt="${store.name} center" loading="lazy">
+                        <img src="${store.imageRight}" alt="${store.name} right" loading="lazy">
                     </div>
                     <div class="store-card-content">
                         <div class="store-name">
