@@ -1,0 +1,264 @@
+<style>
+    :root {
+        --primary-dark: #1a0f15;
+        --primary-burgundy: #6b3e4a;
+        --accent-pink: #e94b7f;
+        --accent-gold: #d4af37;
+        --text-light: #e0e0e0;
+        --text-gray: #b0b0b0;
+        --success-green: #2ecc71;
+        --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .lic-hero-section {
+        padding: 40px 20px;
+        background: linear-gradient(135deg, rgba(107, 62, 74, 0.2), rgba(233, 75, 127, 0.1));
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .lic-hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--accent-gold);
+        margin-bottom: 10px;
+    }
+
+    .lic-hero-subtitle {
+        font-size: 1.1rem;
+        color: var(--text-gray);
+    }
+
+    .lic-section-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-burgundy);
+        margin-bottom: 40px;
+        text-align: center;
+    }
+
+    .lic-stores-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 30px;
+        margin-bottom: 60px;
+    }
+
+    .lic-store-card {
+        background: #ffffff;
+        border: 1px solid #e8e3db;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .lic-store-card:hover {
+        transform: translateY(-8px);
+        border-color: var(--accent-gold);
+        box-shadow: 0 12px 32px rgba(212, 175, 55, 0.2);
+    }
+
+    .lic-gallery-container {
+        height: 280px;
+        background: linear-gradient(135deg, #f5f3f0 0%, #ede8e1 100%);
+        display: flex;
+        gap: 10px;
+        padding: 15px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .lic-gallery-image {
+        height: 100%;
+        flex: 1;
+        object-fit: cover;
+        border-radius: 8px;
+        transition: all 0.3s;
+        filter: brightness(0.95);
+    }
+
+    .lic-store-card:hover .lic-gallery-image {
+        filter: brightness(1.05);
+        transform: scale(1.02);
+    }
+
+    .lic-store-content {
+        padding: 24px;
+    }
+
+    .lic-store-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--primary-burgundy);
+        margin-bottom: 8px;
+    }
+
+    .lic-store-status {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+
+    .lic-status-live {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #c8e6c9;
+    }
+
+    .lic-status-coming {
+        background-color: #fff3e0;
+        color: #e65100;
+        border: 1px solid #ffe0b2;
+    }
+
+    .lic-store-category {
+        color: #999;
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+
+    .lic-store-description {
+        color: #555;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .lic-store-link {
+        display: inline-block;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, var(--accent-gold) 0%, #c9a227 100%);
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+    }
+
+    .lic-store-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+    }
+
+    @media (max-width: 768px) {
+        .lic-stores-grid {
+            grid-template-columns: 1fr;
+        }
+        .lic-hero-title {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+
+<div class="lic-hero-section">
+    <h1 class="lic-hero-title">✨ Long Island Convenience</h1>
+    <p class="lic-hero-subtitle">7 Brands. One Neighborhood. Premium Gifts & Services</p>
+</div>
+
+<h2 class="lic-section-title">🏪 Our Stores</h2>
+
+<div class="lic-stores-grid">
+    <!-- Sports Cards -->
+    <div class="lic-store-card">
+        <div class="lic-gallery-container">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/sports-cards-left.png" alt="Sports Cards Left" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/sports-cards-center.png" alt="Sports Cards Center" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/sports-cards-right.png" alt="Sports Cards Right" class="lic-gallery-image">
+        </div>
+        <div class="lic-store-content">
+            <div class="lic-store-name">Sports Cards</div>
+            <span class="lic-store-status lic-status-live">● LIVE</span>
+            <div class="lic-store-category">Cards &amp; Collectibles</div>
+            <div class="lic-store-description">Rare and vintage sports cards. Build your collection with expert trading advice.</div>
+            <a href="https://www.longislandcards.com/" class="lic-store-link" target="_blank" rel="noopener noreferrer">Visit Store</a>
+        </div>
+    </div>
+
+    <!-- Gift Baskets -->
+    <div class="lic-store-card">
+        <div class="lic-gallery-container">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/giftbasket_left.jpg" alt="Gift Baskets Left" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/giftbasket_center.jpg" alt="Gift Baskets Center" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/giftbasket_right.jpg" alt="Gift Baskets Right" class="lic-gallery-image">
+        </div>
+        <div class="lic-store-content">
+            <div class="lic-store-name">Gift Baskets</div>
+            <span class="lic-store-status lic-status-live">● LIVE</span>
+            <div class="lic-store-category">Gifts &amp; Occasions</div>
+            <div class="lic-store-description">Beautifully curated gift baskets for every celebration and budget.</div>
+            <a href="https://www.ligiftbasket.com/" class="lic-store-link" target="_blank" rel="noopener noreferrer">Visit Store</a>
+        </div>
+    </div>
+
+    <!-- Balloons & Décor -->
+    <div class="lic-store-card">
+        <div class="lic-gallery-container">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/balloon_left.jfif" alt="Balloons Left" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/BalloonsCenter.png" alt="Balloons Center" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/balloon_right.jfif" alt="Balloons Right" class="lic-gallery-image">
+        </div>
+        <div class="lic-store-content">
+            <div class="lic-store-name">Balloons &amp; Décor</div>
+            <span class="lic-store-status lic-status-live">● LIVE</span>
+            <div class="lic-store-category">Events &amp; Parties</div>
+            <div class="lic-store-description">Premium balloon arrangements and event decorations. Same-day setup available.</div>
+            <a href="https://www.longislandballoonsdecor.com/" class="lic-store-link" target="_blank" rel="noopener noreferrer">Visit Store</a>
+        </div>
+    </div>
+
+    <!-- Print & Mail -->
+    <div class="lic-store-card">
+        <div class="lic-gallery-container">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/printmail_left.jpeg" alt="Print & Mail Left" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/printmail_center.jpeg" alt="Print & Mail Center" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/printmail_right.jpeg" alt="Print & Mail Right" class="lic-gallery-image">
+        </div>
+        <div class="lic-store-content">
+            <div class="lic-store-name">Print &amp; Mail</div>
+            <span class="lic-store-status lic-status-live">● LIVE</span>
+            <div class="lic-store-category">Print &amp; Shipping</div>
+            <div class="lic-store-description">Professional printing and nationwide shipping services. Rush orders welcome.</div>
+            <a href="https://www.longislandprintandmail.com/" class="lic-store-link" target="_blank" rel="noopener noreferrer">Visit Store</a>
+        </div>
+    </div>
+
+    <!-- Game Cards -->
+    <div class="lic-store-card">
+        <div class="lic-gallery-container">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/cards_left.png" alt="Game Cards Left" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/cards_center.png" alt="Game Cards Center" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/cards_right.png" alt="Game Cards Right" class="lic-gallery-image">
+        </div>
+        <div class="lic-store-content">
+            <div class="lic-store-name">Game Cards</div>
+            <span class="lic-store-status lic-status-live">● LIVE</span>
+            <div class="lic-store-category">Gaming</div>
+            <div class="lic-store-description">Yu-Gi-Oh, Magic: The Gathering, and more collectible card games.</div>
+            <a href="https://www.longislandcards.com/" class="lic-store-link" target="_blank" rel="noopener noreferrer">Visit Store</a>
+        </div>
+    </div>
+
+    <!-- Greeting Cards -->
+    <div class="lic-store-card">
+        <div class="lic-gallery-container">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/GreetingCardLeft.png" alt="Greeting Cards Left" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/GreetingCardCenter.png" alt="Greeting Cards Center" class="lic-gallery-image">
+            <img src="https://raw.githubusercontent.com/SachinKumarRua2023/longislandconvenience/fix/greeting-cards-images/longislandconvenience_1/images/GreetingCardRight.png" alt="Greeting Cards Right" class="lic-gallery-image">
+        </div>
+        <div class="lic-store-content">
+            <div class="lic-store-name">Greeting Cards</div>
+            <span class="lic-store-status lic-status-coming">⏱ COMING</span>
+            <div class="lic-store-category">Cards &amp; Stationery</div>
+            <div class="lic-store-description">Custom and personalized greeting cards for all occasions.</div>
+            <a href="https://www.longislandcards.com/" class="lic-store-link" target="_blank" rel="noopener noreferrer">Visit Store</a>
+        </div>
+    </div>
+</div>
